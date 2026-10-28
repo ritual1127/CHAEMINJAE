@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffd0e4">
+  <meta name="description" content="먼작귀 친구들과 함께하는 귀여운 모바일 웹 리듬게임">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>먼작귀 리듬 파티</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap">
+  <link rel="preload" as="image" href="assets/trio.webp">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <svg hidden>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-set" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></symbol>
+    <symbol id="i-cup" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3.5 4M16 6h3a3 3 0 0 1-3.5 4M12 13v4M8 20h8"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-retry" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.6-5.7M5 3.5V8h4.5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5l10.5 6.5L8 18.5z" fill="currentColor"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><path d="M10 4H5.5v16H10M15 8l4 4-4 4M19 12H9.5"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="cloud" viewBox="0 0 200 90"><path d="M30 85a28 28 0 0 1 2-55 38 38 0 0 1 70-14 30 30 0 0 1 48 10 30 30 0 0 1 22 59z" fill="#fff"/><path d="M30 85a28 28 0 0 1-8-10h160a30 30 0 0 1-10 10z" fill="#e9e4ff"/></symbol>
+  </svg>
+
+  <div id="app">
+    <!-- 움직이는 배경: 하늘, 구름, 언덕, 꽃잎 파티클, 캐릭터 무대 -->
+    <div id="scene" data-mode="title" aria-hidden="true">
+      <div class="sky"></div>
+      <div class="sky night"></div>
+      <div class="sun"></div>
+      <svg class="cloud" style="--w:46%;--top:8%;--d:46s;--delay:-12s"><use href="#cloud"/></svg>
+      <svg class="cloud" style="--w:30%;--top:22%;--d:38s;--delay:-30s;--o:.8"><use href="#cloud"/></svg>
+      <svg class="cloud" style="--w:58%;--top:34%;--d:60s;--delay:-5s;--o:.65"><use href="#cloud"/></svg>
+      <svg class="cloud" style="--w:24%;--top:4%;--d:30s;--delay:-20s;--o:.9"><use href="#cloud"/></svg>
+      <svg class="hills" viewBox="0 0 400 220" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="h1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f9c9e3"/><stop offset="1" stop-color="#f4b3d6"/></linearGradient>
+          <linearGradient id="h2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c6f0d4"/><stop offset="1" stop-color="#9fdcb8"/></linearGradient>
+          <linearGradient id="h3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b2ecc2"/><stop offset="1" stop-color="#86d3a2"/></linearGradient>
+        </defs>
+        <path d="M0 95Q70 40 160 80T330 60Q370 55 400 70V220H0z" fill="url(#h1)"/>
+        <path d="M0 140Q90 85 210 125T400 110V220H0z" fill="url(#h2)"/>
+        <path d="M0 180Q120 140 260 168T400 160V220H0z" fill="url(#h3)"/>
+        <g fill="#fff"><circle cx="40" cy="170" r="3"/><circle cx="120" cy="158" r="2.5"/><circle cx="300" cy="172" r="3"/><circle cx="350" cy="168" r="2"/><circle cx="210" cy="190" r="2.5"/></g>
+        <g fill="#ffb0cf"><circle cx="70" cy="190" r="3"/><circle cx="250" cy="182" r="2.5"/><circle cx="380" cy="196" r="3"/><circle cx="160" cy="200" r="2"/></g>
+      </svg>
+      <canvas id="sceneFx"></canvas>
+      <div class="stage">
+        <img class="buddy" src="assets/kurimanju.webp" style="--x:-1%;--y:7%;--dl:-.3s" alt="">
+        <img class="buddy" src="assets/shisa.webp" style="--x:81%;--y:10%;--dl:-.7s" alt="">
+        <img class="trio" src="assets/trio.webp" alt="하치와레, 치이카와, 우사기">
+        <div class="bubble" hidden></div>
+      </div>
+    </div>
+
+    <!-- 타이틀 + 로그인/회원가입 -->
+    <section id="title" class="screen active">
+      <h1 class="logo"><span>먼</span><span>작</span><span>귀</span></h1>
+      <p class="ribbon">리듬 파티</p>
+      <button class="touch" id="touch">화면을 터치해 주세요</button>
+
+      <form id="auth" class="sheet" hidden novalidate>
+        <div class="seg" role="tablist">
+          <button type="button" data-mode="login" aria-pressed="true">로그인</button>
+          <button type="button" data-mode="signup" aria-pressed="false">회원가입</button>
+        </div>
+        <label class="field"><span>닉네임</span>
+          <input name="username" autocomplete="username" maxlength="12" placeholder="2~12자" required></label>
+        <label class="field"><span>비밀번호</span>
+          <input name="password" type="password" autocomplete="current-password" maxlength="64" placeholder="4자 이상" required></label>
+        <div class="field signup-only" hidden><span>프로필 친구 고르기</span>
+          <div class="avatars" id="signupAvatars"></div>
+        </div>
+        <p class="err" role="alert"></p>
+        <button class="btn pink big" id="authSubmit">로그인</button>
+        <button type="button" class="link" id="guest">게스트로 둘러보기</button>
+      </form>
+    </section>
+
+    <!-- 로비 -->
+    <section id="lobby" class="screen">
+      <div class="topbar">
+        <button class="chip" id="profileBtn" aria-label="내 정보">
+          <img id="meAvatar" src="assets/avatars/1.webp" alt="">
+          <span class="who"><b id="meName">게스트</b><span class="lvrow"><i class="lv" id="meLv">Lv.1</i><span class="exp"><i id="meExp"></i></span></span></span>
+        </button>
+        <button class="icon-btn" data-open="settings" aria-label="설정"><svg><use href="#i-set"/></svg></button>
+      </div>
+      <h1 class="logo small"><span>먼</span><span>작</span><span>귀</span></h1>
+      <p class="ribbon small">리듬 파티</p>
+      <div class="spacer"></div>
+      <button class="btn pink play" data-go="select"><svg><use href="#i-play"/></svg>플레이!</button>
+      <div class="row">
+        <button class="btn blue" data-go="rank"><svg><use href="#i-cup"/></svg>랭킹</button>
+        <button class="btn butter" id="profileBtn2"><svg><use href="#i-user"/></svg>내 정보</button>
+      </div>
+    </section>
+
+    <!-- 곡 선택 -->
+    <section id="select" class="screen">
+      <div class="header">
+        <button class="icon-btn" data-go="lobby" aria-label="뒤로"><svg><use href="#i-back"/></svg></button>
+        <h2>곡 선택</h2>
+        <button class="icon-btn" data-open="settings" aria-label="설정"><svg><use href="#i-set"/></svg></button>
+      </div>
+      <div class="carousel" id="carousel"></div>
+      <div class="dots" id="dots"></div>
+      <div class="seg diff" id="diffSeg">
+        <button type="button" data-diff="easy">EASY <small></small></button>
+        <button type="button" data-diff="normal">NORMAL <small></small></button>
+      </div>
+      <p class="best" id="best"></p>
+      <button class="btn pink big" id="start"><svg><use href="#i-play"/></svg>시작!</button>
+    </section>
+
+    <!-- 게임 -->
+    <section id="game" class="screen">
+      <canvas id="field"></canvas>
+      <div class="hud">
+        <button class="icon-btn" id="pauseBtn" aria-label="일시정지"><svg><use href="#i-pause"/></svg></button>
+        <div class="songbar"><b id="gTitle"></b><span class="progress"><i id="gProg"></i></span></div>
+        <div class="score" id="gScore">0</div>
+      </div>
+      <div class="combo" id="gCombo" hidden><b>0</b><small>COMBO</small></div>
+      <div class="judge" id="gJudge"></div>
+      <div class="keys" id="keyHint">D · F · J · K 또는 화면 터치</div>
+      <div class="overlay" id="ready" hidden><p class="readytext">준비~</p></div>
+      <div class="overlay" id="paused" hidden>
+        <div class="panel">
+          <h2>잠깐 쉬어요</h2>
+          <button class="btn pink big" id="resume">계속하기</button>
+          <button class="btn blue" id="retryP"><svg><use href="#i-retry"/></svg>처음부터</button>
+          <button class="btn plain" id="quit">그만두기</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 결과 -->
+    <section id="result" class="screen">
+      <div class="panel result">
+        <div class="rhead"><img id="rJacket" alt=""><div><b id="rTitle"></b><span class="tag" id="rDiff"></span></div></div>
+        <div class="stamp" id="rRank">S</div>
+        <p class="rmsg" id="rMsg"></p>
+        <p class="rscore" id="rScore">0</p>
+        <p class="badges"><span class="badge new" id="rNew" hidden>NEW RECORD!</span><span class="badge fc" id="rFc" hidden></span></p>
+        <ul class="stats" id="rStats"></ul>
+        <p class="note" id="rNote"></p>
+      </div>
+      <div class="row">
+        <button class="btn blue" id="retry"><svg><use href="#i-retry"/></svg>다시하기</button>
+        <button class="btn pink" data-go="select">곡 선택</button>
+      </div>
+    </section>
+
+    <!-- 랭킹 -->
+    <section id="rank" class="screen">
+      <div class="header">
+        <button class="icon-btn" data-go="back" aria-label="뒤로"><svg><use href="#i-back"/></svg></button>
+        <h2>랭킹</h2>
+        <span class="icon-gap"></span>
+      </div>
+      <div class="songtabs" id="rankSongs"></div>
+      <div class="seg diff" id="rankDiff">
+        <button type="button" data-diff="easy">EASY</button>
+        <button type="button" data-diff="normal">NORMAL</button>
+      </div>
+      <ol class="ranklist" id="rankList"></ol>
+    </section>
+
+    <div class="overlay loading" id="loading" hidden><img src="assets/chiikawa.webp" alt=""><p>곡 준비 중…</p></div>
+    <div class="toast" id="toast" role="status"></div>
+  </div>
+
+  <dialog id="settings">
+    <h2>설정</h2>
+    <label class="slider"><span>노트 속도 <b id="speedVal"></b></span>
+      <input type="range" id="speed" min="1" max="10" step="0.5"></label>
+    <label class="slider"><span>싱크 조절 <b id="offsetVal"></b></span>
+      <input type="range" id="offset" min="-200" max="200" step="5">
+      <small>음악보다 노트가 빨리 오면 +, 늦게 오면 −</small></label>
+    <label class="toggle"><span>로비 음악</span><input type="checkbox" id="music"></label>
+    <label class="toggle"><span>타격음</span><input type="checkbox" id="hitsfx"></label>
+    <p class="hint">PC에서는 D · F · J · K 키로 플레이해요</p>
+    <form method="dialog"><button class="btn pink">닫기</button></form>
+  </dialog>
+
+  <dialog id="profile">
+    <img class="bigav" id="pAvatar" src="assets/avatars/1.webp" alt="">
+    <h2 id="pName"></h2>
+    <p class="pplays" id="pPlays"></p>
+    <ul class="pbest" id="pBest"></ul>
+    <p class="plabel">프로필 친구 바꾸기</p>
+    <div class="avatars" id="profileAvatars"></div>
+    <div class="row">
+      <button class="btn plain" id="logout"><svg><use href="#i-out"/></svg>로그아웃</button>
+      <form method="dialog"><button class="btn pink">닫기</button></form>
+    </div>
+  </dialog>
+</body>
+</html>
