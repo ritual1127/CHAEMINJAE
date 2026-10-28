@@ -1,18 +1,2270 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>내 홈페이지</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>프로젝트 세카이 스타일 웹 리듬게임</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <style>
+    /* ==========================================
+       [CSS 변수 및 기본 스타일 설정]
+       ========================================== */
+    :root {
+      --primary: #00f3ff;
+      --secondary: #ff007f;
+      --accent: #ffe600;
+      --bg-dark: #070913;
+      --panel-bg: rgba(18, 22, 41, 0.90);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: 'Pretendard', sans-serif; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: var(--bg-dark); color: #fff; }
+
+    #app { width: 100vw; height: 100vh; position: relative; }
+    .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; z-index: 1; }
+    .screen.active { display: flex !important; }
+    .screen:not(.active) { display: none !important; }
+
+    button { background: linear-gradient(135deg, #1e2640, #111525); border: 1px solid var(--primary); color: #fff; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    button:hover { background: var(--primary); color: #000; box-shadow: 0 0 12px var(--primary); }
+    button:disabled { background: #222 !important; border-color: #444 !important; color: #666 !important; cursor: not-allowed; box-shadow: none !important; }
+
+    /* ==========================================
+       [1. 메인 로비 화면]
+       ========================================== */
+    #lobby-screen {
+      background-image: url('images/munjakgui.png.png');
+      background-repeat: no-repeat;
+      background-position: center center;
+      background-size: cover;
+      background-color: #070913;
+      image-rendering: auto;
+      position: relative;
+      padding: 20px;
+    }
+    .lobby-profile {
+      position: absolute; top: 20px; left: 20px; width: 320px; height: 85px;
+      background: var(--panel-bg); border: 2px solid var(--primary); border-radius: 10px;
+      display: flex; align-items: center; padding: 10px; gap: 12px; z-index: 2; cursor: pointer; transition: 0.2s;
+    }
+    .lobby-profile:hover { border-color: var(--accent); transform: scale(1.02); }
+    .profile-avatar { width: 60px; height: 60px; background: #2b355c; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 1px solid var(--primary); overflow: hidden; }
+    .profile-avatar img { width: 100%; height: 100%; object-fit: contain; }
+    .profile-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .exp-bar-bg { width: 100%; height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; }
+    .exp-bar-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.3s; }
+
+    .currency-display {
+      position: absolute; top: 20px; right: 200px;
+      background: var(--panel-bg); border: 1px solid var(--accent); padding: 10px 20px; border-radius: 8px;
+      font-weight: bold; font-size: 16px; color: var(--accent); z-index: 2; height: 85px; display: flex; align-items: center;
+    }
+    
+    .lobby-top-btns {
+      position: absolute; top: 20px; right: 20px; display: flex; gap: 8px; z-index: 2;
+    }
+    .lobby-column-btns {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .lobby-icon-btn {
+      width: 75px; height: 75px; background: var(--panel-bg); border: 2px solid var(--primary); border-radius: 10px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; position: relative; transition: 0.2s;
+    }
+    .lobby-icon-btn.small-btn {
+      height: 75px; width: 75px; flex-direction: row; gap: 4px; padding: 0 6px; justify-content: center;
+    }
+    .lobby-icon-btn:hover { border-color: var(--accent); background: rgba(0,243,255,0.15); }
+    .red-dot {
+      position: absolute; top: 6px; right: 6px; width: 10px; height: 10px; background: #ff0055; border-radius: 50%; border: 2px solid #fff; display: none;
+    }
+    .red-dot.show { display: block; }
+
+    .lobby-left-menu {
+      position: absolute; top: 50%; left: 20px; transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 14px; z-index: 2;
+    }
+    .menu-btn {
+      width: 140px; height: 50px; background: var(--panel-bg); border: 2px solid var(--primary); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; transition: 0.2s;
+    }
+    .menu-btn:hover { background: var(--primary); color: #000; box-shadow: 0 0 12px var(--primary); }
+
+    .lobby-banner {
+      position: absolute; bottom: 20px; left: 20px; width: 450px; height: 130px;
+      background: linear-gradient(135deg, rgba(255,0,127,0.4), rgba(0,243,255,0.3));
+      border: 2px dashed var(--secondary); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; z-index: 2; backdrop-filter: blur(4px);
+    }
+    .lobby-gacha-btn {
+      position: absolute; bottom: 20px; left: 490px; width: 120px; height: 130px;
+      background: var(--panel-bg); border: 2px solid var(--secondary); border-radius: 12px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-weight: bold; z-index: 2;
+    }
+    .lobby-play-btn {
+      position: absolute; bottom: 20px; right: 20px; width: 340px; height: 130px;
+      background: linear-gradient(135deg, var(--primary), #0077ff); border: 3px solid #fff; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 900; color: #000; cursor: pointer; z-index: 2;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+
+    /* ==========================================
+       [2. 캐릭터 편성 화면]
+       ========================================== */
+    #party-screen {
+      background: radial-gradient(circle at center, #182240 0%, #080c19 100%);
+      padding: 20px 30px; position: relative; overflow-y: auto;
+      flex-direction: column; align-items: center; justify-content: flex-start;
+    }
+    .party-header {
+      width: 100%; max-width: 1100px;
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+    }
+    .party-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+      width: 100%; max-width: 1100px; height: 310px; margin-bottom: 15px;
+    }
+    .party-slot {
+      background: rgba(15, 21, 38, 0.9); border: 3px dashed var(--primary);
+      border-radius: 16px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; cursor: pointer;
+      transition: 0.25s; position: relative; overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    }
+    .party-slot:hover {
+      border-style: solid; border-color: var(--accent);
+      transform: translateY(-5px); box-shadow: 0 12px 25px rgba(0, 243, 255, 0.3);
+    }
+    .party-slot.filled {
+      border-style: solid; border-color: var(--primary);
+      background: radial-gradient(circle, #1f2a4a 0%, #0f1526 100%);
+    }
+    .party-slot .plus-icon { font-size: 80px; color: var(--primary); font-weight: 300; transition: 0.2s; }
+    .party-slot:hover .plus-icon { transform: scale(1.15); color: var(--accent); }
+    
+    .party-card-visual { width: 100%; height: 72%; display: flex; align-items: center; justify-content: center; padding: 15px; position: relative; }
+    .party-card-visual img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6)); }
+    .party-card-info {
+      width: 100%; height: 28%; background: rgba(24, 32, 56, 0.95);
+      border-top: 2px solid rgba(255,255,255,0.1); padding: 8px 12px;
+      display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+    }
+    .party-card-name { font-size: 15px; font-weight: 900; color: #fff; }
+    .party-card-mult { font-size: 12px; font-weight: bold; color: var(--accent); }
+    .party-remove-btn {
+      position: absolute; top: 10px; right: 10px; width: 28px; height: 28px;
+      background: #ff0055; border: 1px solid #fff; border-radius: 50%;
+      color: #fff; font-weight: bold; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 5; transition: 0.2s;
+    }
+    .party-remove-btn:hover { transform: scale(1.15); background: #ff3377; }
+
+    .synergy-category-tabs {
+      width: 100%; max-width: 1100px; display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .syn-tab-btn {
+      background: #12182e; border: 2px solid #2a365c; color: #aaa; padding: 6px 14px; border-radius: 6px;
+      font-weight: bold; font-size: 12px; cursor: pointer; transition: 0.2s;
+    }
+    .syn-tab-btn.active { background: var(--primary); border-color: #fff; color: #000; box-shadow: 0 0 10px var(--primary); }
+
+    .synergy-grid-container {
+      width: 100%; max-width: 1100px;
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+      max-height: 200px; overflow-y: auto; padding-right: 4px;
+    }
+    .synergy-card-item {
+      background: rgba(18, 24, 45, 0.85); border: 2px solid rgba(0, 243, 255, 0.3);
+      border-radius: 10px; padding: 10px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; transition: 0.2s; position: relative; overflow: hidden;
+    }
+    .synergy-card-item:hover {
+      border-color: var(--primary); background: rgba(24, 34, 65, 0.95);
+      transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 243, 255, 0.2);
+    }
+    .synergy-card-item.active {
+      border-color: var(--accent); background: linear-gradient(135deg, rgba(35, 45, 80, 0.95), rgba(20, 28, 50, 0.95));
+      box-shadow: 0 0 15px rgba(255, 230, 0, 0.3);
+    }
+    .synergy-info-left { display: flex; align-items: center; gap: 10px; }
+    .synergy-name { font-size: 13px; font-weight: bold; color: #fff; }
+    .synergy-card-item.active .synergy-name { color: var(--accent); }
+    .synergy-faces { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+    .synergy-face-img {
+      width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--primary);
+      background: #101528; object-fit: cover;
+    }
+    .synergy-mult-badge {
+      font-size: 13px; font-weight: 900; color: var(--accent);
+      background: rgba(0, 0, 0, 0.4); padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,230,0,0.5);
+    }
+
+    /* ==========================================
+       [3. 도감 화면 스타일 (세로형 일러스트 대형화)]
+       ========================================== */
+    #encyclopedia-screen {
+      background: radial-gradient(circle at center, #151d38 0%, #070913 100%);
+      padding: 20px 30px; position: relative; flex-direction: column;
+    }
+    .ency-top-header {
+      width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
+    }
+    .ency-tabs-row {
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .ency-tab-btn {
+      background: #12182e; border: 2px solid #2a365c; color: #aaa; padding: 10px 22px; border-radius: 10px;
+      font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s;
+    }
+    .ency-tab-btn.active {
+      background: var(--primary); border-color: #fff; color: #000; box-shadow: 0 0 12px var(--primary);
+    }
+
+    .ency-main-layout {
+      flex: 1; display: grid; grid-template-columns: 460px 1fr; gap: 20px; overflow: hidden; max-height: calc(100vh - 100px);
+    }
+    .ency-left-panel {
+      background: rgba(12, 16, 32, 0.95); border: 2px solid var(--primary); border-radius: 14px;
+      padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+      box-shadow: 0 0 25px rgba(0, 243, 255, 0.2);
+    }
+    .ency-preview-img {
+      width: 100%; height: 480px; object-fit: contain; border-radius: 12px; background: #070914; border: 2px solid rgba(255,255,255,0.2);
+    }
+    .ency-right-panel {
+      background: rgba(12, 16, 32, 0.95); border: 2px solid #253154; border-radius: 14px;
+      padding: 15px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
+    }
+    .ency-ach-card {
+      background: #161e38; border: 2px solid #2a365c; border-radius: 10px; padding: 14px 18px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+
+    /* ==========================================
+       [4. 기타 모달 및 UI]
+       ========================================== */
+    .modal { 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; 
+      z-index: 100; pointer-events: none; opacity: 0; transition: opacity 0.2s ease;
+    }
+    .modal.active { display: flex; pointer-events: auto; opacity: 1; }
+
+    .custom-modal-content {
+      background: var(--panel-bg); border: 2px solid var(--primary); border-radius: 14px;
+      width: 650px; max-height: 85vh; padding: 24px; display: flex; flex-direction: column; gap: 16px; align-items: center;
+      box-shadow: 0 0 35px rgba(0, 243, 255, 0.4);
+    }
+    .modal-list-container {
+      width: 100%; max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 4px;
+    }
+
+    .mail-item {
+      background: #12182e; border: 2px solid #253154; border-radius: 10px; padding: 14px 18px;
+      display: flex; justify-content: space-between; align-items: center; transition: 0.2s;
+    }
+    .mail-item.claimed { opacity: 0.5; border-color: #444; }
+    .mail-info { display: flex; flex-direction: column; gap: 4px; }
+    .mail-title { font-size: 15px; font-weight: bold; color: #fff; }
+    .mail-desc { font-size: 12px; color: #aaa; }
+    .mail-reward { font-size: 14px; font-weight: bold; color: var(--accent); }
+
+    .achievement-tabs-row { display: flex; gap: 10px; width: 100%; justify-content: center; }
+    .ach-tab-btn {
+      background: #12182e; border: 2px solid #2a365c; color: #aaa; padding: 8px 24px; border-radius: 8px;
+      font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px;
+    }
+    .ach-tab-btn.active { background: var(--primary); border-color: #fff; color: #000; box-shadow: 0 0 12px var(--primary); }
+
+    .ach-item {
+      background: #12182e; border: 2px solid #253154; border-radius: 10px; padding: 14px 18px;
+      display: flex; flex-direction: column; gap: 10px; transition: 0.2s;
+    }
+    .ach-top-row { display: flex; justify-content: space-between; align-items: center; }
+    .ach-title { font-size: 15px; font-weight: bold; color: #fff; }
+    .ach-reward { font-size: 13px; font-weight: bold; color: var(--accent); }
+    .ach-progress-row { display: flex; align-items: center; gap: 12px; }
+    .ach-bar-bg { flex: 1; height: 10px; background: rgba(255,255,255,0.15); border-radius: 5px; overflow: hidden; }
+    .ach-bar-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.3s; }
+    .ach-count-text { font-size: 12px; font-weight: bold; color: #aaa; width: 60px; text-align: right; }
+
+    .gacha-container {
+      width: 1000px; height: 630px; background: #0c1020; border: 2px solid #2a3558; border-radius: 14px;
+      display: flex; overflow: hidden; position: relative; box-shadow: 0 0 35px rgba(0,0,0,0.85);
+    }
+    .gacha-close-topleft {
+      position: absolute; top: 12px; left: 12px;
+      width: 34px; height: 34px; background: #ff0055; border: 2px solid #fff; border-radius: 50%;
+      color: #fff; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 10; transition: 0.2s;
+    }
+    .gacha-close-topleft:hover { transform: scale(1.1); background: #ff3377; }
+
+    .gacha-sidebar {
+      width: 230px; background: #070914; border-right: 2px solid #1f2847; padding: 60px 12px 15px 12px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .gacha-tab {
+      height: 65px; background: #12182e; border: 2px solid #253154; border-radius: 8px;
+      display: flex; align-items: center; padding: 0 10px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; gap: 8px;
+    }
+    .gacha-tab.active {
+      border: 3px solid var(--accent) !important;
+      box-shadow: 0 0 12px var(--accent), inset 0 0 8px rgba(255,230,0,0.3);
+      background: #1c2647; color: #fff;
+    }
+    .gacha-tab-icon { width: 32px; height: 32px; object-fit: contain; border-radius: 4px; flex-shrink: 0; }
+    .gacha-main { flex: 1; display: flex; flex-direction: column; position: relative; }
+    
+    .gacha-banner-view {
+      flex: 1; background: radial-gradient(circle at center, #1b2545 0%, #0c1020 100%);
+      margin: 15px 15px 5px 15px; border: 2px solid #202c50; border-radius: 10px;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px; text-align: center;
+      overflow: hidden; position: relative;
+    }
+    .gacha-collab-banner-img { width: 100%; height: 100%; position: absolute; top: 0; left: 0; object-fit: cover; border-radius: 8px; }
+
+    .gacha-rates-panel {
+      position: relative; z-index: 3; width: calc(100% - 30px); margin: 0 15px;
+      background: rgba(8, 12, 24, 0.88); border: 1px solid rgba(0, 243, 255, 0.4);
+      border-radius: 8px; padding: 8px 16px; backdrop-filter: blur(4px);
+      display: flex; justify-content: space-around; align-items: center;
+    }
+    .rate-badge { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold; }
+    .rate-star-1 { color: #cd7f32; }
+    .rate-star-2 { color: #c0c0c0; text-shadow: 0 0 6px rgba(192,192,192,0.8); }
+    .rate-star-3 { color: var(--accent); }
+    .rate-star-4 { color: #ff007f; text-shadow: 0 0 8px #ff007f; }
+
+    .gacha-footer {
+      height: 135px; background: #080a15; border-top: 2px solid #1f2847; padding: 12px 20px;
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .gacha-status-row { display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: bold; }
+    .gacha-diamond-text { color: var(--accent); font-size: 16px; }
+    .gacha-timer-text { color: #fff; font-size: 15px; letter-spacing: 1px; }
+
+    .gacha-btn-row { display: flex; gap: 15px; margin-top: 6px; }
+    .gacha-pull-btn {
+      flex: 1; height: 65px; background: #141b33; border: 2px solid var(--primary); border-radius: 8px;
+      display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s;
+    }
+    .gacha-pull-btn:hover { background: var(--primary); color: #000; }
+    .gacha-pull-btn:hover .cost-text { color: #000 !important; }
+    .gacha-pull-btn.btn-10x { border-color: var(--secondary); }
+    .gacha-pull-btn.btn-10x:hover { background: var(--secondary); color: #fff; }
+
+    .cost-text { font-size: 13px; margin-top: 4px; font-weight: bold; }
+    .cost-text.insufficient { color: #ff0055 !important; }
+    .cost-text.sufficient { color: var(--accent); }
+
+    @keyframes cardPopIn {
+      0% { transform: scale(0); opacity: 0; }
+      70% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .gacha-result-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.92); display: none; flex-direction: column;
+      justify-content: center; align-items: center; z-index: 300; pointer-events: auto;
+    }
+    .gacha-result-overlay.active { display: flex; }
+
+    .gacha-grid-container {
+      display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(2, 1fr);
+      gap: 16px; width: 850px; height: 460px; max-width: 95vw; max-height: 80vh;
+    }
+    .gacha-grid-container.single-mode {
+      display: flex; justify-content: center; align-items: center; width: 320px; height: 440px;
+    }
+    .gacha-grid-container.single-mode .flip-card-slot { width: 280px; height: 400px; }
+
+    .gacha-grid-container.mode-100x {
+      grid-template-columns: repeat(10, 1fr) !important;
+      grid-template-rows: repeat(10, 1fr) !important;
+      gap: 6px !important; width: 90vw !important; height: 80vh !important;
+      max-width: 900px !important; max-height: 700px !important;
+    }
+    .gacha-grid-container.mode-100x .flip-card-slot, .gacha-grid-container.mode-100x .flip-card-inner { border-radius: 4px !important; }
+    .gacha-grid-container.mode-100x .card-back-pattern { font-size: 14px !important; }
+    .gacha-grid-container.mode-100x .back-rank-text { display: none !important; }
+    .gacha-grid-container.mode-100x .card-front-stars { font-size: 8px !important; }
+    .gacha-grid-container.mode-100x .card-front-name { font-size: 9px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+
+    .flip-card-slot { perspective: 1000px; width: 100%; height: 100%; cursor: pointer; opacity: 0; transform: scale(0); }
+    .flip-card-slot.pop-in { animation: cardPopIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+    .flip-card-inner {
+      position: relative; width: 100%; height: 100%; text-align: center;
+      transition: transform 0.4s; transform-style: preserve-3d;
+      border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    .flip-card-slot.flipped .flip-card-inner { transform: rotateY(180deg); }
+
+    .flip-card-front, .flip-card-back {
+      position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+      border-radius: inherit; display: flex; flex-direction: column; overflow: hidden;
+    }
+    
+    .flip-card-back.bronze-back {
+      background: linear-gradient(135deg, #7c4c1e, #cd7f32, #5a3412);
+      border: 2px solid #e6a15c; align-items: center; justify-content: center;
+    }
+    .bronze-back .card-back-pattern { font-size: 32px; color: #ffe600; text-shadow: 0 0 10px rgba(0,0,0,0.8); }
+    .bronze-back .back-rank-text { font-size: 12px; margin-top: 4px; font-weight: bold; color: #ffe600; }
+
+    .flip-card-back.silver-back {
+      background: linear-gradient(135deg, #8a9ba8, #e0e8f0, #5c6b73);
+      border: 2px solid #ffffff; align-items: center; justify-content: center;
+      box-shadow: inset 0 0 15px rgba(255,255,255,0.6), 0 0 12px rgba(224,232,240,0.5);
+    }
+    .silver-back .card-back-pattern { font-size: 28px; color: #ffffff; text-shadow: 0 0 12px rgba(224,232,240,0.5); letter-spacing: 2px; }
+    .silver-back .back-rank-text { font-size: 12px; margin-top: 4px; font-weight: bold; color: #ffffff; text-shadow: 0 0 6px rgba(0,0,0,0.6); }
+
+    .flip-card-front { background: #0f1526; border: 2px solid var(--accent); transform: rotateY(180deg); }
+    .card-front-img-box {
+      height: 70%; background: radial-gradient(circle, #232d52 0%, #0d1222 100%);
+      display: flex; align-items: center; justify-content: center; padding: 4px;
+    }
+    .card-front-img-box img { width: 100%; height: 100%; object-fit: contain; }
+    .card-front-info {
+      height: 30%; background: #182038; border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px;
+    }
+    .card-front-stars { font-size: 11px; color: var(--accent); letter-spacing: 1px; }
+    .card-front-name { font-size: 13px; font-weight: 900; color: #fff; margin-top: 2px; }
+
+    .gacha-control-bar { margin-top: 20px; display: flex; gap: 15px; align-items: center; }
+    .confirm-close-btn {
+      background: #333; color: #777; border: 1px solid #555; padding: 10px 20px;
+      font-weight: bold; border-radius: 8px; cursor: not-allowed; transition: 0.2s;
+    }
+    .confirm-close-btn.ready {
+      background: var(--primary); color: #000; border-color: #fff; cursor: pointer;
+      box-shadow: 0 0 15px var(--primary);
+    }
+
+    .new-card-pop-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center;
+      z-index: 400; pointer-events: auto; cursor: pointer;
+    }
+    .new-card-pop-overlay.active { display: flex; }
+
+    @keyframes newCardZoom {
+      0% { transform: scale(0.3) rotate(-10deg); opacity: 0; filter: brightness(2.5); }
+      60% { transform: scale(1.1) rotate(3deg); opacity: 1; filter: brightness(1.2); }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; filter: brightness(1); }
+    }
+    .new-card-pop-box {
+      width: 280px; height: 420px; background: #0f1526; border: 4px solid var(--accent);
+      border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;
+      box-shadow: 0 0 50px rgba(255, 230, 0, 0.8);
+      animation: newCardZoom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; cursor: pointer;
+    }
+
+    .profile-modal-content {
+      background: var(--panel-bg); border: 2px solid var(--primary); border-radius: 14px;
+      width: 500px; padding: 24px; display: flex; flex-direction: column; gap: 16px; align-items: center;
+      box-shadow: 0 0 30px rgba(0, 243, 255, 0.3); max-height: 90vh; overflow-y: auto;
+    }
+    .profile-modal-avatar {
+      width: 100px; height: 100px; border-radius: 12px; border: 2px solid var(--accent);
+      background: #151b30; display: flex; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .profile-modal-avatar img { width: 100%; height: 100%; object-fit: contain; }
+    .profile-name-row { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: bold; flex-wrap: wrap; justify-content: center; }
+    .edit-name-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px; }
+    .edit-name-btn:hover { background: rgba(255,230,0,0.2); }
+    
+    .profile-avatar-select-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%; max-height: 180px; overflow-y: auto; padding: 6px;
+      background: #0f1526; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+    }
+    .profile-avatar-option {
+      width: 100%; aspect-ratio: 1; background: #151b30; border: 2px solid #2a365c; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; overflow: hidden; position: relative;
+    }
+    .profile-avatar-option:hover { border-color: var(--primary); }
+    .profile-avatar-option.selected { border-color: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .profile-avatar-option img { width: 100%; height: 100%; object-fit: contain; }
+
+    .profile-shop-modal-content {
+      background: var(--panel-bg); border: 2px solid var(--secondary); border-radius: 14px;
+      width: 600px; max-height: 85vh; padding: 24px; display: flex; flex-direction: column; gap: 16px; align-items: center;
+      box-shadow: 0 0 30px rgba(255, 0, 127, 0.3);
+    }
+    .profile-shop-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: 100%; max-height: 400px; overflow-y: auto; padding: 8px;
+      background: #0f1526; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+    }
+    .profile-shop-item {
+      background: #151b30; border: 2px solid #2a365c; border-radius: 10px; padding: 10px;
+      display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 6px; cursor: pointer; transition: 0.2s;
+    }
+    .profile-shop-item:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .profile-shop-item.owned { border-color: #555; background: #101424; opacity: 0.7; cursor: default; }
+    .profile-shop-item img { width: 60px; height: 60px; object-fit: contain; }
+    .profile-shop-price { font-size: 12px; font-weight: bold; color: var(--accent); }
+
+    .inventory-modal-content {
+      background: var(--panel-bg); border: 2px solid var(--primary); border-radius: 14px;
+      width: 650px; max-height: 85vh; padding: 24px; display: flex; flex-direction: column; gap: 14px; align-items: center;
+      box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
+    }
+    .rarity-tabs-row { display: flex; gap: 8px; width: 100%; justify-content: center; margin-bottom: 4px; }
+    .rarity-tab-btn {
+      background: #12182e; border: 2px solid #2a365c; color: #aaa; padding: 6px 16px; border-radius: 8px;
+      font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 13px;
+    }
+    .rarity-tab-btn.active { background: var(--primary); border-color: #fff; color: #000; box-shadow: 0 0 10px var(--primary); }
+
+    .char-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; max-height: 380px; width: 100%; overflow-y: auto; padding: 10px 5px;
+    }
+    .char-slot {
+      background: #151b30; border: 2px solid #2a365c; border-radius: 10px; padding: 12px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: pointer; transition: 0.2s; position: relative;
+    }
+    .char-slot:hover { border-color: var(--primary); transform: translateY(-3px); }
+    .char-slot.locked img { filter: grayscale(100%); opacity: 0.35; }
+    .char-slot.locked { opacity: 0.7; }
+    .char-slot img { width: 70px; height: 70px; object-fit: contain; }
+    .char-slot-name { font-size: 13px; font-weight: bold; margin-top: 8px; text-align: center; }
+
+    .card-modal-wrapper { display: flex; align-items: center; gap: 20px; position: relative; }
+    .card-arrow-btn {
+      background: rgba(0, 243, 255, 0.2); border: 2px solid var(--primary); color: var(--primary);
+      width: 45px; height: 45px; border-radius: 50%; font-size: 22px; font-weight: bold;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;
+    }
+    .card-arrow-btn:hover { background: var(--primary); color: #000; box-shadow: 0 0 15px var(--primary); }
+
+    .card-modal-container {
+      width: 280px; height: 440px; background: #0f1526; border: 3px solid var(--accent); border-radius: 16px;
+      display: flex; flex-direction: column; overflow: hidden; position: relative; box-shadow: 0 0 25px rgba(255, 230, 0, 0.4);
+    }
+    .card-top-visual {
+      height: 65%; background: radial-gradient(circle, #232d52 0%, #0d1222 100%);
+      display: flex; align-items: center; justify-content: center; padding: 15px; position: relative;
+    }
+    .card-top-visual img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); }
+    
+    .card-bottom-info {
+      height: 35%; background: #182038; border-top: 2px solid rgba(255,255,255,0.1);
+      padding: 10px 14px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start;
+    }
+    .card-stars { font-size: 14px; color: var(--accent); letter-spacing: 2px; }
+    .card-name { font-size: 16px; font-weight: 900; color: #fff; text-align: left; }
+
+    .upgrade-container { width: 100%; display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+    .gauge-info-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: #aaa; }
+    .gauge-bar-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; overflow: hidden; }
+    .gauge-bar-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.3s ease; }
+    
+    .upgrade-btn {
+      width: 100%; height: 26px; background: linear-gradient(135deg, var(--accent), #ff9900);
+      border: none; border-radius: 4px; color: #000; font-size: 11px; font-weight: 900; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; margin-top: 2px; transition: 0.2s;
+    }
+    .upgrade-btn:disabled { background: #333; color: #771111; cursor: not-allowed; }
+    .upgrade-btn:not(:disabled):hover { box-shadow: 0 0 8px var(--accent); }
+
+    .sub-modal-content { background: var(--panel-bg); border: 2px solid var(--primary); border-radius: 14px; width: 500px; padding: 22px; display: flex; flex-direction: column; gap: 12px; }
+    .key-grid { display: grid; gap: 8px; margin-top: 8px; }
+    .key-grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .key-grid-6 { grid-template-columns: repeat(6, 1fr); }
+    .key-btn { background: #1f2742; border: 1px solid rgba(255,255,255,0.2); padding: 10px; text-align: center; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; }
+    .key-btn.listening { border-color: var(--accent); background: rgba(255,230,0,0.2); color: var(--accent); }
+  </style>
 </head>
 <body>
+  <div id="app">
+    
+    <!-- 메인 로비 화면 -->
+    <div id="lobby-screen" class="screen active">
+      <div class="lobby-profile" onclick="openProfileModal()">
+        <div class="profile-avatar" id="lobby-profile-avatar"><span style="font-size:24px;">⭐</span></div>
+        <div class="profile-info">
+          <div style="font-size:16px; font-weight:bold;" id="lobby-name-disp">플레이어 님</div>
+          <div style="font-size: 12px; color: #aaa;" id="lobby-level-disp">LV. 0 (0 / 50 XP)</div>
+          <div class="exp-bar-bg"><div class="exp-bar-fill" id="lobby-exp-bar"></div></div>
+        </div>
+      </div>
 
-    <h1>내 사진</h1>
+      <div class="currency-display">💎 <span id="user-crystals">1000</span></div>
 
-    <img
-        src="https://raw.githubusercontent.com/ritual1127/CHAEMINJAE/main/profile.jpg.png"
-        alt="프로필 사진"
-        width="300"
-    >
+      <!-- 우측 상단 버튼 배치 -->
+      <div class="lobby-top-btns">
+        <div class="lobby-icon-btn" onclick="openMailModal()">
+          <span style="font-size: 24px;">📬</span>
+          <span style="font-size: 11px; margin-top: 4px;">우편함</span>
+          <div class="red-dot" id="mail-red-dot"></div>
+        </div>
+        <div class="lobby-column-btns">
+          <!-- 1. 설정 -->
+          <div class="lobby-icon-btn small-btn" onclick="openSettingsModal()">
+            <span style="font-size: 12px;">⚙️</span>
+            <span style="font-size: 11px;">설정</span>
+          </div>
+          <!-- 2. 업적 -->
+          <div class="lobby-icon-btn small-btn" onclick="openAchievementModal()">
+            <span style="font-size: 12px;">🏆</span>
+            <span style="font-size: 11px;">업적</span>
+            <div class="red-dot" id="ach-red-dot"></div>
+          </div>
+          <!-- 3. 도감 -->
+          <div class="lobby-icon-btn small-btn" onclick="openEncyclopediaScreen()" style="border-color:var(--accent);">
+            <span style="font-size: 12px;">📖</span>
+            <span style="font-size: 11px; color:var(--accent);">도감</span>
+          </div>
+        </div>
+      </div>
 
+      <div class="lobby-left-menu">
+        <div class="menu-btn" onclick="openShopModal()">🛒 상 점</div>
+        <div class="menu-btn" onclick="openInventoryModal()">🎒 캐릭터 함</div>
+        <div class="menu-btn" onclick="openPartyScreen()">👥 캐릭터 편성</div>
+      </div>
+
+      <div class="lobby-banner">
+        🎉 먼작귀 콜라보 한정 캐릭터 픽업 중!
+      </div>
+
+      <div class="lobby-gacha-btn" onclick="openGachaModal()">
+        <span style="font-size: 28px;">🌟</span>
+        <span style="font-size: 14px;">상점/뽑기</span>
+      </div>
+
+      <div class="lobby-play-btn" aria-disabled="true" title="게임 기능은 추후 추가됩니다." style="cursor: not-allowed; opacity: 0.75; flex-direction: column; gap: 8px;">
+        <span>GAME PLAY</span>
+        <span style="font-size:14px; font-weight:700;">준비 중</span>
+      </div>
+    </div>
+
+    <!-- 📖 도감 화면 -->
+    <div id="encyclopedia-screen" class="screen">
+      <div class="ency-top-header">
+        <div class="ency-tabs-row">
+          <button class="ency-tab-btn active" id="enctab-samin" onclick="switchEncyclopediaCategory('samin')">삼인방</button>
+          <button class="ency-tab-btn" id="enctab-teacher" onclick="switchEncyclopediaCategory('teacher')">스승과 제자</button>
+          <button class="ency-tab-btn" id="enctab-book" onclick="switchEncyclopediaCategory('book')">책방</button>
+          <button class="ency-tab-btn" id="enctab-pajama" onclick="switchEncyclopediaCategory('pajama')">파자마파티즈</button>
+        </div>
+        <button onclick="switchScreen('lobby-screen')" style="font-size:16px; padding:8px 20px;">➡️ 로비로</button>
+      </div>
+
+      <div class="ency-main-layout">
+        <div class="ency-left-panel" id="ency-left-panel"></div>
+        <div class="ency-right-panel" id="ency-right-panel"></div>
+      </div>
+    </div>
+
+    <!-- 캐릭터 편성 화면 -->
+    <div id="party-screen" class="screen">
+      <div class="party-header">
+        <button onclick="switchScreen('lobby-screen')" style="font-size:16px; padding:10px 20px;">LOBBY</button>
+        <h2 style="color:var(--accent);">👥 팀 캐릭터 편성</h2>
+        <div style="font-size:14px; font-weight:bold; color:var(--primary);">
+          종합 점수 배율: <span id="party-total-mult" style="font-size:18px; color:var(--accent);">x1.0</span>
+        </div>
+      </div>
+
+      <div class="party-grid" id="party-grid"></div>
+
+      <div class="synergy-category-tabs">
+        <button class="syn-tab-btn active" id="syntab-all" onclick="filterSynergyCategory('all')">전체 시너지</button>
+        <button class="syn-tab-btn" id="syntab-samin" onclick="filterSynergyCategory('samin')">삼인방</button>
+        <button class="syn-tab-btn" id="syntab-teacher" onclick="filterSynergyCategory('teacher')">스승과 제자</button>
+        <button class="syn-tab-btn" id="syntab-book" onclick="filterSynergyCategory('book')">책방</button>
+        <button class="syn-tab-btn" id="syntab-pajama" onclick="filterSynergyCategory('pajama')">파자마파티즈</button>
+      </div>
+
+      <div class="synergy-grid-container" id="synergy-grid-container"></div>
+    </div>
+
+  </div>
+
+  <!-- 📬 우편함 모달 -->
+  <div class="modal" id="mail-modal">
+    <div class="custom-modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+        <h3 style="color:var(--accent);">📬 우편함</h3>
+        <button onclick="claimAllMails()" style="background:var(--secondary); font-size:12px; padding:6px 12px;">일괄 수령</button>
+      </div>
+      <div class="modal-list-container" id="mail-list-container"></div>
+      <button onclick="closeModals()" style="width:100%; margin-top:4px;">닫기</button>
+    </div>
+  </div>
+
+  <!-- 🏆 업적 모달 -->
+  <div class="modal" id="achievement-modal">
+    <div class="custom-modal-content">
+      <h3 style="color:var(--accent);">🏆 메인 업적</h3>
+      <div class="modal-list-container" id="ach-list-container"></div>
+      <button onclick="closeModals()" style="width:100%; margin-top:4px;">닫기</button>
+    </div>
+  </div>
+
+  <!-- 프로필 상세 모달 -->
+  <div class="modal" id="profile-modal">
+    <div class="profile-modal-content">
+      <h3 style="color:var(--accent);">👤 프로필 및 설정</h3>
+      <div class="profile-modal-avatar" id="profile-modal-avatar"><span style="font-size:40px;">⭐</span></div>
+      <div class="profile-name-row">
+        <span id="profile-modal-name">플레이어 님</span>
+        <button class="edit-name-btn" onclick="promptChangeName()" title="닉네임 변경">✏️ 변경</button>
+        <span id="name-change-warn" style="font-size:11px; font-weight:bold; margin-left:4px;">(첫 1회 무료)</span>
+      </div>
+      <div style="width:100%; display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+        <span style="font-size:13px; font-weight:bold; color:#aaa;">보유 프로필 아바타 선택:</span>
+        <button onclick="openProfileShopModal()" style="font-size:12px; padding:4px 10px; background:var(--secondary);">✨ 프로필 상점 가기</button>
+      </div>
+      <div class="profile-avatar-select-grid" id="profile-avatar-select-grid"></div>
+      <button onclick="closeModals()" style="width:100%; margin-top:10px;">닫기</button>
+    </div>
+  </div>
+
+  <!-- 프로필 아바타 상점 모달 -->
+  <div class="modal" id="profile-shop-modal">
+    <div class="profile-shop-modal-content">
+      <h3 style="color:var(--secondary);">🛍️ 프로필 아바타 상점</h3>
+      <p style="font-size:12px; color:#aaa;">보석을 소모하여 새로운 프로필 이미지를 구매하세요! (개당 보석 50개)</p>
+      <div class="profile-shop-grid" id="profile-shop-grid"></div>
+      <button onclick="closeProfileShopModal()" style="width:100%; margin-top:10px;">돌아가기</button>
+    </div>
+  </div>
+
+  <!-- 캐릭터 장착 선택 모달 -->
+  <div class="modal" id="party-select-modal">
+    <div class="sub-modal-content" style="width: 550px;">
+      <h3>👥 장착할 캐릭터 선택</h3>
+      <p style="font-size:12px; color:#aaa;">보유 중인 캐릭터를 클릭하여 슬롯에 배치하세요.</p>
+      <div class="char-grid" id="party-select-grid"></div>
+      <button onclick="closeModals()" style="margin-top:10px;">닫기</button>
+    </div>
+  </div>
+
+  <!-- 확장된 가챠 모달 -->
+  <div class="modal" id="gacha-modal">
+    <div class="gacha-container">
+      <div class="gacha-close-topleft" onclick="closeGachaModalWithClear()">✕</div>
+      <div class="gacha-sidebar">
+        <div class="gacha-tab active" id="tab-collab" onclick="selectGachaTab('collab')">
+          <img src="images/colabo icon.png" alt="아이콘" class="gacha-tab-icon">
+          <span>먼작귀 콜라보 뽑기</span>
+        </div>
+        <div class="gacha-tab" id="tab-rateup" onclick="selectGachaTab('rateup')">
+          <span>특정 캐릭터 확률<br>업 뽑기란</span>
+        </div>
+        <div class="gacha-tab" id="tab-normal" onclick="selectGachaTab('normal')">
+          <span>캐릭 뽑기</span>
+        </div>
+      </div>
+      <div class="gacha-main">
+        <div class="gacha-banner-view" id="gacha-banner-view">
+          <img src="images/colaboration.png" alt="먼작귀 콜라보 배너" class="gacha-collab-banner-img" id="gacha-banner-img">
+          <div style="position:relative; z-index:2; top:210px; text-shadow: 0 2px 8px rgba(0,0,0,0.9); margin-top: 10px;">
+            <h2 id="gacha-title" style="color:var(--accent); font-size:24px;">⭐ 콜라보 한정 가챠</h2>
+            <p id="gacha-desc" style="margin-top:6px; color:#fff; font-size:14px; font-weight:bold;">먼가 작고 귀여운 캐릭터 등장!</p>
+          </div>
+        </div>
+        <div class="gacha-rates-panel">
+	  <div class="rate-badge"><span class="rate-star-1">0성</span> <span>0.1%</span></div>
+          <div class="rate-badge"><span class="rate-star-1">★1성</span> <span>59.9%</span></div>
+          <div class="rate-badge"><span class="rate-star-2">★★2성</span> <span>25%</span></div>
+          <div class="rate-badge"><span class="rate-star-3">★★★3성</span> <span>10%</span></div>
+          <div class="rate-badge"><span class="rate-star-4">★★★★4성</span> <span>5%</span></div>
+        </div>
+        <div class="gacha-footer">
+          <div class="gacha-status-row">
+            <div class="gacha-diamond-text">💎 보유 보석: <span id="gacha-diamond-count">1000</span>개</div>
+            <div class="gacha-timer-text" id="gacha-timer-display">⏳ 이벤트 남은 시간: <span id="timer-val" style="color:var(--accent);">12:00:00</span></div>
+          </div>
+          <div class="gacha-btn-row">
+            <div class="gacha-pull-btn" id="single-pull-btn" onclick="executeCurrentSinglePull()">
+              <div id="single-pull-title">1회 뽑기</div>
+              <div class="cost-text" id="cost-1x">보석 100개</div>
+            </div>
+            <div class="gacha-pull-btn btn-10x" id="multi-pull-btn" onclick="executeCurrentMultiPull()">
+              <div id="multi-pull-title">10회 뽑기</div>
+              <div class="cost-text" id="cost-10x">보석 1000개</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 뽑기 결과 오버레이 -->
+  <div class="gacha-result-overlay" id="gacha-result-overlay">
+    <h2 style="color: var(--accent); margin-bottom: 15px;" id="gacha-result-title">🌟 뽑기 결과</h2>
+    <div class="gacha-grid-container" id="gacha-grid-container"></div>
+    <div class="gacha-control-bar">
+      <button id="reveal-all-btn" onclick="revealAllCards()" style="background:var(--secondary); color:#fff; border:none; padding:10px 20px; font-weight:bold; border-radius:8px; cursor:pointer;">⚡ 전체 열기</button>
+      <button id="confirm-close-btn" class="confirm-close-btn" onclick="closeGachaResultOverlay()">확인 (모두 공개 필요)</button>
+    </div>
+  </div>
+
+  <!-- NEW 카드 등장 중앙 팝업 연출 -->
+  <div class="new-card-pop-overlay" id="new-card-pop-overlay" onclick="dismissNewCardPopup()">
+    <div class="new-card-pop-box">
+      <div class="card-top-visual"><img id="new-popup-img" src="" alt="신규 캐릭터 카드"></div>
+      <div class="card-bottom-info">
+        <div style="display:flex; flex-direction:column; align-items:flex-start; width:100%;">
+          <div class="card-stars" id="new-popup-stars">★</div>
+          <div class="card-name" id="new-popup-name">파자마 초록이</div>
+        </div>
+        <div style="width:100%; text-align:center; font-size:12px; color:var(--accent); font-weight:bold; margin-top:4px;">🎉 NEW! 최초 획득 캐릭터! (클릭하여 계속)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 인벤토리 (캐릭터 함) -->
+  <div class="modal" id="inventory-modal">
+    <div class="inventory-modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+        <h3>🎒 캐릭터 함 (도감)</h3>
+        <button onclick="batchUpgradeCharacters()" style="background:linear-gradient(135deg, var(--accent), #ff9900); color:#000; font-size:12px; padding:6px 14px;">⚡ 일괄 레벨업</button>
+      </div>
+      <p style="font-size: 12px; color: #aaa; width:100%;">성급별 탭을 선택하여 캐릭터를 분류해 볼 수 있습니다.</p>
+      <div class="rarity-tabs-row">
+        <button class="rarity-tab-btn active" id="rtab-all" onclick="filterInventoryRarity('all')">전체</button>
+        <button class="rarity-tab-btn" id="rtab-1" onclick="filterInventoryRarity(1)">1성</button>
+        <button class="rarity-tab-btn" id="rtab-2" onclick="filterInventoryRarity(2)">2성</button>
+        <button class="rarity-tab-btn" id="rtab-3" onclick="filterInventoryRarity(3)">3성</button>
+        <button class="rarity-tab-btn" id="rtab-4" onclick="filterInventoryRarity(4)">4성</button>
+      </div>
+      <div class="char-grid" id="inventory-grid"></div>
+      <button onclick="closeModals()" style="width:100%; margin-top: 4px;">닫기</button>
+    </div>
+  </div>
+
+  <!-- 카드 상세 정보 모달 -->
+  <div class="modal" id="card-detail-modal">
+    <div class="card-modal-wrapper">
+      <div class="card-arrow-btn" onclick="prevCard()">‹</div>
+      <div class="card-modal-container">
+        <div class="gacha-close-topleft" style="top:8px; left:8px; width:28px; height:28px; font-size:14px;" onclick="closeCardDetail()">✕</div>
+        <div class="card-top-visual"><img id="detail-card-img" src="" alt="캐릭터 카드"></div>
+        <div class="card-bottom-info">
+          <div style="display:flex; flex-direction:column; align-items:flex-start; width:100%;">
+            <div class="card-stars" id="detail-card-stars">★</div>
+            <div class="card-name" id="detail-card-name">하치와레</div>
+          </div>
+          <div class="upgrade-container">
+            <div class="gauge-info-row">
+              <span id="gauge-text">중복 게이지: 0/5</span>
+              <span id="card-level-text">Lv.0</span>
+            </div>
+            <div class="gauge-bar-bg"><div class="gauge-bar-fill" id="gauge-bar-fill"></div></div>
+            <button class="upgrade-btn" id="upgrade-btn" onclick="upgradeCurrentCharacter()" disabled>업그레이드</button>
+          </div>
+        </div>
+      </div>
+      <div class="card-arrow-btn" onclick="nextCard()">›</div>
+    </div>
+  </div>
+
+  <!-- 설정 모달 -->
+  <div class="modal" id="settings-modal">
+    <div class="sub-modal-content">
+      <h3>⚙️ 게임 설정 (키 지정)</h3>
+      <label style="font-weight:bold; margin-top:4px;">레인 모드 선택 (4키 / 6키)</label>
+      <select id="lane-mode-select" onchange="changeLaneMode(parseInt(this.value))" style="background:#1a2035; color:#fff; padding:8px; border-radius:6px; width:100%;">
+        <option value="4">4키 모드 (4K)</option>
+        <option value="6">6키 모드 (6K)</option>
+      </select>
+      <label style="font-weight:bold; margin-top:8px;">각 레일별 키 지정 (클릭 후 키보드 버튼 입력)</label>
+      <div class="key-grid" id="key-config-grid"></div>
+      <div style="display:flex; justify-content:space-between; margin-top:15px;">
+        <button onclick="resetKeybindings()">기본 키 초기화</button>
+        <button onclick="closeModals()" style="background:var(--primary); color:#000;">저장 및 닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 상점 모달 -->
+  <div class="modal" id="shop-modal">
+    <div class="sub-modal-content">
+      <h3>🛒 상점</h3>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="background:#1f2742; padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+          <span>💎 보석 100개 획득</span><button onclick="addGems(100)">무료 획득</button>
+        </div>
+        <div style="background:#1f2742; padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+          <span>💎 보석 500개 획득</span><button onclick="addGems(500)">무료 획득</button>
+        </div>
+        <div style="background:#1f2742; padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+          <span>💎 보석 1000개 획득</span><button onclick="addGems(1000)">무료 획득</button>
+        </div>
+        <div style="background:#1f2742; padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+          <span>💎 보석 10000개 획득</span><button onclick="addGems(10000)">무료 획득</button>
+        </div>
+      </div>
+      <button onclick="closeModals()" style="margin-top:10px;">닫기</button>
+    </div>
+  </div>
+
+  <!-- JavaScript 소스 코드 -->
+  <script>
+    const CHARACTER_DATABASE = [
+      { id: "tiha", name: "티하", star: 0, img: "images/1성/tiha.webp", count: 0, level: 0, totalAcquired: 0 },
+      { id: "hachiware", name: "하치와레", star: 1, img: "images/1성/hachiware.png.webp", count: 0, level: 0, totalAcquired: 0 },
+      { id: "shisa", name: "시사", star: 1, img: "images/1성/shisa.png.webp", count: 0, level: 0, totalAcquired: 0 },
+      { id: "chiikawa", name: "치이카와", star: 1, img: "images/1성/chiikawa.png.webp", count: 0, level: 0, totalAcquired: 0 },
+      { id: "kani", name: "카니", star: 1, img: "images/1성/kani.png.webp", count: 0, level: 0, totalAcquired: 0 },
+      { id: "rakko", name: "랏코", star: 1, img: "images/1성/rakko.png.webp", count: 0, level: 0, totalAcquired: 0 },
+      { id: "usagi", name: "우사기", star: 1, img: "images/1성/usagi.png.webp", count: 0, level: 0, totalAcquired: 0 },
+      { id: "kurimanju", name: "쿠리만쥬", star: 1, img: "images/1성/kurimanju.png.webp", count: 0, level: 0, totalAcquired: 0 },
+      { id: "momonga", name: "모몽가", star: 1, img: "images/1성/momonga.png.webp", count: 0, level: 0, totalAcquired: 0 },
+
+      { id: "pajama_green", name: "파자마 초록이", star: 2, img: "images/2성/pajama_party_green.png", count: 0, level: 0, totalAcquired: 0 },
+      { id: "pajama_pink", name: "파자마 빨강이", star: 2, img: "images/2성/pajama_party_pink.png", count: 0, level: 0, totalAcquired: 0 },
+      { id: "pajama_purple", name: "파자마 보라", star: 2, img: "images/2성/pajama_party_purple.png", count: 0, level: 0, totalAcquired: 0 },
+      { id: "pajama_white", name: "파자마 하양이", star: 2, img: "images/2성/pajama_party_white.png", count: 0, level: 0, totalAcquired: 0 },
+      
+      /* 새로 추가된 2성 갑옷 씨 3종 캐릭터 */
+      { id: "labor_armor", name: "노동 갑옷 씨", star: 2, img: "images/2성/armor.png", count: 0, level: 0, totalAcquired: 0 },
+      { id: "pochette_armor", name: "포쉐트 갑옷 씨", star: 2, img: "images/2성/poshyet.png", count: 0, level: 0, totalAcquired: 0 },
+      { id: "ramen_armor", name: "라멘 갑옷 씨", star: 2, img: "images/2성/ramen.png", count: 0, level: 0, totalAcquired: 0 }
+    ];
+
+    const PROFILE_AVATAR_DATABASE = [];
+    for (let i = 1; i <= 32; i++) {
+      const numStr = String(i).padStart(2, '0');
+      PROFILE_AVATAR_DATABASE.push({
+        id: `avatar_${numStr}`,
+        name: `프로필 아바타 ${numStr}`,
+        img: `images/프로필 사진/character_${numStr}.png`,
+        price: 50
+      });
+    }
+
+    const SYNERGY_DEFINITIONS = [
+      { id: "saminbang", category: "samin", name: "삼인방 시너지", bonus: 2.0, chars: ["chiikawa", "hachiware", "usagi"] },
+      { id: "saminbang_rakko", category: "samin", name: "삼인방 + 랏코 시너지", bonus: 3.0, chars: ["chiikawa", "hachiware", "usagi", "rakko"] },
+      { id: "bookstore", category: "book", name: "책방 시너지", bonus: 1.5, chars: ["momonga", "kani"] },
+      { id: "bookstore_rakko", category: "book", name: "책방 + 랏코 시너지", bonus: 2.5, chars: ["momonga", "kani", "rakko"] },
+      { id: "teacher", category: "teacher", name: "스승과 제자 시너지", bonus: 1.5, chars: ["kurimanju", "shisa"] },
+      { id: "pajama_party", category: "pajama", name: "파자마파티즈 시너지", bonus: 3.0, chars: ["pajama_green", "pajama_pink", "pajama_purple", "pajama_white"] }
+    ];
+
+    const REQUIREMENT_STEPS = [5, 10, 15, 20, 25];
+    const MAX_CHARACTER_LEVEL = 5;
+    const MAX_TOTAL_ACQUIRED = 76;
+
+    let crystals = 1000;
+    let currentGachaTab = 'collab';
+    let laneCount = 4;
+    let keys4K = ['KeyD', 'KeyF', 'KeyJ', 'KeyK'];
+    let keys6K = ['KeyS', 'KeyD', 'KeyF', 'KeyJ', 'KeyK', 'KeyL'];
+    let isListeningKey = -1;
+    let ownedCharacterIds = [];
+    let ownedAvatarIds = [];
+    let currentInventoryFilter = 'all';
+    let currentSynergyCategory = 'all';
+    let currentEncyclopediaCat = 'samin';
+
+    let partySlots = [null, null, null, null];
+    let selectedPartySlotIndex = -1;
+
+    let currentCardIndex = 0;
+    let remainingSeconds = 45900;
+    let timerInterval = null;
+
+    let isRevealingAll = false;
+    let newCardResolve = null;
+    let currentDrawnCards = [];
+    let overLimitConverted = false;
+
+    let mailList = [
+      { id: 'mail_beginner', title: '초보자 환영 보상', desc: '웹 리듬게임 오픈 기념 환영 보석 지급!', reward: 5000, claimed: false },
+      { id: 'mail_newuser', title: '신규 유저 환영 보상', desc: '신규 플레이어 지원 보석 지급!', reward: 5000, claimed: false },
+      { id: 'mail_bug_apology_20261027', title: '버그 수정 사과 보상', desc: '게임 이용에 불편을 드려 죄송합니다. 버그 수정에 대한 사과의 마음을 담아 보석 30,000개를 지급합니다.', reward: 30000, claimed: false }
+    ];
+
+    let saminLevelClaimed = [false, false, false, false, false];
+    let teacherLevelClaimed = [false, false, false, false, false];
+    let bookLevelClaimed = [false, false, false, false, false];
+    let pajamaLevelClaimed = [false, false, false, false, false];
+
+    let playerData = {
+      name: "플레이어 님",
+      level: 0,
+      xp: 0,
+      avatarImg: null,
+      nameChangeCount: 0
+    };
+
+    function getRequiredXpForLevel(lvl) { return 50 + lvl * 25; }
+
+    function getCardMultiplier(char) {
+      if(!char) return 1.0;
+      const baseMult = char.star === 2 ? 1.5 : 1.0;
+      return baseMult + char.level * 0.1;
+    }
+
+    function getPartyActiveSynergies() {
+      const equippedIds = partySlots.filter(id => id !== null);
+      let activeSynergies = [];
+      SYNERGY_DEFINITIONS.forEach(syn => {
+        const isMatched = syn.chars.every(id => equippedIds.includes(id));
+        if (isMatched) activeSynergies.push(syn);
+      });
+      return activeSynergies;
+    }
+
+    function getPartyTotalMultiplier() {
+      let sum = 0;
+      let count = 0;
+      partySlots.forEach(id => {
+        if(id) {
+          const char = CHARACTER_DATABASE.find(c => c.id === id);
+          if(char) { sum += getCardMultiplier(char); count++; }
+        }
+      });
+      if (count === 0) return 1.0;
+      let totalMult = sum;
+      getPartyActiveSynergies().forEach(syn => { totalMult += syn.bonus; });
+      return totalMult;
+    }
+
+    function autoEquipSynergy(synId) {
+      const synDef = SYNERGY_DEFINITIONS.find(s => s.id === synId);
+      if (!synDef) return;
+      const targetIds = synDef.chars;
+      const synergyName = synDef.name;
+
+      const unowned = targetIds.filter(id => !ownedCharacterIds.includes(id));
+      if (unowned.length > 0) {
+        const unownedNames = unowned.map(id => CHARACTER_DATABASE.find(c => c.id === id).name).join(', ');
+        alert(`해당 시너지에 필요한 캐릭터 중 미획득 캐릭터가 있습니다: [${unownedNames}]`);
+        return;
+      }
+
+      let currentEquipped = partySlots.filter(id => id !== null);
+      if (targetIds.every(id => currentEquipped.includes(id))) {
+        alert(`${synergyName}에 필요한 캐릭터들이 이미 모두 편성되어 있습니다!`);
+        return;
+      }
+
+      const missingIds = targetIds.filter(id => !currentEquipped.includes(id));
+      const emptySlotsCount = partySlots.filter(id => id === null).length;
+
+      if (emptySlotsCount < missingIds.length) {
+        if (!confirm(`빈 슬롯이 부족하여 기존 팀 구성이 변경될 수 있습니다. 계속하시겠습니까?`)) return;
+        let newSlots = [null, null, null, null];
+        targetIds.forEach((id, idx) => { if (idx < 4) newSlots[idx] = id; });
+        partySlots = newSlots;
+      } else {
+        missingIds.forEach(mId => {
+          const firstEmptyIdx = partySlots.indexOf(null);
+          if (firstEmptyIdx !== -1) partySlots[firstEmptyIdx] = mId;
+        });
+      }
+      renderPartyGrid();
+      alert(`${synergyName} 캐릭터들이 성공적으로 팀에 반영되었습니다!`);
+    }
+
+    function switchScreen(id) {
+      const target = document.getElementById(id);
+      if (!target || !target.classList.contains('screen')) {
+        console.error(`화면을 찾을 수 없습니다: ${id}`);
+        return;
+      }
+      document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+      target.classList.add('active');
+    }
+
+    function closeModals() {
+      document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+      isListeningKey = -1;
+      updateRedDots();
+    }
+
+    function closeGachaModalWithClear() { closeModals(); }
+
+    function openGachaModal() { updateGachaUI(); document.getElementById('gacha-modal').classList.add('active'); }
+    function openShopModal() { document.getElementById('shop-modal').classList.add('active'); }
+    function openInventoryModal() { filterInventoryRarity('all'); document.getElementById('inventory-modal').classList.add('active'); }
+    function openPartyScreen() { renderPartyGrid(); switchScreen('party-screen'); }
+    function openProfileModal() { updateProfileUI(); document.getElementById('profile-modal').classList.add('active'); }
+
+    function openMailModal() {
+      renderMailList();
+      document.getElementById('mail-modal').classList.add('active');
+    }
+
+    function renderMailList() {
+      const container = document.getElementById('mail-list-container');
+      container.innerHTML = '';
+      mailList.forEach((mail, idx) => {
+        const item = document.createElement('div');
+        item.className = `mail-item ${mail.claimed ? 'claimed' : ''}`;
+        item.innerHTML = `
+          <div class="mail-info">
+            <div class="mail-title">${mail.title}</div>
+            <div class="mail-desc">${mail.desc}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="mail-reward">💎 +${mail.reward}</div>
+            <button ${mail.claimed ? 'disabled' : ''} onclick="claimMail(${idx})">
+              ${mail.claimed ? '수령 완료' : '받기'}
+            </button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+      updateRedDots();
+    }
+
+    function claimMail(idx) {
+      if (!mailList[idx].claimed) {
+        mailList[idx].claimed = true;
+        crystals += mailList[idx].reward;
+        updateGachaUI();
+        renderMailList();
+        alert(`📬 [우편함] 보석 ${mailList[idx].reward}개가 지급되었습니다!`);
+      }
+    }
+
+    function claimAllMails() {
+      let claimedAny = false;
+      mailList.forEach(mail => {
+        if (!mail.claimed) {
+          mail.claimed = true;
+          crystals += mail.reward;
+          claimedAny = true;
+        }
+      });
+      if (claimedAny) {
+        updateGachaUI();
+        renderMailList();
+        alert("📬 모든 미수령 우편 보상을 일괄 수령했습니다!");
+      } else {
+        alert("수령할 우편이 없습니다.");
+      }
+    }
+
+    function openEncyclopediaScreen() {
+      renderEncyclopedia();
+      switchScreen('encyclopedia-screen');
+    }
+
+    function switchEncyclopediaCategory(cat) {
+      currentEncyclopediaCat = cat;
+      document.querySelectorAll('.ency-tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`enctab-${cat}`).classList.add('active');
+      renderEncyclopedia();
+    }
+
+    function renderEncyclopedia() {
+      const leftPanel = document.getElementById('ency-left-panel');
+      const rightPanel = document.getElementById('ency-right-panel');
+      leftPanel.innerHTML = '';
+      rightPanel.innerHTML = '';
+
+      if (currentEncyclopediaCat === 'samin') {
+        const saminChars = ["chiikawa", "hachiware", "usagi"];
+        const hasChi = ownedCharacterIds.includes("chiikawa");
+        const hasHa = ownedCharacterIds.includes("hachiware");
+        const hasU = ownedCharacterIds.includes("usagi");
+        const saminCount = saminChars.filter(id => ownedCharacterIds.includes(id)).length;
+        const isSaminAll = (saminCount === 3);
+
+        let previewImgPath = "images/삼인방 시너지/3.png";
+        if (hasChi && hasHa && hasU) previewImgPath = "images/삼인방 시너지/33.png";
+        else if (hasChi && hasU && !hasHa) previewImgPath = "images/삼인방 시너지/chi,u.png";
+        else if (hasChi && !hasHa && !hasU) previewImgPath = "images/삼인방 시너지/chi.png";
+        else if (hasChi && hasHa && !hasU) previewImgPath = "images/삼인방 시너지/ha,chi.png";
+        else if (hasHa && hasU && !hasChi) previewImgPath = "images/삼인방 시너지/ha,u.png";
+        else if (hasHa && !hasChi && !hasU) previewImgPath = "images/삼인방 시너지/ha.png";
+        else if (hasU && !hasChi && !hasHa) previewImgPath = "images/삼인방 시너지/u.png";
+
+        leftPanel.innerHTML = `
+          <h3 style="color:var(--accent);">⭐ 삼인방 시너지 도감</h3>
+          <img src="${previewImgPath}" alt="삼인방 조합 일러스트" class="ency-preview-img">
+          <div style="font-size:14px; color:#ddd; text-align:center; font-weight:bold;">
+            보유 캐릭터: 치이카와(${hasChi ? 'O' : 'X'}) · 하치와레(${hasHa ? 'O' : 'X'}) · 우사기(${hasU ? 'O' : 'X'})
+          </div>
+        `;
+
+        if (window.claimedAchSaminBase === undefined) window.claimedAchSaminBase = false;
+        
+        let minSaminLevel = 5;
+        if (!isSaminAll) minSaminLevel = 0;
+        else {
+          saminChars.forEach(id => {
+            const cObj = CHARACTER_DATABASE.find(c => c.id === id);
+            if (cObj && cObj.level < minSaminLevel) minSaminLevel = cObj.level;
+          });
+        }
+
+        let rightHtml = `
+          <div class="ency-ach-card">
+            <div style="display:flex; justify-content:space-between; font-weight:bold;">
+              <span>삼인방 캐릭터 올 획득 업적</span>
+              <span style="color:var(--accent);">💎 +1000</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#aaa;">
+              <span>획득 현황: ${saminCount} / 3</span>
+              <button ${!isSaminAll || window.claimedAchSaminBase ? 'disabled' : ''} onclick="claimSaminBaseEnc()">
+                ${window.claimedAchSaminBase ? '수령 완료' : (isSaminAll ? '보상 수령' : '미달성')}
+              </button>
+            </div>
+          </div>
+        `;
+
+        for (let lvl = 1; lvl <= 5; lvl++) {
+          const rewardAmount = lvl * 500;
+          const isUnlocked = window.claimedAchSaminBase && (minSaminLevel >= lvl);
+          const isClaimed = saminLevelClaimed[lvl - 1];
+
+          rightHtml += `
+            <div class="ency-ach-card">
+              <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                <span>삼인방 모두 Lv.${lvl} 달성 업적</span>
+                <span style="color:var(--accent);">💎 +${rewardAmount}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#aaa;">
+                <span>최소 레벨: Lv.${minSaminLevel} / 목표: Lv.${lvl}</span>
+                <button ${!isUnlocked || isClaimed ? 'disabled' : ''} onclick="claimSaminLevelEnc(${lvl}, ${rewardAmount})">
+                  ${isClaimed ? '수령 완료' : (!window.claimedAchSaminBase ? '기본 선행 필요' : (isUnlocked ? '보상 수령' : '레벨 미달'))}
+                </button>
+              </div>
+            </div>
+          `;
+        }
+        rightPanel.innerHTML = rightHtml;
+
+      } else if (currentEncyclopediaCat === 'teacher') {
+        const teacherChars = ["kurimanju", "shisa"];
+        const count = teacherChars.filter(id => ownedCharacterIds.includes(id)).length;
+        const isAll = (count === 2);
+        if (window.claimedAchTeacherBase === undefined) window.claimedAchTeacherBase = false;
+
+        let minLvl = 5;
+        if (!isAll) minLvl = 0;
+        else {
+          teacherChars.forEach(id => {
+            const cObj = CHARACTER_DATABASE.find(c => c.id === id);
+            if (cObj && cObj.level < minLvl) minLvl = cObj.level;
+          });
+        }
+
+        const hasKurimanju = ownedCharacterIds.includes("kurimanju");
+        const hasShisa = ownedCharacterIds.includes("shisa");
+        let teacherPreviewPath = "images/스승과 제자 시너지/00.png";
+        if (hasKurimanju && hasShisa) teacherPreviewPath = "images/스승과 제자 시너지/0.jpg";
+        else if (hasKurimanju) teacherPreviewPath = "images/스승과 제자 시너지/cu.png";
+        else if (hasShisa) teacherPreviewPath = "images/스승과 제자 시너지/si.png";
+
+        leftPanel.innerHTML = `
+          <h3 style="color:var(--accent);">⭐ 스승과 제자 도감</h3>
+          <img src="${teacherPreviewPath}" alt="스승과 제자 시너지 일러스트" class="ency-preview-img" onerror="this.onerror=null;this.alt='이미지를 불러오지 못했습니다: '+this.src;">
+          <div style="font-size:14px; color:#ddd; text-align:center; font-weight:bold;">쿠리만쥬(${hasKurimanju ? 'O' : 'X'}) · 시사(${hasShisa ? 'O' : 'X'})</div>
+        `;
+
+        let rightHtml = `
+          <div class="ency-ach-card">
+            <div style="display:flex; justify-content:space-between; font-weight:bold;">
+              <span>스승과 제자 올 획득 업적</span>
+              <span style="color:var(--accent);">💎 +1000</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#aaa;">
+              <span>획득 현황: ${count} / 2</span>
+              <button ${!isAll || window.claimedAchTeacherBase ? 'disabled' : ''} onclick="claimTeacherBaseEnc()">
+                ${window.claimedAchTeacherBase ? '수령 완료' : (isAll ? '보상 수령' : '미달성')}
+              </button>
+            </div>
+          </div>
+        `;
+        for (let lvl = 1; lvl <= 5; lvl++) {
+          const rewardAmount = lvl * 500;
+          const isUnlocked = window.claimedAchTeacherBase && (minLvl >= lvl);
+          const isClaimed = teacherLevelClaimed[lvl - 1];
+          rightHtml += `
+            <div class="ency-ach-card">
+              <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                <span>스승과 제자 모두 Lv.${lvl} 달성 업적</span>
+                <span style="color:var(--accent);">💎 +${rewardAmount}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#aaa;">
+                <span>최소 레벨: Lv.${minLvl} / 목표: Lv.${lvl}</span>
+                <button ${!isUnlocked || isClaimed ? 'disabled' : ''} onclick="claimTeacherLevelEnc(${lvl}, ${rewardAmount})">
+                  ${isClaimed ? '수령 완료' : (!window.claimedAchTeacherBase ? '기본 선행 필요' : (isUnlocked ? '보상 수령' : '레벨 미달'))}
+                </button>
+              </div>
+            </div>
+          `;
+        }
+        rightPanel.innerHTML = rightHtml;
+
+      } else if (currentEncyclopediaCat === 'book') {
+        const bookChars = ["momonga", "kani"];
+        const count = bookChars.filter(id => ownedCharacterIds.includes(id)).length;
+        const isAll = (count === 2);
+        if (window.claimedAchBookBase === undefined) window.claimedAchBookBase = false;
+
+        let minLvl = 5;
+        if (!isAll) minLvl = 0;
+        else {
+          bookChars.forEach(id => {
+            const cObj = CHARACTER_DATABASE.find(c => c.id === id);
+            if (cObj && cObj.level < minLvl) minLvl = cObj.level;
+          });
+        }
+
+        const hasMomonga = ownedCharacterIds.includes("momonga");
+        const hasKani = ownedCharacterIds.includes("kani");
+        let bookPreviewPath = "images/책방 시너지/00.png";
+        if (hasMomonga && hasKani) bookPreviewPath = "images/책방 시너지/2.png";
+        else if (hasKani) bookPreviewPath = "images/책방 시너지/0_ka.png";
+        else if (hasMomonga) bookPreviewPath = "images/책방 시너지/0_mo.png";
+
+        leftPanel.innerHTML = `
+          <h3 style="color:var(--accent);">⭐ 책방 도감</h3>
+          <img src="${bookPreviewPath}" alt="책방 시너지 일러스트" class="ency-preview-img" onerror="this.onerror=null;this.alt='이미지를 불러오지 못했습니다: '+this.src;">
+          <div style="font-size:14px; color:#ddd; text-align:center; font-weight:bold;">카니(${hasKani ? 'O' : 'X'}) · 모몽가(${hasMomonga ? 'O' : 'X'})</div>
+        `;
+
+        let rightHtml = `
+          <div class="ency-ach-card">
+            <div style="display:flex; justify-content:space-between; font-weight:bold;">
+              <span>책방 시너지 올 획득 업적</span>
+              <span style="color:var(--accent);">💎 +1000</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#aaa;">
+              <span>획득 현황: ${count} / 2</span>
+              <button ${!isAll || window.claimedAchBookBase ? 'disabled' : ''} onclick="claimBookBaseEnc()">
+                ${window.claimedAchBookBase ? '수령 완료' : (isAll ? '보상 수령' : '미달성')}
+              </button>
+            </div>
+          </div>
+        `;
+        for (let lvl = 1; lvl <= 5; lvl++) {
+          const rewardAmount = lvl * 500;
+          const isUnlocked = window.claimedAchBookBase && (minLvl >= lvl);
+          const isClaimed = bookLevelClaimed[lvl - 1];
+          rightHtml += `
+            <div class="ency-ach-card">
+              <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                <span>책방 시너지 모두 Lv.${lvl} 달성 업적</span>
+                <span style="color:var(--accent);">💎 +${rewardAmount}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#aaa;">
+                <span>최소 레벨: Lv.${minLvl} / 목표: Lv.${lvl}</span>
+                <button ${!isUnlocked || isClaimed ? 'disabled' : ''} onclick="claimBookLevelEnc(${lvl}, ${rewardAmount})">
+                  ${isClaimed ? '수령 완료' : (!window.claimedAchBookBase ? '기본 선행 필요' : (isUnlocked ? '보상 수령' : '레벨 미달'))}
+                </button>
+              </div>
+            </div>
+          `;
+        }
+        rightPanel.innerHTML = rightHtml;
+
+      } else if (currentEncyclopediaCat === 'pajama') {
+        const hasGreen = ownedCharacterIds.includes("pajama_green");
+        const hasPurple = ownedCharacterIds.includes("pajama_purple");
+        const hasPink = ownedCharacterIds.includes("pajama_pink");
+        const hasWhite = ownedCharacterIds.includes("pajama_white");
+
+        const pajamaCount = [hasGreen, hasPurple, hasPink, hasWhite].filter(Boolean).length;
+        const isPajamaAll = (pajamaCount === 4);
+
+        let pajamaImgPath = "images/파자마파티즈 시너지/00_grayscale.png";
+        if (pajamaCount === 4) {
+          pajamaImgPath = "images/파자마파티즈 시너지/04_all.jpg";
+        } else if (pajamaCount === 1) {
+          if (hasGreen) pajamaImgPath = "images/파자마파티즈 시너지/01_green.png";
+          else if (hasPurple) pajamaImgPath = "images/파자마파티즈 시너지/01_purple.png";
+          else if (hasPink) pajamaImgPath = "images/파자마파티즈 시너지/01_pink.png";
+          else if (hasWhite) pajamaImgPath = "images/파자마파티즈 시너지/01_white.png";
+        } else if (pajamaCount === 2) {
+          if (hasGreen && hasPurple) pajamaImgPath = "images/파자마파티즈 시너지/02_purple_green.png";
+          else if (hasGreen && hasPink) pajamaImgPath = "images/파자마파티즈 시너지/02_green_pink.png";
+          else if (hasGreen && hasWhite) pajamaImgPath = "images/파자마파티즈 시너지/02_green_white.png";
+          else if (hasPurple && hasPink) pajamaImgPath = "images/파자마파티즈 시너지/02_purple_pink.png";
+          else if (hasPurple && hasWhite) pajamaImgPath = "images/파자마파티즈 시너지/02_purple_white.png";
+          else if (hasPink && hasWhite) pajamaImgPath = "images/파자마파티즈 시너지/02_pink_white.png";
+        } else if (pajamaCount === 3) {
+          if (!hasGreen) pajamaImgPath = "images/파자마파티즈 시너지/03_purple_pink_white.png";
+          else if (!hasPurple) pajamaImgPath = "images/파자마파티즈 시너지/03_green_pink_white.png";
+          else if (!hasPink) pajamaImgPath = "images/파자마파티즈 시너지/03_purple_green_white.png";
+          else if (!hasWhite) pajamaImgPath = "images/파자마파티즈 시너지/03_purple_green_pink.png";
+        }
+
+        leftPanel.innerHTML = `
+          <h3 style="color:var(--accent);">⭐ 파자마파티즈 도감</h3>
+          <img src="${pajamaImgPath}" alt="파자마파티즈 조합 일러스트" class="ency-preview-img" onerror="this.onerror=null;this.alt='이미지를 불러오지 못했습니다: '+this.src;">
+          <div style="font-size:14px; color:#ddd; text-align:center; font-weight:bold;">
+            보유 현황: 초록이(${hasGreen ? 'O' : 'X'}) · 보라(${hasPurple ? 'O' : 'X'}) · 빨강이(${hasPink ? 'O' : 'X'}) · 하양이(${hasWhite ? 'O' : 'X'})
+          </div>
+        `;
+
+        if (window.claimedAchPajamaBase === undefined) window.claimedAchPajamaBase = false;
+
+        let minLvl = 5;
+        if (!isPajamaAll) minLvl = 0;
+        else {
+          ["pajama_green", "pajama_purple", "pajama_pink", "pajama_white"].forEach(id => {
+            const cObj = CHARACTER_DATABASE.find(c => c.id === id);
+            if (cObj && cObj.level < minLvl) minLvl = cObj.level;
+          });
+        }
+
+        let rightHtml = `
+          <div class="ency-ach-card">
+            <div style="display:flex; justify-content:space-between; font-weight:bold;">
+              <span>파자마파티즈 올 획득 업적</span>
+              <span style="color:var(--accent);">💎 +1500</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#aaa;">
+              <span>획득 현황: ${pajamaCount} / 4</span>
+              <button ${!isPajamaAll || window.claimedAchPajamaBase ? 'disabled' : ''} onclick="claimPajamaBaseEnc()">
+                ${window.claimedAchPajamaBase ? '수령 완료' : (isPajamaAll ? '보상 수령' : '미달성')}
+              </button>
+            </div>
+          </div>
+        `;
+        for (let lvl = 1; lvl <= 5; lvl++) {
+          const rewardAmount = lvl * 500;
+          const isUnlocked = window.claimedAchPajamaBase && (minLvl >= lvl);
+          const isClaimed = pajamaLevelClaimed[lvl - 1];
+          rightHtml += `
+            <div class="ency-ach-card">
+              <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                <span>파자마파티즈 모두 Lv.${lvl} 달성 업적</span>
+                <span style="color:var(--accent);">💎 +${rewardAmount}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#aaa;">
+                <span>최소 레벨: Lv.${minLvl} / 목표: Lv.${lvl}</span>
+                <button ${!isUnlocked || isClaimed ? 'disabled' : ''} onclick="claimPajamaLevelEnc(${lvl}, ${rewardAmount})">
+                  ${isClaimed ? '수령 완료' : (!window.claimedAchPajamaBase ? '기본 선행 필요' : (isUnlocked ? '보상 수령' : '레벨 미달'))}
+                </button>
+              </div>
+            </div>
+          `;
+        }
+        rightPanel.innerHTML = rightHtml;
+      }
+    }
+
+    function claimSaminBaseEnc() {
+      if (!window.claimedAchSaminBase) {
+        window.claimedAchSaminBase = true; crystals += 1000; updateGachaUI(); renderEncyclopedia(); alert("🏆 삼인방 올 획득 보상으로 보석 1,000개가 지급되었습니다!");
+      }
+    }
+    function claimSaminLevelEnc(lvl, reward) {
+      if (!saminLevelClaimed[lvl - 1]) {
+        saminLevelClaimed[lvl - 1] = true; crystals += reward; updateGachaUI(); renderEncyclopedia(); alert(`🏆 삼인방 Lv.${lvl} 달성 보상으로 보석 ${reward}개가 지급되었습니다!`);
+      }
+    }
+    function claimTeacherBaseEnc() {
+      if (!window.claimedAchTeacherBase) { window.claimedAchTeacherBase = true; crystals += 1000; updateGachaUI(); renderEncyclopedia(); alert("🏆 스승과 제자 올 획득 보상 지급!"); }
+    }
+    function claimTeacherLevelEnc(lvl, reward) {
+      if (!teacherLevelClaimed[lvl - 1]) { teacherLevelClaimed[lvl - 1] = true; crystals += reward; updateGachaUI(); renderEncyclopedia(); alert(`🏆 스승과 제자 Lv.${lvl} 보상 지급!`); }
+    }
+    function claimBookBaseEnc() {
+      if (!window.claimedAchBookBase) { window.claimedAchBookBase = true; crystals += 1000; updateGachaUI(); renderEncyclopedia(); alert("🏆 책방 올 획득 보상 지급!"); }
+    }
+    function claimBookLevelEnc(lvl, reward) {
+      if (!bookLevelClaimed[lvl - 1]) { bookLevelClaimed[lvl - 1] = true; crystals += reward; updateGachaUI(); renderEncyclopedia(); alert(`🏆 책방 Lv.${lvl} 보상 지급!`); }
+    }
+    function claimPajamaBaseEnc() {
+      if (!window.claimedAchPajamaBase) { window.claimedAchPajamaBase = true; crystals += 1500; updateGachaUI(); renderEncyclopedia(); alert("🏆 파자마파티즈 올 획득 보상 지급!"); }
+    }
+    function claimPajamaLevelEnc(lvl, reward) {
+      if (!pajamaLevelClaimed[lvl - 1]) { pajamaLevelClaimed[lvl - 1] = true; crystals += reward; updateGachaUI(); renderEncyclopedia(); alert(`🏆 파자마파티즈 Lv.${lvl} 보상 지급!`); }
+    }
+
+    function batchUpgradeCharacters() {
+      let upgradedAny = false;
+      CHARACTER_DATABASE.forEach(char => {
+        if (!ownedCharacterIds.includes(char.id)) return;
+        while (char.level < MAX_CHARACTER_LEVEL) {
+          const req = REQUIREMENT_STEPS[char.level];
+          if (char.count >= req) {
+            char.count -= req;
+            char.level++;
+            upgradedAny = true;
+          } else {
+            break;
+          }
+        }
+      });
+
+      if (upgradedAny) {
+        alert("⚡ 보유 중인 조건에 맞는 모든 캐릭터가 일괄 업그레이드되었습니다!");
+        renderPartyGrid();
+        filterInventoryRarity(currentInventoryFilter);
+      } else {
+        alert("업그레이드 조건을 만족하는 캐릭터가 없습니다 (중복 게이지를 확인해주세요).");
+      }
+    }
+
+    function openAchievementModal() {
+      renderMainAchievements();
+      document.getElementById('achievement-modal').classList.add('active');
+    }
+
+    function renderMainAchievements() {
+      const container = document.getElementById('ach-list-container');
+      container.innerHTML = '';
+
+      const counts = { 1: 0, 2: 0, 3: 0, 4: 0 };
+      const maxCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
+      CHARACTER_DATABASE.forEach(c => {
+        if (!(c.star in maxCounts)) return;
+        maxCounts[c.star]++;
+        if (ownedCharacterIds.includes(c.id)) counts[c.star]++;
+      });
+
+      const mainAchDefs = [
+        { star: 1, name: "1성 먼작귀 캐릭터 획득", reward: 2000 },
+        { star: 2, name: "2성 먼작귀 캐릭터 획득", reward: 3000 },
+        { star: 3, name: "3성 먼작귀 캐릭터 획득", reward: 5000 },
+        { star: 4, name: "4성 먼작귀 캐릭터 획득", reward: 7000 }
+      ];
+
+      if (!window.claimedAchMain) window.claimedAchMain = { 1: false, 2: false, 3: false, 4: false };
+
+      mainAchDefs.forEach(def => {
+        const cur = counts[def.star];
+        const max = maxCounts[def.star] > 0 ? maxCounts[def.star] : 0;
+        const percent = max > 0 ? Math.min(100, (cur / max) * 100) : 0;
+        const isDone = max > 0 && cur >= max;
+        const isClaimed = window.claimedAchMain[def.star];
+        const isConfigured = max > 0;
+
+        const item = document.createElement('div');
+        item.className = 'ach-item';
+        item.innerHTML = `
+          <div class="ach-top-row">
+            <div class="ach-title">${def.name}</div>
+            <div class="ach-reward">💎 +${def.reward}</div>
+          </div>
+          <div class="ach-progress-row">
+            <div class="ach-bar-bg"><div class="ach-bar-fill" style="width:${percent}%;"></div></div>
+            <div class="ach-count-text">${isConfigured ? `${cur} / ${max}` : '데이터 없음'}</div>
+            <button ${!isConfigured || !isDone || isClaimed ? 'disabled' : ''} onclick="claimMainAch(${def.star}, ${def.reward})">
+              ${isClaimed ? '수령 완료' : (!isConfigured ? '캐릭터 준비 중' : (isDone ? '보상 수령' : '진행 중'))}
+            </button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+      updateRedDots();
+    }
+
+    function claimMainAch(star, reward) {
+      if (!window.claimedAchMain) window.claimedAchMain = {};
+      if (!window.claimedAchMain[star]) {
+        window.claimedAchMain[star] = true;
+        crystals += reward;
+        updateGachaUI();
+        renderMainAchievements();
+        alert(`🏆 [메인 업적] ${star}성 캐릭터 획득 보상으로 보석 ${reward}개가 지급되었습니다!`);
+      }
+    }
+
+    function updateRedDots() {
+      const hasUnclaimedMail = mailList.some(m => !m.claimed);
+      const mailDot = document.getElementById('mail-red-dot');
+      if (mailDot) {
+        if (hasUnclaimedMail) mailDot.classList.add('show');
+        else mailDot.classList.remove('show');
+      }
+
+      let hasUnclaimedAch = false;
+      const claimedMain = window.claimedAchMain || {};
+      const counts = { 1: 0, 2: 0, 3: 0, 4: 0 };
+      const maxCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
+      CHARACTER_DATABASE.forEach(c => {
+        if (!(c.star in maxCounts)) return;
+        maxCounts[c.star]++;
+        if (ownedCharacterIds.includes(c.id)) counts[c.star]++;
+      });
+      [1, 2, 3, 4].forEach(s => {
+        if (maxCounts[s] > 0 && counts[s] >= maxCounts[s] && !claimedMain[s]) {
+          hasUnclaimedAch = true;
+        }
+      });
+
+      const achDot = document.getElementById('ach-red-dot');
+      if (achDot) {
+        if (hasUnclaimedAch) achDot.classList.add('show');
+        else achDot.classList.remove('show');
+      }
+    }
+
+    function updateProfileUI() {
+      const lobbyAvatar = document.getElementById('lobby-profile-avatar');
+      if (playerData.avatarImg) lobbyAvatar.innerHTML = `<img src="${playerData.avatarImg}" alt="아바타">`;
+      else lobbyAvatar.innerHTML = `<span style="font-size:24px;">⭐</span>`;
+      
+      document.getElementById('lobby-name-disp').innerText = playerData.name;
+      const reqXp = getRequiredXpForLevel(playerData.level);
+      document.getElementById('lobby-level-disp').innerText = `LV. ${playerData.level} (${playerData.xp} / ${reqXp} XP)`;
+      document.getElementById('lobby-exp-bar').style.width = `${Math.min(100, (playerData.xp / reqXp) * 100)}%`;
+
+      const modalAvatar = document.getElementById('profile-modal-avatar');
+      if (playerData.avatarImg) modalAvatar.innerHTML = `<img src="${playerData.avatarImg}" alt="아바타">`;
+      else modalAvatar.innerHTML = `<span style="font-size:40px;">⭐</span>`;
+      document.getElementById('profile-modal-name').innerText = playerData.name;
+
+      const grid = document.getElementById('profile-avatar-select-grid');
+      grid.innerHTML = '';
+      const defaultOpt = document.createElement('div');
+      defaultOpt.className = `profile-avatar-option ${playerData.avatarImg === null ? 'selected' : ''}`;
+      defaultOpt.innerHTML = `<span style="font-size:22px;">⭐</span>`;
+      defaultOpt.onclick = () => { playerData.avatarImg = null; updateProfileUI(); };
+      grid.appendChild(defaultOpt);
+
+      PROFILE_AVATAR_DATABASE.forEach(avatar => {
+        if (ownedAvatarIds.includes(avatar.id)) {
+          const opt = document.createElement('div');
+          opt.className = `profile-avatar-option ${playerData.avatarImg === avatar.img ? 'selected' : ''}`;
+          opt.innerHTML = `<img src="${avatar.img}" alt="${avatar.name}">`;
+          opt.onclick = () => { playerData.avatarImg = avatar.img; updateProfileUI(); };
+          grid.appendChild(opt);
+        }
+      });
+
+      CHARACTER_DATABASE.forEach(char => {
+        if (ownedCharacterIds.includes(char.id)) {
+          const opt = document.createElement('div');
+          opt.className = `profile-avatar-option ${playerData.avatarImg === char.img ? 'selected' : ''}`;
+          opt.innerHTML = `<img src="${char.img}" alt="${char.name}">`;
+          opt.onclick = () => { playerData.avatarImg = char.img; updateProfileUI(); };
+          grid.appendChild(opt);
+        }
+      });
+
+      const cost = playerData.nameChangeCount === 0 ? 0 : playerData.nameChangeCount * 100;
+      const warnEl = document.getElementById('name-change-warn');
+      if (warnEl) {
+        if (cost === 0) {
+          warnEl.innerText = "(첫 1회 무료)";
+          warnEl.style.color = "var(--accent)";
+        } else {
+          warnEl.innerText = `(변경 비용: 보석 ${cost}개)`;
+          warnEl.style.color = "#ff0055";
+        }
+      }
+    }
+
+    function openProfileShopModal() { renderProfileShopGrid(); document.getElementById('profile-shop-modal').classList.add('active'); }
+    function closeProfileShopModal() { document.getElementById('profile-shop-modal').classList.remove('active'); updateProfileUI(); }
+
+    function renderProfileShopGrid() {
+      const grid = document.getElementById('profile-shop-grid');
+      grid.innerHTML = '';
+      PROFILE_AVATAR_DATABASE.forEach(avatar => {
+        const isOwned = ownedAvatarIds.includes(avatar.id);
+        const item = document.createElement('div');
+        item.className = `profile-shop-item ${isOwned ? 'owned' : ''}`;
+        item.innerHTML = `
+          <img src="${avatar.img}" alt="${avatar.name}">
+          <div style="font-size:11px; font-weight:bold; color:#fff;">${avatar.name}</div>
+          <div class="profile-shop-price">${isOwned ? '보유 중' : `💎 ${avatar.price}`}</div>
+        `;
+        if (!isOwned) item.onclick = () => buyProfileAvatar(avatar);
+        grid.appendChild(item);
+      });
+    }
+
+    function buyProfileAvatar(avatar) {
+      if (crystals < avatar.price) { alert("보석이 부족합니다!"); return; }
+      crystals -= avatar.price;
+      ownedAvatarIds.push(avatar.id);
+      updateGachaUI();
+      renderProfileShopGrid();
+      alert(`🎉 [${avatar.name}] 프로필 이미지를 구매했습니다!`);
+    }
+
+    function promptChangeName() {
+      const cost = playerData.nameChangeCount === 0 ? 0 : playerData.nameChangeCount * 100;
+      const newName = prompt(cost === 0 ? "변경할 새 닉네임을 입력하세요 (첫 1회 무료):" : `닉네임 변경 비용은 보석 ${cost}개입니다. 새 닉네임을 입력하세요:`, playerData.name);
+      if (newName === null) return;
+      const trimmed = newName.trim();
+      if (!trimmed) { alert("올바른 닉네임을 입력해주세요."); return; }
+      if (cost > 0) {
+        if (crystals < cost) { alert(`보석이 부족합니다!`); return; }
+        crystals -= cost;
+        updateGachaUI();
+      }
+      playerData.name = trimmed;
+      playerData.nameChangeCount++;
+      updateProfileUI();
+      alert("닉네임이 성공적으로 변경되었습니다!");
+    }
+
+    function filterSynergyCategory(cat) {
+      currentSynergyCategory = cat;
+      document.querySelectorAll('.syn-tab-btn').forEach(btn => btn.classList.remove('active'));
+      if (cat === 'all') document.getElementById('syntab-all').classList.add('active');
+      else document.getElementById(`syntab-${cat}`).classList.add('active');
+      renderSynergyGrid();
+    }
+
+    function renderPartyGrid() {
+      const grid = document.getElementById('party-grid');
+      grid.innerHTML = '';
+
+      partySlots.forEach((charId, idx) => {
+        const slot = document.createElement('div');
+        const char = CHARACTER_DATABASE.find(c => c.id === charId);
+
+        if(char) {
+          slot.className = "party-slot filled";
+          const mult = getCardMultiplier(char).toFixed(1);
+          slot.innerHTML = `
+            <div class="party-remove-btn" onclick="event.stopPropagation(); removePartySlot(${idx});">✕</div>
+            <div class="party-card-visual"><img src="${char.img}" alt="${char.name}"></div>
+            <div class="party-card-info">
+              <div class="party-card-name">${char.name} (Lv.${char.level})</div>
+              <div class="party-card-mult">기본 배율: x${mult}</div>
+            </div>
+          `;
+          slot.onclick = () => openPartySelectModal(idx);
+        } else {
+          slot.className = "party-slot";
+          slot.innerHTML = `<div class="plus-icon">+</div>`;
+          slot.onclick = () => openPartySelectModal(idx);
+        }
+        grid.appendChild(slot);
+      });
+
+      renderSynergyGrid();
+      document.getElementById('party-total-mult').innerText = `x${getPartyTotalMultiplier().toFixed(1)}`;
+      updateRedDots();
+    }
+
+    function renderSynergyGrid() {
+      const container = document.getElementById('synergy-grid-container');
+      container.innerHTML = '';
+      const activeSynergies = getPartyActiveSynergies();
+
+      SYNERGY_DEFINITIONS.forEach(syn => {
+        if (currentSynergyCategory !== 'all' && syn.category !== currentSynergyCategory) return;
+
+        const isActive = activeSynergies.some(a => a.id === syn.id);
+        const card = document.createElement('div');
+        card.className = `synergy-card-item ${isActive ? 'active' : ''}`;
+        card.onclick = () => autoEquipSynergy(syn.id);
+
+        const faceImgsHtml = syn.chars.map(cId => {
+          const charObj = CHARACTER_DATABASE.find(c => c.id === cId);
+          return `<img src="${charObj.img}" alt="${charObj.name}" class="synergy-face-img" title="${charObj.name}">`;
+        }).join('');
+
+        card.innerHTML = `
+          <div class="synergy-info-left">
+            <div>
+              <div class="synergy-name">${syn.name} ${isActive ? '<span style="font-size:11px; color:var(--accent);">[활성화]</span>' : ''}</div>
+              <div class="synergy-faces">${faceImgsHtml}</div>
+            </div>
+          </div>
+          <div class="synergy-mult-badge">+x${syn.bonus.toFixed(1)}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function removePartySlot(idx) { partySlots[idx] = null; renderPartyGrid(); }
+
+    function openPartySelectModal(slotIdx) {
+      selectedPartySlotIndex = slotIdx;
+      const grid = document.getElementById('party-select-grid');
+      grid.innerHTML = '';
+
+      CHARACTER_DATABASE.forEach((char) => {
+        const isUnlocked = ownedCharacterIds.includes(char.id);
+        const isAlreadyEquipped = partySlots.includes(char.id);
+        const slot = document.createElement('div');
+        slot.className = `char-slot ${isUnlocked ? '' : 'locked'}`;
+        if(isUnlocked) slot.onclick = () => equipCharacterToSlot(char.id);
+
+        slot.innerHTML = `
+          <img src="${char.img}" alt="${char.name}">
+          <div class="char-slot-name">${char.name}</div>
+          <div style="font-size:11px; color:var(--accent); font-weight:bold; margin-top:2px;">
+            ${isUnlocked ? `Lv.${char.level} (x${getCardMultiplier(char).toFixed(1)})` : '미획득'}
+          </div>
+          ${isAlreadyEquipped ? '<div style="font-size:10px; color:#ff0055; font-weight:bold;">[장착중]</div>' : ''}
+        `;
+        grid.appendChild(slot);
+      });
+      document.getElementById('party-select-modal').classList.add('active');
+    }
+
+    function equipCharacterToSlot(charId) {
+      const existingIdx = partySlots.indexOf(charId);
+      if(existingIdx !== -1) partySlots[existingIdx] = null;
+      partySlots[selectedPartySlotIndex] = charId;
+      closeModals();
+      renderPartyGrid();
+    }
+
+    function openSettingsModal() { renderKeyConfigUI(); document.getElementById('settings-modal').classList.add('active'); }
+
+    function filterInventoryRarity(rarity) {
+      currentInventoryFilter = rarity;
+      document.querySelectorAll('.rarity-tab-btn').forEach(btn => btn.classList.remove('active'));
+      if(rarity === 'all') document.getElementById('rtab-all').classList.add('active');
+      else document.getElementById(`rtab-${rarity}`).classList.add('active');
+      renderInventoryGrid();
+    }
+
+    function renderInventoryGrid() {
+      const grid = document.getElementById('inventory-grid');
+      grid.innerHTML = '';
+
+      CHARACTER_DATABASE.forEach((char) => {
+        if (currentInventoryFilter !== 'all' && char.star !== currentInventoryFilter) return;
+        const realIndex = CHARACTER_DATABASE.findIndex(c => c.id === char.id);
+        const isUnlocked = ownedCharacterIds.includes(char.id);
+        const slot = document.createElement('div');
+        slot.className = `char-slot ${isUnlocked ? '' : 'locked'}`;
+        slot.onclick = () => openCardDetailByIndex(realIndex);
+
+        let starsStr = '';
+        for(let s=0; s<char.star; s++) starsStr += '★';
+
+        slot.innerHTML = `
+          <img src="${char.img}" alt="${char.name}">
+          <div class="char-slot-name">${char.name}</div>
+          <div style="font-size:11px; color:var(--accent); margin-top:2px;">${starsStr}</div>
+        `;
+        grid.appendChild(slot);
+      });
+    }
+
+    function openCardDetailByIndex(index) { currentCardIndex = index; updateCardDetailView(); document.getElementById('card-detail-modal').classList.add('active'); }
+
+    function updateCardDetailView() {
+      const char = CHARACTER_DATABASE[currentCardIndex];
+      document.getElementById('detail-card-img').src = char.img;
+      document.getElementById('detail-card-name').innerText = char.name;
+      
+      let starsStr = '';
+      for(let i=0; i<char.star; i++) starsStr += '★';
+      document.getElementById('detail-card-stars').innerText = starsStr;
+
+      document.getElementById('card-level-text').innerText = `Lv.${char.level} (배율 x${getCardMultiplier(char).toFixed(1)})`;
+      
+      const upgradeBtn = document.getElementById('upgrade-btn');
+      if (char.level >= MAX_CHARACTER_LEVEL) {
+        document.getElementById('gauge-text').innerText = `최고 레벨 도달 (Lv.5)`;
+        document.getElementById('gauge-bar-fill').style.width = `100%`;
+        upgradeBtn.disabled = true;
+        upgradeBtn.innerText = "최고 레벨 도달 (Lv.5)";
+      } else {
+        const reqCount = REQUIREMENT_STEPS[char.level] || 25;
+        const curCount = char.count;
+        document.getElementById('gauge-text').innerText = `중복 게이지: ${curCount}/${reqCount}`;
+        document.getElementById('gauge-bar-fill').style.width = `${Math.min(100, (curCount / reqCount) * 100)}%`;
+
+        if (curCount >= reqCount) {
+          upgradeBtn.disabled = false;
+          upgradeBtn.innerText = "업그레이드 가능! (클릭)";
+        } else {
+          upgradeBtn.disabled = true;
+          upgradeBtn.innerText = "업그레이드 불가";
+        }
+      }
+    }
+
+    function prevCard() { currentCardIndex = (currentCardIndex - 1 + CHARACTER_DATABASE.length) % CHARACTER_DATABASE.length; updateCardDetailView(); }
+    function nextCard() { currentCardIndex = (currentCardIndex + 1) % CHARACTER_DATABASE.length; updateCardDetailView(); }
+
+    function upgradeCurrentCharacter() {
+      const char = CHARACTER_DATABASE[currentCardIndex];
+      if (char.level >= MAX_CHARACTER_LEVEL) return;
+      const reqCount = REQUIREMENT_STEPS[char.level];
+
+      if (char.count >= reqCount) {
+        char.count -= reqCount;
+        char.level++;
+        if (char.level > MAX_CHARACTER_LEVEL) char.level = MAX_CHARACTER_LEVEL;
+        alert(`${char.name}의 레벨이 Lv.${char.level}로 업그레이드되었습니다!`);
+        updateCardDetailView();
+        renderPartyGrid();
+      }
+    }
+
+    function closeCardDetail() { document.getElementById('card-detail-modal').classList.remove('active'); }
+    function changeLaneMode(count) { laneCount = count; renderKeyConfigUI(); }
+
+    function renderKeyConfigUI() {
+      const grid = document.getElementById('key-config-grid');
+      const currentKeys = laneCount === 4 ? keys4K : keys6K;
+      grid.className = `key-grid key-grid-${laneCount}`;
+      grid.innerHTML = '';
+      currentKeys.forEach((k, i) => {
+        const btn = document.createElement('div');
+        btn.className = `key-btn ${isListeningKey === i ? 'listening' : ''}`;
+        btn.innerText = `L${i+1}: ${k.replace('Key','')}`;
+        btn.onclick = () => { isListeningKey = i; renderKeyConfigUI(); };
+        grid.appendChild(btn);
+      });
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if(isListeningKey >= 0) {
+        if(laneCount === 4) keys4K[isListeningKey] = e.code;
+        else keys6K[isListeningKey] = e.code;
+        isListeningKey = -1;
+        renderKeyConfigUI();
+        e.preventDefault();
+      }
+    });
+
+    function resetKeybindings() {
+      if(laneCount === 4) keys4K = ['KeyD', 'KeyF', 'KeyJ', 'KeyK'];
+      else keys6K = ['KeyS', 'KeyD', 'KeyF', 'KeyJ', 'KeyK', 'KeyL'];
+      renderKeyConfigUI();
+    }
+
+    function startRealtimeTimer() {
+      if(timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        if(remainingSeconds > 0) { remainingSeconds--; updateTimerDisplay(); }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const h = String(Math.floor(remainingSeconds / 3600)).padStart(2, '0');
+      const m = String(Math.floor((remainingSeconds % 3600) / 60)).padStart(2, '0');
+      const s = String(remainingSeconds % 60).padStart(2, '0');
+      document.getElementById('timer-val').innerText = `${h}:${m}:${s}`;
+    }
+
+    function selectGachaTab(tabKey) {
+      currentGachaTab = tabKey;
+      document.querySelectorAll('.gacha-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(`tab-${tabKey}`).classList.add('active');
+      
+      const bannerImg = document.getElementById('gacha-banner-img');
+      const titleEl = document.getElementById('gacha-title');
+      const descEl = document.getElementById('gacha-desc');
+      const timerEl = document.getElementById('gacha-timer-display');
+
+      if(tabKey === 'collab') {
+        bannerImg.style.display = 'block';
+        bannerImg.src = 'images/colaboration.png';
+        titleEl.innerText = "⭐ 콜라보 한정 가챠";
+        descEl.innerText = "1성 및 2성 파자마파티즈 캐릭터 등장!";
+        timerEl.style.display = 'block';
+      } else if(tabKey === 'rateup') {
+        bannerImg.style.display = 'none';
+        titleEl.innerText = "⭐ 특정 4성 캐릭터 확률 업";
+        descEl.innerText = "확률 업 픽업 뽑기란입니다.";
+        timerEl.style.display = 'block';
+      } else if(tabKey === 'normal') {
+        bannerImg.style.display = 'none';
+        titleEl.innerText = "🌟 상시 캐릭터 뽑기";
+        descEl.innerText = "언제든 이용 가능한 상시 픽업 뽑기란";
+        timerEl.style.display = 'none';
+      }
+      updateGachaUI();
+    }
+
+    function updateGachaUI() {
+      document.getElementById('user-crystals').innerText = crystals;
+      document.getElementById('gacha-diamond-count').innerText = crystals;
+
+      const cost1x = document.getElementById('cost-1x');
+      const cost10x = document.getElementById('cost-10x');
+      const singleTitle = document.getElementById('single-pull-title');
+      const multiTitle = document.getElementById('multi-pull-title');
+
+      if (crystals >= 10000) {
+        singleTitle.innerText = "10회 뽑기";
+        cost1x.className = "cost-text sufficient";
+        cost1x.innerText = "보석 1000개";
+
+        multiTitle.innerText = "100회 뽑기";
+        cost10x.className = "cost-text sufficient";
+        cost10x.innerText = "보석 10000개";
+      } else {
+        singleTitle.innerText = "1회 뽑기";
+        if (crystals < 100) {
+          cost1x.className = "cost-text insufficient";
+          cost1x.innerText = "보석 100개 (부족!)";
+        } else {
+          cost1x.className = "cost-text sufficient";
+          cost1x.innerText = "보석 100개";
+        }
+
+        multiTitle.innerText = "10회 뽑기";
+        if (crystals < 1000) {
+          cost10x.className = "cost-text insufficient";
+          cost10x.innerText = "보석 1000개 (부족!)";
+        } else {
+          cost10x.className = "cost-text sufficient";
+          cost10x.innerText = "보석 1000개";
+        }
+      }
+      updateRedDots();
+    }
+
+    function executeCurrentSinglePull() {
+      if (crystals >= 10000) {
+        executePull(10);
+      } else {
+        executePull(1);
+      }
+    }
+
+    function executeCurrentMultiPull() {
+      if (crystals >= 10000) {
+        executePull(100);
+      } else {
+        executePull(10);
+      }
+    }
+
+    function checkAllCardsFlipped() {
+      const slots = document.querySelectorAll('.flip-card-slot');
+      if (slots.length === 0) return;
+      const allFlipped = Array.from(slots).every(s => s.classList.contains('flipped'));
+      const confirmBtn = document.getElementById('confirm-close-btn');
+
+      if (allFlipped) {
+        confirmBtn.classList.add('ready');
+        confirmBtn.innerText = "확인 (닫기)";
+        if (!overLimitConverted) convertOverLimitCards();
+      } else {
+        confirmBtn.classList.remove('ready');
+        confirmBtn.innerText = "확인 (모두 공개 필요)";
+      }
+    }
+
+    function convertOverLimitCards() {
+      const slots = document.querySelectorAll('.flip-card-slot');
+      let convertedCount = 0;
+      slots.forEach((slot, idx) => {
+        const cardData = currentDrawnCards[idx];
+        if (cardData && cardData.isOverLimit && !slot.classList.contains('converted-crystal')) {
+          slot.classList.add('converted-crystal');
+          convertedCount++;
+          const front = slot.querySelector('.flip-card-front');
+          if (front) {
+            front.style.background = 'radial-gradient(circle, #2a2200 0%, #0c1020 100%)';
+            front.style.border = '2px solid var(--accent)';
+            front.innerHTML = `<div style="height:70%; display:flex; align-items:center; justify-content:center; font-size:36px;">💎</div><div style="height:30%; background:#182038; display:flex; flex-direction:column; justify-content:center; align-items:center;"><div style="font-size:10px; color:var(--accent); font-weight:bold;">+50💎</div></div>`;
+          }
+        }
+      });
+      if (convertedCount > 0) {
+        crystals += convertedCount * 50;
+        updateGachaUI();
+        setTimeout(() => { alert(`🌟 76개 한도 초과 중복 카드 ${convertedCount}장이 보석 +${convertedCount * 50}개로 변환되었습니다!`); }, 300);
+      }
+      overLimitConverted = true;
+    }
+
+    function getRandomStarByProbability() {
+      const baseWeights = { 0: 0.1, 1: 59.9, 2: 25, 3: 10, 4: 5 };
+      const availableStars = [...new Set(CHARACTER_DATABASE.map(c => c.star))]
+        .filter(star => baseWeights[star] > 0);
+      const totalWeight = availableStars.reduce((sum, star) => sum + baseWeights[star], 0);
+      if (!availableStars.length || totalWeight <= 0) return null;
+      let roll = Math.random() * totalWeight;
+      for (const star of availableStars) {
+        roll -= baseWeights[star];
+        if (roll < 0) return star;
+      }
+      return availableStars[availableStars.length - 1];
+    }
+
+    function registerPulledCharacter(originalChar) {
+      const pulledChar = { ...originalChar };
+      const isOwned = ownedCharacterIds.includes(pulledChar.id);
+      let isNew = false;
+      let isOverLimit = false;
+
+      if (!isOwned) {
+        ownedCharacterIds.push(pulledChar.id);
+        originalChar.level = 0;
+        originalChar.count = 0;
+        originalChar.totalAcquired = 1;
+        pulledChar.level = 0;
+        pulledChar.count = 0;
+        pulledChar.totalAcquired = 1;
+        isNew = true;
+      } else {
+        if (originalChar.totalAcquired >= MAX_TOTAL_ACQUIRED) {
+          isOverLimit = true;
+        } else {
+          originalChar.totalAcquired++;
+          originalChar.count++;
+        }
+        pulledChar.level = originalChar.level;
+        pulledChar.count = originalChar.count;
+        pulledChar.totalAcquired = originalChar.totalAcquired;
+      }
+      return { char: pulledChar, isNew, isOverLimit };
+    }
+
+    function executePull(count) {
+      if (currentGachaTab === 'rateup' && !CHARACTER_DATABASE.some(c => c.star === 4)) {
+        alert("확률 업 대상인 4성 캐릭터 데이터가 없습니다. CHARACTER_DATABASE에 4성 캐릭터를 추가한 뒤 이용해주세요.");
+        return;
+      }
+      if (currentGachaTab === 'normal' && CHARACTER_DATABASE.length === 0) {
+        alert("뽑을 수 있는 캐릭터 데이터가 없습니다.");
+        return;
+      }
+      const cost = count === 100 ? 10000 : count * 100;
+      if(crystals < cost) { alert("보석이 부족합니다!"); return; }
+      crystals -= cost;
+      updateGachaUI();
+
+      isRevealingAll = false;
+      overLimitConverted = false;
+      currentDrawnCards = [];
+
+      const gridContainer = document.getElementById('gacha-grid-container');
+      gridContainer.innerHTML = '';
+      gridContainer.classList.remove('single-mode', 'mode-100x');
+
+      if (count === 1) {
+        gridContainer.classList.add('single-mode');
+        document.getElementById('reveal-all-btn').style.display = 'none';
+        document.getElementById('gacha-result-title').innerText = "🌟 1회 뽑기 결과";
+      } else if (count === 100) {
+        gridContainer.classList.add('mode-100x');
+        document.getElementById('reveal-all-btn').style.display = 'block';
+        document.getElementById('gacha-result-title').innerText = "🌟 100회 연속 뽑기 결과 (10x10)";
+      } else {
+        document.getElementById('reveal-all-btn').style.display = 'block';
+        document.getElementById('gacha-result-title').innerText = "🌟 10회 뽑기 결과";
+      }
+
+      for (let i = 0; i < count; i++) {
+        let pool;
+        if (currentGachaTab === 'collab') {
+          const targetStar = getRandomStarByProbability();
+          pool = CHARACTER_DATABASE.filter(c => c.star === targetStar);
+        } else if (currentGachaTab === 'rateup') {
+          pool = CHARACTER_DATABASE.filter(c => c.star === 4);
+        } else {
+          pool = CHARACTER_DATABASE;
+        }
+
+        if (!pool || pool.length === 0) {
+          crystals += cost;
+          updateGachaUI();
+          alert("현재 뽑기에서 선택할 수 있는 캐릭터가 없습니다. 보석을 돌려드렸습니다.");
+          document.getElementById('gacha-result-overlay').classList.remove('active');
+          return;
+        }
+        const originalChar = pool[Math.floor(Math.random() * pool.length)];
+        currentDrawnCards.push(registerPulledCharacter(originalChar));
+      }
+
+      const delayUnit = count === 100 ? 0.015 : 0.12;
+      currentDrawnCards.forEach((item, index) => {
+        const slot = document.createElement('div');
+        slot.className = 'flip-card-slot';
+        slot.style.animationDelay = `${index * delayUnit}s`;
+
+        let starsStr = '';
+        for(let s=0; s<item.char.star; s++) starsStr += '★';
+        const isStar2 = item.char.star === 2;
+
+        slot.innerHTML = `
+          <div class="flip-card-inner">
+            <div class="flip-card-back ${isStar2 ? 'silver-back' : 'bronze-back'}">
+              <div class="card-back-pattern">${isStar2 ? '★★' : '★'}</div>
+              <div class="back-rank-text">${isStar2 ? 'SILVER' : 'BRONZE'}</div>
+            </div>
+            <div class="flip-card-front">
+              <div class="card-front-img-box"><img src="${item.char.img || ''}" alt="${item.char.name}"></div>
+              <div class="card-front-info">
+                <div class="card-front-stars">${starsStr}</div>
+                <div class="card-front-name">${item.char.name}</div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        slot.onclick = async () => {
+          if(!slot.classList.contains('flipped')) {
+            slot.classList.add('flipped');
+            checkAllCardsFlipped();
+            if(item.isNew && currentGachaTab === 'collab') await showNewCardPopup(item.char);
+          }
+        };
+        gridContainer.appendChild(slot);
+      });
+
+      checkAllCardsFlipped();
+      document.getElementById('gacha-result-overlay').classList.add('active');
+      setTimeout(() => { document.querySelectorAll('.flip-card-slot').forEach(s => s.classList.add('pop-in')); }, 50);
+      if (count === 1) checkAllCardsFlipped();
+    }
+
+    async function revealAllCards() {
+      if(isRevealingAll) return;
+      isRevealingAll = true;
+      const slots = document.querySelectorAll('.flip-card-slot');
+      const flipDelay = slots.length > 20 ? 30 : 200;
+
+      for (let i = 0; i < slots.length; i++) {
+        const slot = slots[i];
+        if (!slot.classList.contains('flipped')) {
+          slot.click();
+          await new Promise(resolve => setTimeout(resolve, flipDelay));
+          const popOverlay = document.getElementById('new-card-pop-overlay');
+          if (popOverlay.classList.contains('active')) {
+            await new Promise(resolve => {
+              const checkInterval = setInterval(() => {
+                if (!popOverlay.classList.contains('active')) { clearInterval(checkInterval); resolve(); }
+              }, 50);
+            });
+          }
+        }
+      }
+      isRevealingAll = false;
+    }
+
+    function showNewCardPopup(char) {
+      return new Promise(resolve => {
+        newCardResolve = resolve;
+        const popOverlay = document.getElementById('new-card-pop-overlay');
+        document.getElementById('new-popup-img').src = char.img;
+        document.getElementById('new-popup-name').innerText = char.name;
+        let starsStr = '';
+        for(let i=0; i<char.star; i++) starsStr += '★';
+        document.getElementById('new-popup-stars').innerText = starsStr;
+        popOverlay.classList.add('active');
+      });
+    }
+
+    function dismissNewCardPopup() {
+      const popOverlay = document.getElementById('new-card-pop-overlay');
+      popOverlay.classList.remove('active');
+      if (newCardResolve) { newCardResolve(); newCardResolve = null; }
+    }
+
+    function closeGachaResultOverlay() {
+      const confirmBtn = document.getElementById('confirm-close-btn');
+      if (!confirmBtn.classList.contains('ready')) { alert("모든 카드를 뒤집어서 공개한 후에 닫을 수 있습니다!"); return; }
+      document.getElementById('gacha-result-overlay').classList.remove('active');
+    }
+
+    function addGems(amount) { crystals += amount; updateGachaUI(); alert(`${amount} 보석이 지급되었습니다.`); }
+
+    startRealtimeTimer();
+    updateTimerDisplay();
+    updateProfileUI();
+    updateRedDots();
+  </script>
 </body>
 </html>
