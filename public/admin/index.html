@@ -566,9 +566,14 @@
     }
     $('#maintSave').onclick = async () => {
       const on = $('#maintOn').checked;
-      if (on && !confirm('점검 모드를 켜면 유저들이 바로 게임을 못 하게 돼요. 켤까요?')) return;
+      let pin;
+      if (on) {
+        pin = prompt('점검 모드를 켜면 유저들이 바로 게임을 못 해요.
+점검 비밀번호를 입력해 주세요');
+        if (pin === null) return;
+      }
       try {
-        status.maintenance = (await api('admin-maintenance', { on, reason: $('#maintReason').value })).maintenance;
+        status.maintenance = (await api('admin-maintenance', { on, pin, reason: $('#maintReason').value })).maintenance;
         if (on) status.schedule = null;
         renderStatus();
         $('#maintErr').textContent = '저장했어요';

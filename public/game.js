@@ -887,6 +887,11 @@ export class Game {
       if (!this.wakeAt || performance.now() - this.wakeAt > 700) { this.wakeAt = performance.now(); sound.get(); this.onStall?.(true); }
     } else if (this.wakeAt) { this.wakeAt = 0; this.onStall?.(false); }
     const t = this.time(), late = JUDGES[2].w + this.bonus;
+    // 자동 연주 (영상 촬영용 · 로컬에서 ?auto 일 때만): 노트가 판정선에 닿는 순간 누르고 롱노트 끝에서 뗀다
+    if (this.auto) for (let l = 0; l < 4; l++) {
+      const n = this.byLane[l][this.ptr[l]];
+      if (!this.holding[l] && n && t >= n.t - 0.004) this.press(l);
+    }
     for (let l = 0; l < 4 && this.running; l++) {
       const h = this.holding[l];
       if (h && t >= h.t + h.dur) this.endHold(l, t);

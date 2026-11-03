@@ -1691,6 +1691,7 @@ function playGame(song, diff, buffs, faces, multi = false, tiles = null) {
     song, diff, speed: settings.speed, offset: settings.offset, buffs, hitsound: settings.hitsound, multi, tiles, onItem,
     lanes: s.team.map((id, i) => ({ color: id ? CHAR[id].color : LANE_COLORS[i], face: faces[i], badge: id ? CHAR[id].badge : null, key: keys[i] })),
     onJudge, onHp, onCombo, onEnd: multi ? finishMulti : finish, onError: reportError2,
+    auto: /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).has('auto'), // 영상 촬영용 자동 연주 (로컬 전용)
     onStall: (on) => { $('#stall').hidden = !on; },
     onTick: (p) => ($('#gProg').style.width = `${p * 100}%`),
   });

@@ -1081,6 +1081,8 @@ const routes = {
   async 'POST admin-maintenance'(req, res) {
     if (!(await adminOk(req))) return adminOnly(res);
     const on = req.body?.on === true, prev = await maintenance(true);
+    // 점검을 켤 때는 점검 비밀번호 (실수로 켜는 걸 막는다 · 환경 변수 MAINT_PIN으로 바꿀 수 있음)
+    if (on && String(req.body?.pin ?? '') !== String(process.env.MAINT_PIN || '6121')) return res.status(403).json({ error: '점검 비밀번호가 달라요' });
     await putSetting('maintenance', {
       on,
       reason: text(req.body?.reason, 200) || '더 재밌는 게임을 위해 점검 중이에요',
