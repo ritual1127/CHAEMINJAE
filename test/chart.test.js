@@ -293,7 +293,7 @@ test('플레이어 레벨 1~1000: 100레벨까지 예전과 같고, 그 뒤로 �
   assert.ok(r.save.items.heart === s.items.heart + 1, '10레벨 부스터 선물');
 });
 
-test('프로필 테두리: 10레벨마다 새 테두리, 1000레벨까지 101개 · 고르기', () => {
+test('프로필 테두리: 10레벨마다 새 테두리, 1000레벨까지 101개 · 늘 가장 높은 테두리', () => {
   const names = new Set(Array.from({ length: 101 }, (_, t) => frameInfo(t).name));
   assert.equal(names.size, 101, '테두리 이름이 모두 다르다');
   assert.equal(frameTier(1), 0);
@@ -302,10 +302,7 @@ test('프로필 테두리: 10레벨마다 새 테두리, 1000레벨까지 101개
   assert.equal(frameTier(1000), 100);
   const s = { ...newSave(), exp: expAt(55) };
   assert.equal(frameOfSave(s), 5);
-  const pick = act(s, { type: 'frame', tier: 2 });
-  assert.equal(frameOfSave(pick.save), 2, '열린 테두리는 고를 수 있다');
-  assert.throws(() => act(s, { type: 'frame', tier: 6 }), GameError, '안 열린 테두리');
-  assert.equal(frameOfSave(act(pick.save, { type: 'frame', tier: -1 }).save), 5, '-1은 가장 높은 테두리');
+  assert.equal(frameOfSave({ ...s, frame: 2 }), 5, '예전에 고른 테두리가 있어도 가장 높은 테두리');
 });
 
 test('업적: 5만 개 이상 · 트랙마다 단계는 순서대로 · 예전 업적 id도 이어진다', () => {

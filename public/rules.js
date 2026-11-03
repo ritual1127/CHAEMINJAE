@@ -429,10 +429,7 @@ export const frameInfo = (tier) => {
   return { tier: t, family: Math.floor(t / 10), style: st, name: t === 100 ? '무한의 우주' : `${f.name} ${FRAME_STYLES[st]}`, icon: f.icon, c: f.c, level: Math.max(1, t * 10) };
 };
 // 지금 쓰는 테두리: 고른 테두리가 열려 있으면 그것, 아니면 가장 높은 테두리
-export const frameOfSave = (s) => {
-  const top = frameTier(levelOf(s.exp));
-  return Number.isInteger(s.frame) && s.frame >= 0 && s.frame <= top ? s.frame : top;
-};
+export const frameOfSave = (s) => frameTier(levelOf(s.exp)); // 테두리는 늘 지금 레벨의 가장 높은 것 (고르지 않음)
 
 /* ---------- 카드 점수 · 팀 ---------- */
 

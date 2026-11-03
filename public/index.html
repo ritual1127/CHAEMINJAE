@@ -203,7 +203,8 @@
               <div><b id="roomTitle"></b><span class="tag" id="roomDiff"></span><small id="roomMeta"></small></div>
             </div>
             <div class="card-box room-pick" id="roomPick">
-              <label class="sortsel">곡 <select id="roomSongSel" aria-label="곡 고르기"></select></label>
+              <div class="room-songrow"><label class="sortsel">곡 <select id="roomSongSel" aria-label="곡 고르기"></select></label>
+                <button type="button" class="btn small blue" id="roomRandom" title="연 곡 중에서 아무거나">🎲 랜덤</button></div>
               <div class="diffs" id="roomDiffs" role="radiogroup" aria-label="난이도"></div>
               <div class="bot-add"><label class="sortsel">🤖 AI 실력
                 <select id="botSkill" aria-label="AI 실력"><option value="easy">쉬움</option><option value="normal" selected>보통</option><option value="hard">어려움</option><option value="pro">고수</option></select></label>
@@ -542,8 +543,7 @@
     <ul class="perks" id="pPerks"></ul>
     <div class="row"><button type="button" class="btn small butter" id="pLevelBtn">🎖 레벨 혜택 · 테두리 보기</button><button type="button" class="btn small blue" data-friends>👫 친구</button></div>
     <p class="pplays" id="pPlays"></p>
-    <p class="plabel">테두리 고르기 <small>(10레벨마다 새 테두리)</small></p>
-    <div class="frames" id="pFrames"></div>
+    <p class="plabel" id="pFrameName"></p>
     <ul class="pbest" id="pBest"></ul>
     <p class="plabel">프로필 사진 바꾸기 <small>(더 많은 사진은 상점에서)</small></p>
     <div class="avatars" id="profileAvatars"></div>

@@ -130,6 +130,16 @@
     th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--line); }
     th { position: sticky; top: 0; font-weight: normal; color: var(--ink2); background: var(--surface); }
     #members th { cursor: pointer; user-select: none; }
+    #members tr.pick { cursor: pointer; }
+    #members tr.pick:hover td { background: #fff0f6; }
+    #memberDlg { width: min(760px, calc(100vw - 24px)); max-height: 90dvh; padding: 18px 20px; border: 3px solid var(--ink, #4a3953); border-radius: 18px; }
+    #memberDlg::backdrop { background: rgba(40, 25, 50, .45); }
+    #memberDlg .acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-top: 12px; }
+    #memberDlg .act { display: flex; flex-direction: column; gap: 6px; padding: 10px; background: #fbf6fd; border: 2px solid #eadff0; border-radius: 12px; }
+    #memberDlg .act b { font-size: 14px; }
+    #memberDlg .act input { width: 100%; }
+    #memberDlg .banned { padding: 6px 10px; color: #fff; background: #e5487f; border-radius: 10px; }
+    #memberDlg .x { float: right; }
     th[aria-sort="ascending"]::after { content: ' ▲'; }
     th[aria-sort="descending"]::after { content: ' ▼'; }
     td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
@@ -466,7 +476,6 @@
             <label>닉네임<input name="name" maxlength="20" autocomplete="off"></label>
             <div class="row"><button class="btn">조회</button><small class="err" id="userErr"></small></div>
           </form>
-          <div id="userInfo"></div>
         </section>
       </div>
 
@@ -741,22 +750,10 @@
         $('#roomCloseErr').textContent = err.message;
       }
     };
-    $('#userForm').onsubmit = async (e) => {
+    $('#userForm').onsubmit = (e) => {
       e.preventDefault();
       const name = e.target.name.value.trim();
-      if (!name) return;
-      try {
-        const u = await api(`admin-user?name=${encodeURIComponent(name)}`);
-        $('#userErr').textContent = '';
-        $('#userInfo').innerHTML = `<p><b>${esc(u.username)}</b> · Lv.${fmt(u.lv)} · 종합 ${compact(u.total)} · 코인 ${fmt(u.coins)} · 보석 ${fmt(u.gems)} · 친구 ${fmt(u.friends)}명</p>
-          <p class="no">가입 ${new Date(u.created_at).toLocaleDateString('ko-KR')} · 마지막 접속 ${u.last_seen ? new Date(u.last_seen).toLocaleString('ko-KR') : '-'} · 연주 ${fmt(u.stats.plays)} · 뽑기 ${fmt(u.stats.pulls)} · 멀티 1등 ${fmt(u.stats.mwins ?? 0)}</p>
-          <p>${u.chars.slice(0, 40).map((c) => `<span class="chip" title="${esc(RARITY[c.rarity].name)}">${esc(c.name)} Lv.${c.lv}</span>`).join(' ')}</p>
-          <div class="tablewrap"><table><thead><tr><th>곡</th><th>난이도</th><th class="n">점수</th><th>랭크</th><th>시각</th></tr></thead><tbody>${u.plays.map((p) => `<tr><td>${esc(SONG[p.song]?.title ?? p.song)}</td>
-            <td>${esc(DIFF_NAME[p.diff] ?? p.diff)}${p.multi ? ' 👥' : ''}</td><td class="n">${fmt(p.score)}</td><td>${esc(p.rank)}</td><td>${new Date(p.played_at).toLocaleString('ko-KR')}</td></tr>`).join('')}</tbody></table></div>`;
-      } catch (err) {
-        $('#userErr').textContent = err.message;
-        $('#userInfo').innerHTML = '';
-      }
+      if (name) openMember(name);
     };
     async function loadErrors() {
       try {
@@ -769,6 +766,66 @@
       }
     }
     $('#errReload').onclick = loadErrors;
+
+
+    /* ---------- 회원 조치 (회원 목록에서 이름을 누르면) ---------- */
+    let mName = '';
+    async function openMember(name) {
+      mName = name;
+      $('#mBody').innerHTML = '<p class="no">불러오는 중…</p>';
+      if (!$('#memberDlg').open) $('#memberDlg').showModal();
+      try {
+        const u = await api(`admin-user?name=${encodeURIComponent(name)}`);
+        $('#mBody').innerHTML = `<h2 style="margin:0 0 6px"><img src="/assets/avatars/${+u.avatar}.webp" alt="" style="width:36px;height:36px;border-radius:50%;vertical-align:middle"> ${esc(u.username)} <small>Lv.${fmt(u.lv)}</small></h2>
+          ${u.banned_until ? `<p class="banned">⛔ 정지 중 · ${new Date(u.banned_until).toLocaleString('ko-KR')}까지${u.ban_reason ? ` · ${esc(u.ban_reason)}` : ''}</p>` : ''}
+          <p>종합 ${compact(u.total)} · 코인 <b>${fmt(u.coins)}</b> · 보석 <b>${fmt(u.gems)}</b> · 친구 ${fmt(u.friends)}명 · 연주 ${fmt(u.stats.plays)} · 뽑기 ${fmt(u.stats.pulls)} · 멀티 1등 ${fmt(u.stats.mwins ?? 0)}</p>
+          <p class="no">가입 ${new Date(u.created_at).toLocaleDateString('ko-KR')} · 마지막 접속 ${u.last_seen ? new Date(u.last_seen).toLocaleString('ko-KR') : '-'}</p>
+          <p>${u.chars.slice(0, 30).map((c) => `<span class="chip">${esc(c.name)} Lv.${c.lv}</span>`).join(' ')}</p>
+          <div class="acts">
+            <form class="act form" data-a="wallet"><b>💰 코인 · 보석 주기/빼기</b><input name="coins" type="number" placeholder="코인 (빼려면 -)"><input name="gems" type="number" placeholder="보석 (빼려면 -)"><input name="reason" placeholder="우편 내용 (선택)"><button class="btn small">적용</button></form>
+            <form class="act form" data-a="ban"><b>⛔ 이용 정지</b><input name="days" type="number" min="1" max="36500" value="7" placeholder="일 수"><input name="reason" placeholder="사유 (유저에게 보여요)"><button class="btn small">정지하기</button>
+              ${u.banned_until ? '<button type="button" class="btn small plain" data-quick="unban">정지 풀기</button>' : ''}</form>
+            <form class="act form" data-a="rename"><b>✏️ 닉네임 바꾸기</b><input name="to" maxlength="12" placeholder="새 닉네임"><button class="btn small">바꾸기</button></form>
+            <div class="act"><b>🛠 기타</b>
+              <button type="button" class="btn small plain" data-quick="logout">강제 로그아웃</button>
+              <button type="button" class="btn small plain" data-quick="password">임시 비밀번호 만들기</button>
+              <button type="button" class="btn small plain" data-quick="wipe-scores">랭킹 기록 모두 지우기</button></div>
+          </div>
+          <p class="err" id="mErr"></p>
+          <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>곡</th><th>난이도</th><th class="n">점수</th><th>랭크</th><th>시각</th></tr></thead><tbody>${u.plays.map((p) => `<tr><td>${esc(SONG[p.song]?.title ?? p.song)}</td>
+            <td>${esc(DIFF_NAME[p.diff] ?? p.diff)}${p.multi ? ' 👥' : ''}</td><td class="n">${fmt(p.score)}</td><td>${esc(p.rank)}</td><td>${new Date(p.played_at).toLocaleString('ko-KR')}</td></tr>`).join('') || '<tr><td colspan="5" class="no">플레이 기록이 없어요</td></tr>'}</tbody></table></div>`;
+      } catch (err) {
+        $('#mBody').innerHTML = `<p class="err">${esc(err.message)}</p>`;
+      }
+    }
+    const ASK = { ban: '정지할까요? 바로 로그아웃되고 기간 동안 로그인할 수 없어요', 'wipe-scores': '이 회원의 랭킹 기록을 모두 지울까요? 되돌릴 수 없어요',
+      password: '비밀번호를 임시 비밀번호로 바꿀까요? (본인 확인 뒤 전달해 주세요)', logout: '모든 기기에서 로그아웃시킬까요?', rename: '닉네임을 바꿀까요?', wallet: '재화를 바꿀까요?', unban: '정지를 풀까요?' };
+    async function memberAction(action, extra = {}) {
+      if (!confirm(`${mName}: ${ASK[action] ?? '진행할까요?'}`)) return;
+      try {
+        const r = await api('admin-user-action', { name: mName, action, ...extra });
+        if (action === 'password') alert(`임시 비밀번호: ${r.temp}\n(이 창을 닫으면 다시 볼 수 없어요)`);
+        if (action === 'rename') mName = extra.to;
+        await openMember(mName);
+        $('#mErr').textContent = '처리했어요';
+      } catch (err) {
+        $('#mErr').textContent = err.message;
+      }
+    }
+    $('#memberDlg').addEventListener('submit', (e) => {
+      const f = e.target.closest('form[data-a]');
+      if (!f) return;
+      e.preventDefault();
+      const a = f.dataset.a, v = (k) => f.elements[k]?.value.trim() ?? '';
+      if (a === 'wallet') memberAction(a, { coins: Math.trunc(+v('coins') || 0), gems: Math.trunc(+v('gems') || 0), reason: v('reason') });
+      if (a === 'ban') memberAction(a, { days: Math.trunc(+v('days') || 7), reason: v('reason') });
+      if (a === 'rename') memberAction(a, { to: v('to') });
+    });
+    $('#memberDlg').addEventListener('click', (e) => {
+      const q = e.target.closest('[data-quick]');
+      if (q) memberAction(q.dataset.quick);
+      else if (e.target === $('#memberDlg')) $('#memberDlg').close(); // 바깥 누르면 닫기
+    });
 
     /* ---------- 뽑기 확률 ---------- */
 
@@ -1200,13 +1257,15 @@
       $('#count').textContent = `${fmt(rows.length)}명 / 전체 ${fmt(data.members.length)}명`;
       $('#members').innerHTML = `<thead><tr>${COLS.map(([k, label, n]) => `<th data-k="${k}" class="${n ? 'n' : ''}"
         ${sort.key === k ? `aria-sort="${sort.dir > 0 ? 'ascending' : 'descending'}"` : ''}>${label}</th>`).join('')}</tr></thead>
-        <tbody>${rows.map((m) => `<tr><td><img src="/assets/avatars/${+m.avatar}.webp" alt="">${esc(m.username)}</td><td>${time(m.created_at)}</td><td>${time(m.last_seen)}</td>
+        <tbody>${rows.map((m) => `<tr class="pick" data-name="${esc(m.username)}" title="눌러서 조치하기"><td><img src="/assets/avatars/${+m.avatar}.webp" alt="">${esc(m.username)}</td><td>${time(m.created_at)}</td><td>${time(m.last_seen)}</td>
         <td class="n">Lv.${levelOf(m.exp)}</td><td class="n">${fmt(m.plays)}</td><td class="n">${fmt(m.clears)}</td><td class="n">${fmt(m.s_ranks)}</td><td class="n">${fmt(m.max_combo)}</td>
         <td class="n">${fmt(m.power)}</td><td class="n">${fmt(m.chars)}/${CHARS.length}</td>
         <td class="n">${fmt(m.pulls)}</td><td class="n">${fmt(m.coins)}</td><td class="n">${fmt(m.gems)}</td></tr>`).join('') || `<tr><td colspan="${COLS.length}" class="no">회원이 없어요</td></tr>`}</tbody>`;
     }
     $('#search').oninput = renderMembers;
     $('#members').onclick = (e) => {
+      const tr = e.target.closest('tr[data-name]');
+      if (tr) return openMember(tr.dataset.name);
       const th = e.target.closest('th');
       if (!th) return;
       sort = { key: th.dataset.k, dir: sort.key === th.dataset.k ? -sort.dir : -1 };
@@ -1235,5 +1294,10 @@
 
     loadStats();
   </script>
+
+  <dialog id="memberDlg">
+    <form method="dialog"><button class="btn small plain x">닫기</button></form>
+    <div id="mBody"></div>
+  </dialog>
 </body>
 </html>

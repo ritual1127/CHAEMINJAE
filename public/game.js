@@ -771,7 +771,8 @@ export class Game {
         if (n.hold) this.judge(lane, 'miss', 0, true);
         return;
       }
-      // 다가오는 노트가 없는 칸을 누르면 헛손질 (조금 일찍 누른 건 봐준다)
+      // 다가오는 노트가 없는 칸을 누르면 헛손질 (조금 일찍 누른 건 봐준다). 첫 노트가 오기 전에는 눌러도 괜찮다
+      if (t < (this.tiles[0]?.t ?? 0) - 0.45) return;
       if (!n || n.t - t > 0.45) {
         this.damage(3);
         this.burst(lane, 'wrong');

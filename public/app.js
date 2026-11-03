@@ -1975,10 +1975,7 @@ function renderProfile() {
     <small>${L >= MAX_LV ? '최고 레벨!' : `다음 레벨까지 ${fmt(need - cur)} EXP`}</small>`;
   $('#pPerks').innerHTML = `<li>🪙 코인 +${per.coin}%</li><li>✨ 경험치 +${per.exp}%</li><li>👫 친구 ${per.friends}명</li><li>🎁 하루 선물 ${per.gifts}번</li><li>📅 출석 보상 +${per.attend}%</li>`;
   $('#pPlays').textContent = `${fmt(s.stats.plays)}번 연주 · 캐릭터 ${Object.keys(s.chars).length}명 · 팀 점수 ${fmt(teamPower(s))} · 멀티 1등 ${fmt(s.stats.mwins)}번`;
-  // 테두리 고르기: 지금까지 열린 테두리 (최신 20개 + 각 재질의 마지막) · '자동'은 늘 가장 높은 테두리
-  const tiers = [...new Set([...Array.from({ length: top + 1 }, (_, t) => t).filter((t) => t % 10 === 9 || t > top - 20), top])].sort((a, b) => b - a);
-  $('#pFrames').innerHTML = `<button type="button" data-frame="-1" aria-pressed="${!Number.isInteger(s.frame) || s.frame < 0}"><span class="auto">자동</span><small>가장 높은 테두리</small></button>`
-    + tiers.map((t) => `<button type="button" data-frame="${t}" aria-pressed="${s.frame === t}">${framed(s.avatar, t, 'sm')}<small>${esc(frameInfo(t).name)}</small></button>`).join('');
+  $('#pFrameName').textContent = `${frameInfo(mine).name} 테두리 · 다음 테두리는 Lv.${fmt(Math.min(MAX_LV, (top + 1) * 10))}`;
   const rows = SONGS.flatMap((x) => DIFFS.map((d) => [x, d, s.best[`${x.id}:${d}`]])).filter((r) => r[2]).sort((a, b) => b[2].score - a[2].score).slice(0, 50);
   $('#pBest').innerHTML = rows.length
     ? rows.map(([x, d, b]) => `<li><span>${esc(x.title)} · ${DIFF_NAME[d]}</span><span>${fmt(b.score)} ${b.rank}</span></li>`).join('')
@@ -1994,18 +1991,6 @@ function renderProfile() {
     }
   });
 }
-$('#pFrames').onclick = async (e) => {
-  const b = e.target.closest('[data-frame]');
-  if (!b) return;
-  sound.sfx('tap');
-  try {
-    await doAct({ type: 'frame', tier: +b.dataset.frame });
-    renderProfile();
-    renderTop();
-  } catch (err) {
-    toast(err.message);
-  }
-};
 $('#profileBtn').onclick = openProfile;
 
 /* ---------- 레벨 혜택: 1~1000레벨 테두리 · 레벨 업 보상 · 계속 받는 혜택 (10레벨 단위로) ---------- */
@@ -2658,6 +2643,15 @@ $('#roomStart').onclick = () => {
   $('#roomStart').disabled = true;
   mpCmd('mp-start');
 };
+// 랜덤 곡: 방장이 연 곡 중 지금 곡 말고 하나 (난이도는 그대로)
+$('#roomRandom').onclick = () => {
+  const r = mp.room, list = SONGS.filter((x) => unlocked(state.save, x) && x.id !== r?.song);
+  if (!r || !list.length) return;
+  const pick = list[Math.floor(Math.random() * list.length)];
+  sound.sfx('flip', 0.1);
+  toast(`🎲 ${pick.title}`);
+  mpCmd('mp-set', { song: pick.id, diff: r.diff });
+};
 $('#roomSongSel').onchange = (e) => {
   sound.sfx('tap');
   mpCmd('mp-set', { song: e.target.value, diff: mp.room.diff });
@@ -2972,3 +2966,11 @@ function frame(now) {
 requestAnimationFrame(frame);
 renderTop();
 $('#stall').onclick = () => sound.get();
+
+// 팝업 바깥(어두운 배경)을 누르면 닫기 (처음 사용법 안내는 빼고)
+document.addEventListener('click', (e) => {
+  const d = e.target;
+  if (!(d instanceof HTMLDialogElement) || !d.open || d.id === 'welcome') return;
+  const r = d.getBoundingClientRect();
+  if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close();
+});
