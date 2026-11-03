@@ -2186,3 +2186,10 @@ dialog.evo-fx[open] { align-items: center; animation: popIn .3s cubic-bezier(.3,
 .room-songrow { display: flex; align-items: center; gap: 8px; }
 .room-songrow .sortsel { flex: 1; min-width: 0; }
 .room-songrow .sortsel select { width: 100%; }
+
+/* 내 정보: 비밀번호 바꾸기 */
+.pname { flex-wrap: wrap; }
+.pwform { display: flex; flex-direction: column; gap: 6px; padding: 10px; background: #fff; border: 2px solid #eadff0; border-radius: 14px; }
+.pwform input { height: 40px; padding: 0 12px; font: inherit; font-size: 16px; border: 2px solid var(--ink); border-radius: 12px; }
+.pwform small { font-size: 12px; color: var(--ink2); }
+.pwform small.bad { color: #e5487f; }

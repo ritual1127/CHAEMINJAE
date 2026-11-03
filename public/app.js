@@ -1972,6 +1972,7 @@ function renderProfile() {
   $('#pAvatar').innerHTML = framed(s.avatar, mine, 'big');
   $('#pName').textContent = state.me.username;
   $('#renameForm').hidden = true;
+  $('#pwForm').hidden = true;
   $('#pLevel').innerHTML = `<b>Lv.${fmt(L)}</b><span class="prog"><i style="width:${(cur / need) * 100}%"></i></span>
     <small>${L >= MAX_LV ? '최고 레벨!' : `다음 레벨까지 ${fmt(need - cur)} EXP`}</small>`;
   $('#pPerks').innerHTML = `<li>🪙 코인 +${per.coin}%</li><li>✨ 경험치 +${per.exp}%</li><li>👫 친구 ${per.friends}명</li><li>🎁 하루 선물 ${per.gifts}번</li><li>📅 출석 보상 +${per.attend}%</li>`;
@@ -2017,6 +2018,31 @@ $$('[data-ask]').forEach((b) => (b.onclick = () => {
   openAsk();
 }));
 
+// 비밀번호 바꾸기: 지금 비밀번호 + 새 비밀번호 두 번
+$('#pwBtn').onclick = () => {
+  sound.sfx('tap');
+  const f = $('#pwForm');
+  f.hidden = !f.hidden;
+  f.reset();
+  $('#pwNote').textContent = '관리자에게 받은 임시 비밀번호를 쓰고 있다면 여기서 꼭 바꿔 주세요';
+  $('#pwNote').className = '';
+  if (!f.hidden) f.old.focus();
+};
+$('#pwForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const f = e.target, note = $('#pwNote'), bad = (m) => { note.textContent = m; note.className = 'bad'; };
+  if (f.pw.value.length < 4) return bad('새 비밀번호는 4자 이상이에요');
+  if (f.pw.value !== f.pw2.value) return bad('새 비밀번호 두 칸이 서로 달라요');
+  try {
+    await api('password', { old: f.old.value, pw: f.pw.value });
+    sound.sfx('ok');
+    toast('비밀번호를 바꿨어요! 다른 기기는 로그아웃됐어요');
+    f.reset();
+    f.hidden = true;
+  } catch (err) {
+    bad(err.message);
+  }
+};
 $('#renameBtn').onclick = () => {
   const f = $('#renameForm');
   f.hidden = !f.hidden;

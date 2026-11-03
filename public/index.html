@@ -533,7 +533,14 @@
 
   <dialog id="profile">
     <span class="bigav" id="pAvatar"></span>
-    <div class="pname"><h2 id="pName"></h2><button type="button" class="btn small plain" id="renameBtn">닉네임 변경</button></div>
+    <div class="pname"><h2 id="pName"></h2><button type="button" class="btn small plain" id="renameBtn">닉네임 변경</button><button type="button" class="btn small plain" id="pwBtn">비밀번호 변경</button></div>
+    <form class="pwform" id="pwForm" hidden novalidate>
+      <input name="old" type="password" maxlength="64" placeholder="지금 비밀번호" autocomplete="current-password">
+      <input name="pw" type="password" maxlength="64" placeholder="새 비밀번호 (4자 이상)" autocomplete="new-password">
+      <input name="pw2" type="password" maxlength="64" placeholder="새 비밀번호 한 번 더" autocomplete="new-password">
+      <button class="btn small pink">비밀번호 바꾸기</button>
+      <small id="pwNote"></small>
+    </form>
     <form class="rename" id="renameForm" hidden novalidate>
       <input name="username" maxlength="12" placeholder="새 닉네임 (2~12자)" autocomplete="off">
       <button class="btn small pink">바꾸기</button>

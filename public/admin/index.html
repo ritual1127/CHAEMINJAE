@@ -140,6 +140,8 @@
     #memberDlg .act input { width: 100%; }
     #memberDlg .banned { padding: 6px 10px; color: #fff; background: #e5487f; border-radius: 10px; }
     #memberDlg .x { float: right; }
+    #memberDlg .armed { color: #fff !important; background: #e5487f !important; }
+    #mErr { font-size: 14px; }
     #memberDlg .temp { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 6px 8px; background: #fff7d6; border-radius: 8px; }
     #memberDlg .temp code { font-size: 18px; user-select: all; }
     #memberDlg .temp small { color: #8a7c90; font-size: 11px; }
@@ -809,8 +811,19 @@
     }
     const ASK = { ban: '정지할까요? 바로 로그아웃되고 기간 동안 로그인할 수 없어요', 'wipe-scores': '이 회원의 랭킹 기록을 모두 지울까요? 되돌릴 수 없어요',
       password: '비밀번호를 이 임시 비밀번호로 바꿀까요? 그 회원은 바로 로그아웃돼요 (본인 확인 뒤 전달해 주세요)', logout: '모든 기기에서 로그아웃시킬까요?', rename: '닉네임을 바꿀까요?', wallet: '재화를 바꿀까요?', unban: '정지를 풀까요?' };
-    async function memberAction(action, extra = {}) {
-      if (!confirm(`${mName}: ${ASK[action] ?? '진행할까요?'}`)) return;
+    // 확인은 확인창 대신 버튼을 한 번 더 누르게 (브라우저가 확인창을 막으면 조용히 취소되던 문제)
+    let armed = null;
+    async function memberAction(action, extra = {}, btn = null) {
+      if (btn && armed !== btn) {
+        armed = btn;
+        btn.dataset.label ??= btn.textContent;
+        btn.textContent = '한 번 더 누르면 실행';
+        btn.classList.add('armed');
+        $('#mErr').textContent = `${mName}: ${ASK[action] ?? '진행할까요?'}`;
+        setTimeout(() => { if (armed === btn && btn.isConnected) { armed = null; btn.textContent = btn.dataset.label; btn.classList.remove('armed'); } }, 4000);
+        return;
+      }
+      armed = null;
       try {
         const r = await api('admin-user-action', { name: mName, action, ...extra });
         if (action === 'rename') mName = extra.to;
@@ -824,18 +837,18 @@
       const f = e.target.closest('form[data-a]');
       if (!f) return;
       e.preventDefault();
-      const a = f.dataset.a, v = (k) => f.elements[k]?.value.trim() ?? '';
-      if (a === 'wallet') memberAction(a, { coins: Math.trunc(+v('coins') || 0), gems: Math.trunc(+v('gems') || 0), reason: v('reason') });
-      if (a === 'ban') memberAction(a, { days: Math.trunc(+v('days') || 7), reason: v('reason') });
-      if (a === 'rename') memberAction(a, { to: v('to') });
+      const a = f.dataset.a, v = (k) => f.elements[k]?.value.trim() ?? '', btn = f.querySelector('button:not([type="button"])');
+      if (a === 'wallet') memberAction(a, { coins: Math.trunc(+v('coins') || 0), gems: Math.trunc(+v('gems') || 0), reason: v('reason') }, btn);
+      if (a === 'ban') memberAction(a, { days: Math.trunc(+v('days') || 7), reason: v('reason') }, btn);
+      if (a === 'rename') memberAction(a, { to: v('to') }, btn);
       if (a === 'password') {
         if (v('pw').length < 4) return ($('#mErr').textContent = '임시 비밀번호는 4자 이상');
-        memberAction(a, { pw: v('pw') });
+        memberAction(a, { pw: v('pw') }); // 임시 비밀번호는 바로 저장 (되돌리려면 다시 정하면 됨)
       }
     });
     $('#memberDlg').addEventListener('click', (e) => {
       const q = e.target.closest('[data-quick]');
-      if (q) memberAction(q.dataset.quick);
+      if (q) memberAction(q.dataset.quick, {}, q);
       else if (e.target === $('#memberDlg')) $('#memberDlg').close(); // 바깥 누르면 닫기
     });
 

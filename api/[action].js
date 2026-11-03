@@ -630,6 +630,20 @@ const routes = {
   },
 
   // 닉네임 변경: 바꿀 때마다 코인 RENAME_COINS개
+  // 비밀번호 바꾸기 (내 정보): 지금 비밀번호 확인 → 새 비밀번호. 관리자가 정해 준 임시 비밀번호는 지운다 · 다른 기기는 로그아웃
+  async 'POST password'(req, res) {
+    const user = await currentUser(req);
+    if (!user) return login(res);
+    const { old = '', pw = '' } = req.body ?? {};
+    if (typeof pw !== 'string' || pw.length < 4 || pw.length > 64) return res.status(400).json({ error: '새 비밀번호는 4~64자로 정해 주세요' });
+    const [row] = await sql`SELECT pw FROM users WHERE id = ${user.id}`;
+    if (typeof old !== 'string' || !checkPw(old, row.pw)) return res.status(403).json({ error: '지금 비밀번호가 달라요' });
+    if (old === pw) return res.status(400).json({ error: '지금 비밀번호와 다른 비밀번호로 정해 주세요' });
+    await sql`UPDATE users SET pw = ${hashPw(pw)}, temp_pw = NULL, temp_pw_at = NULL WHERE id = ${user.id}`;
+    await sql`DELETE FROM sessions WHERE user_id = ${user.id} AND token <> ${hash(req.cookies.sid).toString('hex')}`;
+    res.json({ ok: true });
+  },
+
   async 'POST rename'(req, res) {
     const user = await currentUser(req);
     if (!user) return login(res);
