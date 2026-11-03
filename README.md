@@ -4,7 +4,7 @@
 
 먼작귀 친구들과 누구나 아는 명곡을 신나게 연주하는 **모바일 웹 리듬게임**
 
-### [▶ 지금 플레이하기 — chaeminjae.vercel.app](https://chaeminjae.vercel.app)
+### [▶ 지금 플레이하기 — smallcute.online](https://smallcute.online)
 
 <img src="docs/title.webp" width="220" alt="타이틀 화면"> <img src="docs/lobby.webp" width="220" alt="로비"> <img src="docs/game.webp" width="220" alt="게임 화면">
 
