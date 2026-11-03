@@ -1,0 +1,1239 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>먼작귀 관리자</title>
+  <link rel="icon" href="/assets/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap">
+  <style>
+    :root {
+      --ink: #4a3953; --ink2: #6f5f7a; --muted: #8b7897; --line: #ece4f0; --grid: #e7e3ea; --cream: #fffaf3; --surface: #fcfcfb;
+      --pink: #e5487f; --blue: #3b8fd9;
+      /* 차트: 한 지표 = 한 색 (참고 팔레트 1번 파랑) · 강조 아닌 선은 회색 · 히트맵은 파랑 한 가지 색의 단계 */
+      --series: #2a78d6; --deemph: #b9b5ad; --good: #0ca30c; --critical: #d03b3b;
+      --h0: #f0efec; --h1: #86b6ef; --h2: #5598e7; --h3: #2a78d6; --h4: #1c5cab; --h5: #0d366b;
+      font-family: 'Jua', system-ui, sans-serif;
+      color: var(--ink);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100dvh; background: #ffe9f2 radial-gradient(#ffd8e8 2px, transparent 2.5px) 0 0 / 26px 26px; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    [hidden] { display: none !important; }
+    .btn { padding: 8px 16px; color: #fff; background: linear-gradient(#ffa8c8, #ff7eab); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink); cursor: pointer; }
+    .btn.plain { color: var(--ink); background: #fff; }
+    .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .btn.small { padding: 4px 12px; font-size: 14px; border-radius: 12px; box-shadow: 0 3px 0 var(--ink); }
+    .card { background: var(--surface); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 5px 0 var(--ink); }
+
+    /* 로그인 */
+    #login { display: grid; place-items: center; min-height: 100dvh; padding: 16px; }
+    #login form { display: flex; flex-direction: column; gap: 12px; width: min(100%, 360px); padding: 24px; }
+    #login h1 { margin: 0; font-size: 30px; font-weight: normal; text-align: center; }
+    #login label { display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
+    #login input { padding: 10px 14px; font-size: 17px; background: #fff; border: 3px solid var(--ink); border-radius: 14px; outline: none; }
+    #login input:focus { box-shadow: 0 0 0 4px #ffc4da; }
+    .err { min-height: 1.2em; margin: 0; font-size: 14px; color: var(--pink); }
+    #login .err { text-align: center; }
+
+    /* 뼈대 */
+    #dash { max-width: 1280px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+    header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    header h1 { flex: 1; margin: 0; font-size: 30px; font-weight: normal; }
+    header small { display: block; font-size: 13px; color: var(--muted); }
+    .state { padding: 4px 12px; font-size: 14px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; }
+    .state.on { color: #fff; background: var(--critical); }
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tabs button { padding: 7px 16px; font-size: 16px; background: #fff; border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
+    .tabs button[aria-selected="true"] { color: #fff; background: var(--pink); translate: 0 2px; box-shadow: 0 1px 0 var(--ink); }
+    .tabs i { margin-left: 4px; padding: 0 6px; font-size: 12px; font-style: normal; color: #fff; background: var(--critical); border-radius: 99px; }
+    .pane { display: flex; flex-direction: column; gap: 16px; }
+    .chip { display: inline-block; margin: 2px; padding: 1px 8px; font-size: 12px; background: #f6eef8; border-radius: 999px; }
+    .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap: 16px; }
+    .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 16px; }
+    section.card { padding: 16px; min-width: 0; }
+    h2 { margin: 0 0 12px; font-size: 20px; font-weight: normal; }
+    h2 small, h3 small { font-size: 13px; color: var(--muted); }
+    h3 { margin: 4px 0 8px; font-size: 16px; font-weight: normal; }
+    .group-title { margin: 4px 0 -6px; font-size: 15px; color: var(--ink2); }
+
+    /* 숫자 카드: 이름 · 값 · 어제와 비교 · 14일 흐름 */
+    .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+    .tile { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px 10px; }
+    .tile .lb { font-size: 13px; color: var(--ink2); }
+    .tile b { font-size: 30px; font-weight: normal; line-height: 1.15; }
+    .tile .delta { font-size: 12px; color: var(--muted); }
+    .tile .delta.up { color: var(--good); }
+    .tile .delta.down { color: var(--critical); }
+    .tile svg { display: block; width: 100%; height: 26px; margin-top: 4px; overflow: visible; }
+    .tile.alert { border-color: var(--critical); }
+    .tile.alert b { color: var(--critical); }
+
+    /* 세로 막대 (일별): 차트 하나에 축 하나 */
+    .vchart { position: relative; height: 150px; margin-top: 18px; }
+    .vchart .gl { position: absolute; left: 30px; right: 0; height: 0; border-top: 1px solid var(--grid); }
+    .vchart .gl span { position: absolute; left: -30px; width: 26px; top: -8px; font-size: 11px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .vbars { position: absolute; inset: 0 0 0 30px; display: grid; grid-template-columns: repeat(14, 1fr); align-items: end; gap: 2px; border-bottom: 1px solid #cfc7d4; }
+    .vbar { position: relative; height: 100%; display: flex; align-items: flex-end; justify-content: center; outline: none; }
+    .vbar i { display: block; width: 62%; max-width: 22px; min-height: 2px; background: var(--series); border-radius: 4px 4px 0 0; }
+    .vbar:hover i, .vbar:focus-visible i { filter: brightness(1.12); box-shadow: 0 0 0 2px var(--ink); }
+    .vbar em { position: absolute; margin-bottom: 2px; font-size: 11px; font-style: normal; color: var(--ink2); }
+    .xlabels { display: grid; grid-template-columns: repeat(14, 1fr); gap: 2px; margin: 4px 0 0 30px; font-size: 11px; color: var(--muted); text-align: center; }
+    .xlabels span:nth-child(odd) { visibility: hidden; }
+    .xlabels span:last-child { visibility: visible; }
+
+    /* 가로 막대 (곡 · 난이도 · 캐릭터) */
+    .hbars { display: flex; flex-direction: column; gap: 5px; margin: 0; padding: 0; list-style: none; }
+    .hbars li { display: grid; grid-template-columns: minmax(96px, 160px) 1fr auto; align-items: center; gap: 8px; font-size: 14px; outline: none; }
+    .hbars .lb { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hbars img { width: 24px; height: 24px; flex: none; border: 1.5px solid var(--ink); border-radius: 50%; background: #fff; object-fit: cover; }
+    .hbars .tr { height: 12px; }
+    .hbars .tr i { display: block; height: 100%; min-width: 2px; background: var(--series); border-radius: 0 4px 4px 0; }
+    .hbars li:hover .tr i, .hbars li:focus-visible .tr i { filter: brightness(1.12); box-shadow: 0 0 0 2px var(--ink); }
+    .hbars .v { min-width: 44px; text-align: right; color: var(--ink2); font-variant-numeric: tabular-nums; }
+    .hbars .v small { color: var(--muted); }
+    .rgroup + .rgroup { margin-top: 12px; }
+    .rb { padding: 0 8px; font-size: 13px; color: #fff; border-radius: 99px; }
+
+    /* 요일 × 시간 히트맵 */
+    .heat-wrap { overflow-x: auto; }
+    .heat { display: grid; grid-template-columns: 28px repeat(24, minmax(16px, 1fr)); gap: 2px; min-width: 520px; font-size: 11px; color: var(--muted); }
+    .heat span { text-align: center; }
+    .heat .cell { aspect-ratio: 1; border-radius: 3px; outline: none; }
+    .heat .cell:hover, .heat .cell:focus-visible { box-shadow: 0 0 0 2px var(--ink); }
+    .legend { display: flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 12px; color: var(--ink2); }
+    .legend i { width: 18px; height: 12px; border-radius: 3px; }
+
+    /* 명예의 전당 */
+    .hof { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+    .hof section { padding: 12px 14px; }
+    .hof h3 { margin: 0 0 6px; }
+    .hof ol { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+    .hof li { display: grid; grid-template-columns: 26px 26px 1fr auto; align-items: center; gap: 6px; font-size: 14px; }
+    .hof li .m { text-align: center; }
+    .hof li img { width: 26px; height: 26px; border: 1.5px solid var(--ink); border-radius: 50%; }
+    .hof li .n { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .hof li .v { color: var(--ink2); font-variant-numeric: tabular-nums; }
+    .hof li:first-child .n { color: var(--pink); }
+    .hof .none { color: var(--muted); font-size: 13px; }
+
+    /* 표 */
+    .tools { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+    .tools input { flex: 1; min-width: 180px; padding: 8px 12px; background: #fff; border: 3px solid var(--ink); border-radius: 12px; outline: none; }
+    .tools small { color: var(--muted); }
+    .scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; white-space: nowrap; }
+    th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--line); }
+    th { position: sticky; top: 0; font-weight: normal; color: var(--ink2); background: var(--surface); }
+    #members th { cursor: pointer; user-select: none; }
+    th[aria-sort="ascending"]::after { content: ' ▲'; }
+    th[aria-sort="descending"]::after { content: ' ▼'; }
+    td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+    td img { width: 26px; height: 26px; vertical-align: middle; margin-right: 6px; border: 1.5px solid var(--ink); border-radius: 50%; }
+    tbody tr:hover { background: #fff5f9; }
+    .ok { color: #2e9e6e; }
+    .no { color: var(--muted); }
+    .tablewrap { max-height: 520px; overflow: auto; }
+    details.tv { margin-top: 10px; font-size: 13px; }
+    details.tv summary { color: var(--ink2); cursor: pointer; }
+
+    /* 점검 모드 · 예고 */
+    .maint { display: flex; flex-direction: column; gap: 10px; }
+    .maint h2 { margin: 0; }
+    .maint.on { background: #fff0f5; border-color: var(--pink); }
+    .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .row b { font-size: 19px; font-weight: normal; }
+    .maint.on .row b { color: var(--pink); }
+    .row small { color: var(--muted); }
+    textarea, .form input, .form select, .rates input, .picker input[type="search"] {
+      width: 100%; padding: 8px 12px; font-size: 15px; color: var(--ink); background: #fff; border: 3px solid var(--ink); border-radius: 12px; outline: none; }
+    textarea { resize: vertical; }
+    .switch { position: relative; width: 64px; height: 36px; flex: none; }
+    .switch input { position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0; }
+    .switch span { position: absolute; inset: 0; background: #e4d9ea; border: 3px solid var(--ink); border-radius: 99px; pointer-events: none; transition: background .2s; }
+    .switch span::after { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; background: #fff; border: 2px solid var(--ink); border-radius: 50%; transition: translate .2s; }
+    .switch input:checked + span { background: var(--pink); }
+    .switch input:checked + span::after { translate: 28px 0; }
+    .switch input:focus-visible + span { outline: 3px solid var(--blue); outline-offset: 2px; }
+    .check, .form label.check { display: inline-flex; flex-direction: row; align-items: center; gap: 6px; font-size: 14px; color: var(--ink); cursor: pointer; }
+    .check input { width: 18px; height: 18px; accent-color: var(--pink); }
+    .form input[type="checkbox"] { flex: none; width: 18px; height: 18px; padding: 0; accent-color: var(--pink); }
+
+    /* 우편 · 공지 · 문의 · 확률 */
+    .form { display: flex; flex-direction: column; gap: 8px; }
+    .form label { display: flex; flex-direction: column; gap: 3px; font-size: 14px; color: var(--ink2); }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .picker { display: flex; flex-direction: column; gap: 6px; padding: 10px; background: #fff; border: 2px solid var(--line); border-radius: 14px; }
+    .chosen { display: flex; flex-wrap: wrap; gap: 4px; }
+    .chosen button { padding: 1px 8px; font-size: 13px; color: #fff; background: var(--pink); border: 0; border-radius: 99px; cursor: pointer; }
+    .chosen .none { font-size: 13px; color: var(--muted); }
+    .plist { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 2px 8px; max-height: 180px; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
+    .form .plist label { display: flex; flex-direction: row; align-items: center; gap: 6px; padding: 2px 4px; font-size: 14px; color: var(--ink); border-radius: 8px; cursor: pointer; }
+    .plist label:hover { background: #fff5f9; }
+    .plist img { width: 22px; height: 22px; border: 1.5px solid var(--ink); border-radius: 50%; }
+    .plist small { color: var(--muted); }
+    .kind { padding: 1px 8px; font-size: 12px; color: #fff; background: var(--ink2); border-radius: 99px; }
+    .kind.song { background: var(--pink); }
+    .kind.bug { background: #c47f00; }
+    .kind.idea { background: var(--blue); }
+    .rates { min-width: 640px; }
+    .rates td { padding: 4px 6px; }
+    .rates input { width: 76px; padding: 4px 6px; font-size: 14px; text-align: right; }
+    .rates .sum.bad { color: var(--critical); }
+    .notices { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; max-height: 420px; overflow-y: auto; }
+    .notices li { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; padding: 8px 10px; background: #fff; border: 2px solid var(--line); border-radius: 14px; }
+    .notices li.on { border-color: var(--pink); }
+    .notices .ver { padding: 0 8px; font-size: 12px; color: #fff; background: var(--pink); border-radius: 99px; }
+    .notices p { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--ink2); white-space: pre-line; max-height: 4.5em; overflow: hidden; }
+
+    #tip { position: fixed; z-index: 10; padding: 6px 10px; font-size: 13px; color: #fff; background: var(--ink); border-radius: 10px; pointer-events: none; }
+    #tip b { display: block; font-size: 17px; font-weight: normal; }
+
+    /* 실시간 · 문의 탭 */
+    .tabs i.live { background: var(--good); }
+    .tile.live b { color: var(--good); }
+    .dotlive { display: inline-block; width: 9px; height: 9px; margin-right: 6px; background: var(--good); border-radius: 50%; box-shadow: 0 0 0 3px #d6f5d6; }
+    .badge { padding: 0 7px; font-size: 12px; color: #fff; background: var(--ink2); border-radius: 99px; }
+    .badge.play { background: var(--pink); }
+    .badge.multi { background: var(--blue); }
+    .badge.guest { color: var(--ink2); background: #efe8f3; }
+    .seg { display: inline-flex; padding: 3px; background: #f1e5f3; border: 2px solid var(--ink); border-radius: 999px; }
+    .seg button { padding: 4px 12px; font-size: 14px; color: var(--ink2); background: none; border: 0; border-radius: 999px; cursor: pointer; }
+    .seg button[aria-selected="true"] { color: #fff; background: var(--pink); }
+    .kinds { display: flex; flex-wrap: wrap; gap: 6px; }
+    .kinds button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 15px; background: #fff; border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
+    .kinds button[aria-selected="true"] { color: #fff; background: var(--ink); }
+    .kinds small { font-size: 12px; opacity: .8; }
+    .kinds i { padding: 0 6px; font-size: 12px; font-style: normal; color: #fff; background: var(--critical); border-radius: 99px; }
+    .kind.reward { background: #0ca30c; }
+    .kind.account { background: #8a5cd6; }
+    .kind.report { background: var(--critical); }
+    .inq-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; align-items: start; }
+    .inq-side { display: flex; flex-direction: column; gap: 8px; }
+    .inq-side .tools { margin: 0; }
+    .inq-list { display: flex; flex-direction: column; gap: 6px; max-height: 640px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+    .inq-list li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 10px; background: #fff; border: 2px solid var(--line); border-radius: 14px; cursor: pointer; }
+    .inq-list li:hover { border-color: #ffc4da; }
+    .inq-list li.on { border-color: var(--pink); background: #fff5f9; }
+    .inq-list li.open b::before { content: '● '; color: var(--critical); }
+    .inq-list b { overflow: hidden; font-weight: normal; white-space: nowrap; text-overflow: ellipsis; }
+    .inq-list small { color: var(--muted); font-size: 12px; }
+    .inq-list .meta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .inq-detail { position: sticky; top: 8px; display: flex; flex-direction: column; gap: 10px; }
+    .inq-detail h3 { margin: 0; font-size: 21px; overflow-wrap: anywhere; }
+    .inq-detail .body { margin: 0; padding: 10px 12px; font-size: 15px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; background: #fff; border: 2px solid var(--line); border-radius: 14px; }
+    .inq-detail .body.none { color: var(--muted); }
+    .who { display: grid; grid-template-columns: 52px 1fr; gap: 2px 10px; align-items: center; padding: 10px 12px; background: #fff7fb; border: 2px solid var(--line); border-radius: 14px; }
+    .who img { grid-row: span 2; width: 52px; height: 52px; border: 2px solid var(--ink); border-radius: 50%; }
+    .who b { font-size: 17px; font-weight: normal; }
+    .who small { color: var(--ink2); font-size: 13px; }
+    .who button { grid-column: 2; justify-self: start; padding: 0; font-size: 13px; color: var(--blue); background: none; border: 0; text-decoration: underline; cursor: pointer; }
+    .replied { margin: 0; padding: 8px 12px; font-size: 14px; color: #2e7d55; white-space: pre-wrap; background: #effaf3; border-radius: 12px; }
+    .reply-form { display: flex; flex-direction: column; gap: 8px; }
+    .reply-form .gift { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; color: var(--ink2); }
+    .reply-form .gift input { width: 110px; padding: 6px 10px; font-size: 15px; background: #fff; border: 3px solid var(--ink); border-radius: 12px; outline: none; }
+    .kind-pick { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink2); }
+    .kind-pick select { padding: 3px 6px; font-size: 13px; background: #fff; border: 2px solid var(--ink); border-radius: 10px; }
+
+    /* 휴대폰: 한 줄씩 · 탭은 가로로 밀어서 · 표는 옆으로 스크롤 */
+    @media (max-width: 760px) {
+      #dash { padding: 10px; gap: 12px; }
+      header { gap: 6px; }
+      header h1 { flex-basis: 100%; font-size: 24px; }
+      header .btn { padding: 5px 12px; font-size: 14px; border-radius: 12px; box-shadow: 0 3px 0 var(--ink); }
+      .tabs { position: sticky; top: 0; z-index: 5; flex-wrap: nowrap; margin: 0 -10px; padding: 8px 10px; overflow-x: auto; background: rgba(255, 233, 242, .96); scrollbar-width: none; }
+      .tabs button { flex: none; padding: 6px 12px; font-size: 14px; }
+      .pane { gap: 12px; }
+      section.card { padding: 12px; border-radius: 18px; }
+      h2 { font-size: 18px; }
+      .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .tile { padding: 10px 12px 8px; }
+      .tile b { font-size: 23px; }
+      .hof { grid-template-columns: minmax(0, 1fr); }
+      .hbars li { grid-template-columns: minmax(70px, 110px) 1fr auto; font-size: 13px; }
+      table { font-size: 13px; }
+      th, td { padding: 6px 8px; }
+      .tablewrap { max-height: 420px; }
+      .inq-wrap { grid-template-columns: minmax(0, 1fr); }
+      .inq-list { max-height: 360px; }
+      .inq-detail { position: static; }
+      .two { grid-template-columns: minmax(0, 1fr); }
+      .tools input { min-width: 0; }
+      .rates { min-width: 560px; }
+      .plist { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <main id="login" hidden>
+    <form class="card" novalidate>
+      <h1>관리자 로그인</h1>
+      <label>아이디<input name="username" autocomplete="username" required></label>
+      <label>비밀번호<input name="password" type="password" autocomplete="current-password" required></label>
+      <p class="err" role="alert"></p>
+      <button class="btn">로그인</button>
+      <a href="/" style="text-align:center;color:var(--ink2);font-size:14px">게임으로 돌아가기</a>
+    </form>
+  </main>
+
+  <div id="dash" hidden>
+    <header>
+      <h1>먼작귀 관리자<small id="updated"></small></h1>
+      <span class="state" id="stateChip">-</span>
+      <button class="btn plain" id="reload">새로고침</button>
+      <a class="btn plain" href="/" style="text-decoration:none">게임</a>
+      <button class="btn" id="logout">로그아웃</button>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="관리자 메뉴">
+      <button type="button" role="tab" data-tab="stats" aria-selected="true">📊 통계</button>
+      <button type="button" role="tab" data-tab="live">🟢 실시간<i class="live" id="liveDot" hidden></i></button>
+      <button type="button" role="tab" data-tab="inq">💬 문의<i id="inqDot" hidden></i></button>
+      <button type="button" role="tab" data-tab="ops">🛠 운영</button>
+      <button type="button" role="tab" data-tab="people">👥 회원 · 기록</button>
+    </nav>
+
+    <!-- 📊 통계 -->
+    <div class="pane" id="pane-stats">
+      <p class="group-title">지금 · 오늘</p>
+      <div class="tiles" id="tilesToday"></div>
+      <p class="group-title">활동 · 재방문</p>
+      <div class="tiles" id="tilesActive"></div>
+      <p class="group-title">누적 · 경제</p>
+      <div class="tiles" id="tilesTotal"></div>
+
+      <div class="grid3">
+        <section class="card"><h2>가입자 <small>최근 14일 · 하루 몇 명</small></h2><div id="chSignups"></div></section>
+        <section class="card"><h2>플레이한 회원 <small>최근 14일 · 하루 몇 명이 연주했나</small></h2><div id="chPlayers"></div></section>
+        <section class="card"><h2>플레이 수 <small>최근 14일 · 게스트 포함</small></h2><div id="chPlays"></div></section>
+      </div>
+      <details class="tv card" style="padding:10px 16px"><summary>최근 14일 숫자를 표로 보기</summary><div class="scroll"><table id="dayTable"></table></div></details>
+
+      <section class="card">
+        <h2>언제 많이 할까? <small>요일 × 시간대 플레이 수 · 최근 4주 · 한국 시간</small></h2>
+        <div class="heat-wrap"><div class="heat" id="heat"></div></div>
+        <div class="legend" id="heatLegend"></div>
+        <details class="tv"><summary>시간대별 숫자를 표로 보기</summary><div class="scroll"><table id="heatTable"></table></div></details>
+      </section>
+
+      <div class="grid2">
+        <section class="card"><h2>난이도별 플레이 <small>막대 = 플레이 수 · 오른쪽 = 클리어율</small></h2><ul class="hbars" id="diffBars"></ul></section>
+        <section class="card"><h2>곡별 플레이 <small>많이 한 순서</small></h2><ul class="hbars" id="songBars" style="max-height:420px;overflow-y:auto"></ul></section>
+      </div>
+
+      <div class="grid3">
+        <section class="card"><h2>레벨 분포 <small>회원 수</small></h2><ul class="hbars" id="levelBars"></ul></section>
+        <section class="card"><h2>랭크 분포 <small>모든 플레이의 랭크</small></h2><ul class="hbars" id="rankBars"></ul></section>
+        <section class="card"><h2>문의 주제 <small>막대 = 전체 · 오른쪽 = 답변 대기</small></h2><ul class="hbars" id="kindBars"></ul></section>
+      </div>
+
+      <section class="card">
+        <h2>캐릭터 보유 회원 수 <small>등급별 · 막대 = 그 친구를 가진 회원 수</small></h2>
+        <div class="grid2" id="charGroups"></div>
+      </section>
+
+      <section>
+        <h2>🏆 명예의 전당 <small>항목마다 TOP 5</small></h2>
+        <div class="hof" id="hof"></div>
+      </section>
+    </div>
+
+    <!-- 🟢 실시간: 지금 접속 중인 사람 · 멀티 방 -->
+    <div class="pane" id="pane-live" hidden>
+      <div class="tools"><button class="btn small plain" id="liveReload">↻ 새로고침</button><label class="check"><input type="checkbox" id="liveAuto" checked>10초마다 자동</label><small id="liveAt"></small></div>
+      <div class="tiles" id="liveTiles"></div>
+      <section class="card">
+        <h2>지금 접속 중 <small>75초 안에 신호를 보낸 화면 · 게스트 포함 · 창을 숨기면 빠져요</small></h2>
+        <div class="tools">
+          <input type="search" id="liveSearch" placeholder="닉네임 · 화면 검색" aria-label="접속자 검색">
+          <select id="liveFilter" aria-label="접속자 보기">
+            <option value="all">전체</option><option value="member">회원만</option><option value="guest">게스트만</option><option value="play">연주 중만</option>
+          </select>
+        </div>
+        <div class="tablewrap"><table id="liveTable"></table></div>
+      </section>
+      <section class="card">
+        <h2>멀티 플레이 방 <small>지금 열려 있는 방</small></h2>
+        <div class="tablewrap"><table id="roomTable"></table></div>
+      </section>
+    </div>
+
+    <!-- 💬 문의: 주제별 · 목록 + 자세히 보기 · 답변 -->
+    <div class="pane" id="pane-inq" hidden>
+      <div class="kinds" id="inqKinds" role="tablist" aria-label="문의 주제"></div>
+      <div class="inq-wrap">
+        <section class="card inq-side">
+          <div class="tools">
+            <div class="seg" id="inqStatus" role="tablist" aria-label="답변 상태">
+              <button type="button" data-s="open" aria-selected="true">답변 대기</button><button type="button" data-s="done">답변 완료</button><button type="button" data-s="all">전체</button>
+            </div>
+            <input type="search" id="inqSearch" placeholder="제목 · 내용 · 닉네임 검색" aria-label="문의 검색">
+          </div>
+          <small class="no" id="inqCount"></small>
+          <ul class="inq-list" id="inqList"></ul>
+        </section>
+        <section class="card inq-detail" id="inqDetail"><p class="no">왼쪽에서 문의를 골라 주세요</p></section>
+      </div>
+      <section class="card">
+        <h2>노래 신청 순위 <small>문의하기 → 노래 신청에서 많이 나온 제목</small></h2>
+        <ul class="hbars" id="songReqs"></ul>
+      </section>
+    </div>
+
+    <!-- 🛠 운영 -->
+    <div class="pane" id="pane-ops" hidden>
+      <div class="grid2">
+        <section class="card maint" id="maintCard">
+          <h2>서버 점검 모드 <small>켜면 모든 유저(관리자 브라우저 포함)가 점검 화면을 봐요</small></h2>
+          <div class="row">
+            <label class="switch"><input type="checkbox" id="maintOn"><span></span></label>
+            <b id="maintState">-</b>
+            <small id="maintSince"></small>
+          </div>
+          <textarea id="maintReason" maxlength="200" rows="2" placeholder="점검 사유 (유저 화면에 그대로 보여요)"></textarea>
+          <div class="row"><button class="btn" id="maintSave">저장</button><small class="err" id="maintErr"></small></div>
+          <label class="check"><input type="checkbox" id="previewOn">이 브라우저에서는 점검 중에도 게임 들어가 보기 (미리보기)</label>
+        </section>
+
+        <section class="card maint" id="schedCard">
+          <h2>점검 예고 알림 <small>유저 화면에 '언제부터 언제까지 점검' 팝업 · 게임 중이면 곡이 끝난 뒤에</small></h2>
+          <div class="two form">
+            <label>점검 시작<input type="datetime-local" id="schedFrom"></label>
+            <label>점검 끝<input type="datetime-local" id="schedTo"></label>
+          </div>
+          <textarea id="schedMsg" maxlength="300" rows="2" placeholder="안내 문구 (비우면 기본 문구)"></textarea>
+          <div class="row"><button class="btn" id="schedSend">유저에게 알리기</button><button class="btn plain" id="schedOff">알림 끄기</button><small class="err" id="schedErr"></small></div>
+          <small id="schedNow" class="no"></small>
+        </section>
+      </div>
+
+      <div class="grid2">
+        <section class="card">
+          <h2>우편 보내기 <small>받는 사람을 골라서 · 점검 보상, 이벤트 선물 등</small></h2>
+          <form id="mailForm" class="form" novalidate>
+            <div class="picker">
+              <label class="check"><input type="checkbox" id="mailEveryone">전체 회원에게 보내기</label>
+              <div class="chosen" id="mailChosen"></div>
+              <input type="search" id="mailSearch" placeholder="닉네임 검색 (Enter로 바로 추가)" autocomplete="off" aria-label="받는 사람 검색">
+              <ul class="plist" id="mailPick"></ul>
+            </div>
+            <label>제목<input name="title" maxlength="60" placeholder="예: 점검 보상이에요!" autocomplete="off"></label>
+            <label>내용<textarea name="body" maxlength="1000" rows="3" placeholder="유저 우편함에 그대로 보여요"></textarea></label>
+            <div class="two">
+              <label>코인<input name="coins" type="number" min="0" max="1000000" step="100" value="0"></label>
+              <label>보석<input name="gems" type="number" min="0" max="100000" step="10" value="0"></label>
+            </div>
+            <div class="row"><button class="btn">보내기</button><small class="err" id="mailErr"></small></div>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>공지사항 <small>유저 홈 화면 '공지사항'에 보여요 · 눌러서 고치기</small></h2>
+          <form id="noticeForm" class="form" novalidate>
+            <div class="two">
+              <label>버전<input name="version" maxlength="20" placeholder="예: 3.0.1" autocomplete="off"></label>
+              <label>제목<input name="title" maxlength="80" placeholder="예: 새 곡 추가!" autocomplete="off"></label>
+            </div>
+            <label>내용<textarea name="body" maxlength="3000" rows="5" placeholder="무엇이 어떻게 바뀌었는지 한 줄씩 적어 주세요"></textarea></label>
+            <div class="row"><button class="btn" id="noticeSave">새 공지 올리기</button><button type="button" class="btn plain" id="noticeNew" hidden>새로 쓰기</button>
+              <button type="button" class="btn plain" id="noticeDel" hidden>지우기</button><small class="err" id="noticeErr"></small></div>
+          </form>
+          <ul class="notices" id="noticeList" style="margin-top:10px"></ul>
+        </section>
+      </div>
+
+      <div class="grid2">
+        <section class="card">
+          <h2>캐릭터 선물 <small>회원에게 캐릭터(없으면 1레벨, 있으면 레벨 업 카드)를 바로 넣어 줘요</small></h2>
+          <form class="form" id="grantForm" novalidate>
+            <label>닉네임<input name="name" maxlength="20" autocomplete="off"></label>
+            <label>캐릭터<select name="id" id="grantChar"></select></label>
+            <label>장수<input name="count" type="number" min="1" max="100" value="1"></label>
+            <div class="row"><button class="btn">선물하기</button><small class="err" id="grantErr"></small></div>
+          </form>
+        </section>
+        <section class="card">
+          <h2>멀티 방 닫기 · 회원 조회</h2>
+          <form class="form" id="roomCloseForm" novalidate>
+            <label>방 참가 코드<input name="code" maxlength="4" inputmode="numeric" autocomplete="off"></label>
+            <div class="row"><button class="btn plain">방 닫기</button><small class="err" id="roomCloseErr"></small></div>
+          </form>
+          <form class="form" id="userForm" novalidate style="margin-top:12px">
+            <label>닉네임<input name="name" maxlength="20" autocomplete="off"></label>
+            <div class="row"><button class="btn">조회</button><small class="err" id="userErr"></small></div>
+          </form>
+          <div id="userInfo"></div>
+        </section>
+      </div>
+
+      <section class="card">
+        <h2>화면 에러 <small>유저 화면에서 난 에러 · 최근 3일 · 같은 메시지끼리 묶음</small></h2>
+        <div class="tools"><button class="btn small plain" id="errReload">↻ 불러오기</button></div>
+        <div class="tablewrap"><table id="errTable"></table></div>
+      </section>
+
+      <section class="card">
+        <h2>뽑기 확률 조정 <small>% 단위 · 여섯 칸(초월 포함)의 합이 100%가 되어야 해요 · 초월은 0.00000001% = 1e-8 · 저장하면 30초 안에 모든 유저에게 적용</small></h2>
+        <div class="scroll"><table class="rates" id="rateTable"></table></div>
+        <div class="row" style="margin-top:10px"><button class="btn" id="rateSave">확률 저장</button><button class="btn plain" id="rateReset">기본값으로</button><small class="err" id="rateErr"></small></div>
+      </section>
+
+    </div>
+
+    <!-- 👥 회원 · 기록 -->
+    <div class="pane" id="pane-people" hidden>
+      <section class="card">
+        <h2>최근 플레이 30건 <small id="recentAt"></small></h2>
+        <div class="tools"><button class="btn small plain" id="recentReload">↻ 최근 플레이 새로고침</button><label class="check"><input type="checkbox" id="recentAuto">30초마다 자동</label></div>
+        <div class="tablewrap"><table id="recent"></table></div>
+      </section>
+
+      <section class="card">
+        <h2>회원 목록 <small>최근 가입 500명 · 머리글을 누르면 정렬</small></h2>
+        <div class="tools"><input id="search" placeholder="닉네임 검색" aria-label="닉네임 검색"><small id="count"></small></div>
+        <div class="tablewrap"><table id="members"></table></div>
+      </section>
+
+      <section class="card">
+        <h2>곡별 통계</h2>
+        <div class="scroll"><table id="songTable"></table></div>
+      </section>
+    </div>
+  </div>
+  <div id="tip" hidden></div>
+
+  <script type="module">
+    import { SONGS, SONG, DIFFS, DIFF_NAME } from '/songs.js';
+    import { CHARS, CHAR, RARITY, BANNERS, INQUIRY, bannerOf, levelOf } from '/rules.js';
+
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => [...document.querySelectorAll(s)];
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    const fmt = (n) => Math.round(n ?? 0).toLocaleString('ko-KR');
+    const compact = (n) => (Math.abs(n) >= 1e8 ? `${+(n / 1e8).toFixed(1)}억` : Math.abs(n) >= 1e4 ? `${+(n / 1e4).toFixed(1)}만` : fmt(n));
+    const time = (t) => (t ? new Date(t).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-');
+    const pct = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '-');
+    const face = (id) => `/assets/faces/${CHAR[id]?.img ?? id}.webp`;
+    const DOW = ['월', '화', '수', '목', '금', '토', '일'];
+    let data = null, status = {}, notices = [];
+
+    async function api(path, body) {
+      const res = await fetch(`/api/${path}`, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : undefined);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw Object.assign(new Error(json.error || '연결이 불안정해요'), { status: res.status });
+      return json;
+    }
+
+    // 탭 (실시간 · 문의 탭은 열 때마다 새로)
+    $('.tabs').onclick = (e) => {
+      const b = e.target.closest('[data-tab]');
+      if (!b) return;
+      $$('.tabs [data-tab]').forEach((x) => x.setAttribute('aria-selected', x === b));
+      $$('.pane').forEach((p) => (p.hidden = p.id !== `pane-${b.dataset.tab}`));
+      if (data && b.dataset.tab === 'live') loadLive();
+      if (data && b.dataset.tab === 'inq') loadInquiries().catch(() => {});
+      try { localStorage.setItem('adminTab', b.dataset.tab); } catch {}
+    };
+    try { $(`.tabs [data-tab="${localStorage.getItem('adminTab')}"]`)?.click(); } catch {}
+
+    /* ---------- 점검 모드 · 미리보기 · 점검 예고 ---------- */
+
+    function renderStatus() {
+      const m = status.maintenance, sc = status.schedule;
+      $('#maintCard').classList.toggle('on', Boolean(m));
+      $('#maintOn').checked = Boolean(m);
+      $('#maintState').textContent = m ? '점검 중 (유저 접속 막힘)' : '정상 운영 중';
+      $('#maintSince').textContent = m ? `${time(m.since)}부터` : '';
+      if (m) $('#maintReason').value = m.reason;
+      $('#previewOn').checked = Boolean(status.preview);
+      $('#stateChip').textContent = m ? '🔴 점검 중' : sc ? '🟠 점검 예고 중' : '🟢 정상 운영';
+      $('#stateChip').classList.toggle('on', Boolean(m));
+      $('#schedCard').classList.toggle('on', Boolean(sc));
+      $('#schedNow').textContent = sc ? `지금 알리는 중: ${time(sc.from)} ~ ${time(sc.to)} · ${sc.msg}` : '지금 알리는 점검 예고가 없어요';
+    }
+    $('#maintSave').onclick = async () => {
+      const on = $('#maintOn').checked;
+      if (on && !confirm('점검 모드를 켜면 유저들이 바로 게임을 못 하게 돼요. 켤까요?')) return;
+      try {
+        status.maintenance = (await api('admin-maintenance', { on, reason: $('#maintReason').value })).maintenance;
+        if (on) status.schedule = null;
+        renderStatus();
+        $('#maintErr').textContent = '저장했어요';
+      } catch (e) {
+        $('#maintErr').textContent = e.message;
+      }
+    };
+    $('#previewOn').onchange = async (e) => {
+      try {
+        status.preview = (await api('admin-preview', { on: e.target.checked })).preview;
+        $('#maintErr').textContent = status.preview ? '이 브라우저에서는 점검 중에도 게임에 들어갈 수 있어요' : '미리보기를 껐어요';
+      } catch (err) {
+        $('#maintErr').textContent = err.message;
+      }
+    };
+    // datetime-local 기본값: 다음 정시부터 2시간
+    const localInput = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60e3).toISOString().slice(0, 16);
+    { const d = new Date(); d.setMinutes(0, 0, 0); d.setHours(d.getHours() + 1); $('#schedFrom').value = localInput(d); d.setHours(d.getHours() + 2); $('#schedTo').value = localInput(d); }
+    $('#schedSend').onclick = async () => {
+      const from = $('#schedFrom').value, to = $('#schedTo').value;
+      if (!from || !to) return ($('#schedErr').textContent = '시작과 끝 시각을 골라 주세요');
+      if (!confirm(`모든 유저에게 '${time(from)} ~ ${time(to)} 점검' 팝업을 띄울까요?`)) return;
+      try {
+        status.schedule = (await api('admin-schedule', { from: new Date(from).toISOString(), to: new Date(to).toISOString(), msg: $('#schedMsg').value })).schedule;
+        renderStatus();
+        $('#schedErr').textContent = '알렸어요 (30초 안에 모든 화면에 떠요)';
+      } catch (e) {
+        $('#schedErr').textContent = e.message;
+      }
+    };
+    $('#schedOff').onclick = async () => {
+      try {
+        await api('admin-schedule', { off: true });
+        status.schedule = null;
+        renderStatus();
+        $('#schedErr').textContent = '알림을 껐어요';
+      } catch (e) {
+        $('#schedErr').textContent = e.message;
+      }
+    };
+
+    /* ---------- 우편: 받는 사람 고르기 (검색 · 여러 명 · 전체) ---------- */
+
+    const chosen = new Set();
+    function renderPicker() {
+      const all = $('#mailEveryone').checked, q = $('#mailSearch').value.trim().toLowerCase();
+      $('#mailChosen').innerHTML = all ? '<span class="none">전체 회원에게 보내요</span>'
+        : chosen.size ? [...chosen].map((n) => `<button type="button" data-un="${esc(n)}" title="빼기">${esc(n)} ✕</button>`).join('') : '<span class="none">아래에서 받는 사람을 골라 주세요</span>';
+      $('#mailSearch').disabled = all;
+      $('#mailPick').hidden = all;
+      const list = (data?.members ?? []).filter((m) => m.username.toLowerCase().includes(q)).slice(0, 300);
+      $('#mailPick').innerHTML = list.map((m) => `<li><label><input type="checkbox" data-pick="${esc(m.username)}" ${chosen.has(m.username) ? 'checked' : ''}>
+        <img src="/assets/avatars/${+m.avatar}.webp" alt="">${esc(m.username)} <small>Lv.${levelOf(m.exp)}</small></label></li>`).join('') || '<li class="no">검색 결과가 없어요 · Enter로 그대로 추가할 수 있어요</li>';
+    }
+    $('#mailEveryone').onchange = renderPicker;
+    $('#mailSearch').oninput = renderPicker;
+    $('#mailSearch').onkeydown = (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const n = e.target.value.trim();
+      if (n) chosen.add(n);
+      e.target.value = '';
+      renderPicker();
+    };
+    $('#mailPick').onchange = (e) => {
+      const n = e.target.dataset.pick;
+      if (!n) return;
+      e.target.checked ? chosen.add(n) : chosen.delete(n);
+      renderPicker();
+    };
+    $('#mailChosen').onclick = (e) => {
+      const b = e.target.closest('[data-un]');
+      if (!b) return;
+      chosen.delete(b.dataset.un);
+      renderPicker();
+    };
+    $('#mailForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target, all = $('#mailEveryone').checked;
+      const body = { all, to: [...chosen], title: f.title.value.trim(), body: f.body.value.trim(), coins: +f.coins.value || 0, gems: +f.gems.value || 0 };
+      if (!body.title) return ($('#mailErr').textContent = '제목을 적어 주세요');
+      if (!all && !chosen.size) return ($('#mailErr').textContent = '받는 사람을 골라 주세요');
+      const gift = body.coins || body.gems ? ` (코인 ${fmt(body.coins)} · 보석 ${fmt(body.gems)})` : '';
+      if (!confirm(`${all ? '전체 회원' : `${chosen.size}명`}에게 보낼까요?${gift}`)) return;
+      try {
+        const r = await api('admin-mail', body);
+        $('#mailErr').textContent = `${fmt(r.sent)}명에게 보냈어요${r.missing ? ` · 없는 닉네임 ${r.missing}개는 건너뜀` : ''}`;
+        f.reset();
+        chosen.clear();
+        $('#mailEveryone').checked = false;
+        renderPicker();
+      } catch (err) {
+        $('#mailErr').textContent = err.message;
+      }
+    };
+
+    /* ---------- 공지사항: 쓰기 · 고치기 · 지우기 ---------- */
+
+    let editing = null;
+    async function loadNotices() {
+      notices = await api('notices');
+      renderNotices();
+    }
+    function renderNotices() {
+      $('#noticeList').innerHTML = notices.map((n) => `<li class="${editing === n.id ? 'on' : ''}" data-nid="${n.id}">
+        <span>${n.version ? `<span class="ver">v${esc(n.version.replace(/^v/i, ''))}</span> ` : ''}${esc(n.title)}</span>
+        <small class="no">${time(n.created_at)}${n.updated_at ? ' · 수정됨' : ''}</small><p>${esc(n.body)}</p></li>`).join('') || '<li class="no">아직 공지가 없어요</li>';
+      $('#noticeSave').textContent = editing ? '고친 내용 저장' : '새 공지 올리기';
+      $('#noticeNew').hidden = $('#noticeDel').hidden = !editing;
+    }
+    $('#noticeList').onclick = (e) => {
+      const li = e.target.closest('[data-nid]');
+      if (!li) return;
+      const n = notices.find((x) => x.id === +li.dataset.nid), f = $('#noticeForm');
+      editing = n.id;
+      f.version.value = n.version;
+      f.title.value = n.title;
+      f.body.value = n.body;
+      $('#noticeErr').textContent = '';
+      renderNotices();
+    };
+    $('#noticeNew').onclick = () => {
+      editing = null;
+      $('#noticeForm').reset();
+      renderNotices();
+    };
+    $('#noticeForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target, body = { version: f.version.value.trim(), title: f.title.value.trim(), body: f.body.value.trim() };
+      if (!body.title) return ($('#noticeErr').textContent = '제목을 적어 주세요');
+      try {
+        await api('admin-notice', editing ? { ...body, id: editing } : body);
+        $('#noticeErr').textContent = editing ? '고쳤어요' : '올렸어요 (유저 홈 공지사항에 빨간 점이 떠요)';
+        editing = null;
+        f.reset();
+        await loadNotices();
+      } catch (err) {
+        $('#noticeErr').textContent = err.message;
+      }
+    };
+    $('#noticeDel').onclick = async () => {
+      if (!editing || !confirm('이 공지를 지울까요? 되돌릴 수 없어요')) return;
+      try {
+        await api('admin-notice-delete', { id: editing });
+        editing = null;
+        $('#noticeForm').reset();
+        $('#noticeErr').textContent = '지웠어요';
+        await loadNotices();
+      } catch (err) {
+        $('#noticeErr').textContent = err.message;
+      }
+    };
+
+
+    /* ---------- v4 운영: 캐릭터 선물 · 방 닫기 · 회원 조회 · 화면 에러 ---------- */
+    $('#grantChar').innerHTML = [6, 5, 4, 3, 2, 1].map((r) => `<optgroup label="${RARITY[r].name}">${CHARS.filter((c) => c.rarity === r)
+      .map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</optgroup>`).join('');
+    $('#grantForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target, name = f.name.value.trim(), id = f.id.value, count = Math.max(1, Math.min(100, +f.count.value || 1));
+      if (!name) return ($('#grantErr').textContent = '닉네임을 적어 주세요');
+      if (!confirm(`${name}님에게 ${CHAR[id].name} ${count}장을 줄까요?`)) return;
+      try {
+        const r = await api('admin-grant', { name, id, count });
+        $('#grantErr').textContent = `보냈어요 · 지금 Lv.${r.level} · 남은 카드 ${r.dup}장`;
+      } catch (err) {
+        $('#grantErr').textContent = err.message;
+      }
+    };
+    $('#roomCloseForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const code = e.target.code.value.trim();
+      if (!/^\d{4}$/.test(code)) return ($('#roomCloseErr').textContent = '숫자 4자리');
+      if (!confirm(`${code}번 방을 닫을까요? 안에 있는 사람은 모두 나가요`)) return;
+      try {
+        await api('admin-room-close', { code });
+        $('#roomCloseErr').textContent = '닫았어요';
+      } catch (err) {
+        $('#roomCloseErr').textContent = err.message;
+      }
+    };
+    $('#userForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const name = e.target.name.value.trim();
+      if (!name) return;
+      try {
+        const u = await api(`admin-user?name=${encodeURIComponent(name)}`);
+        $('#userErr').textContent = '';
+        $('#userInfo').innerHTML = `<p><b>${esc(u.username)}</b> · Lv.${fmt(u.lv)} · 종합 ${compact(u.total)} · 코인 ${fmt(u.coins)} · 보석 ${fmt(u.gems)} · 친구 ${fmt(u.friends)}명</p>
+          <p class="no">가입 ${new Date(u.created_at).toLocaleDateString('ko-KR')} · 마지막 접속 ${u.last_seen ? new Date(u.last_seen).toLocaleString('ko-KR') : '-'} · 연주 ${fmt(u.stats.plays)} · 뽑기 ${fmt(u.stats.pulls)} · 멀티 1등 ${fmt(u.stats.mwins ?? 0)}</p>
+          <p>${u.chars.slice(0, 40).map((c) => `<span class="chip" title="${esc(RARITY[c.rarity].name)}">${esc(c.name)} Lv.${c.lv}</span>`).join(' ')}</p>
+          <div class="tablewrap"><table><thead><tr><th>곡</th><th>난이도</th><th class="n">점수</th><th>랭크</th><th>시각</th></tr></thead><tbody>${u.plays.map((p) => `<tr><td>${esc(SONG[p.song]?.title ?? p.song)}</td>
+            <td>${esc(DIFF_NAME[p.diff] ?? p.diff)}${p.multi ? ' 👥' : ''}</td><td class="n">${fmt(p.score)}</td><td>${esc(p.rank)}</td><td>${new Date(p.played_at).toLocaleString('ko-KR')}</td></tr>`).join('')}</tbody></table></div>`;
+      } catch (err) {
+        $('#userErr').textContent = err.message;
+        $('#userInfo').innerHTML = '';
+      }
+    };
+    async function loadErrors() {
+      try {
+        const r = await api('admin-errors');
+        $('#errTable').innerHTML = `<thead><tr><th>메시지</th><th class="n">횟수</th><th class="n">사람</th><th>어디서</th><th>마지막</th><th>기기</th></tr></thead>
+          <tbody>${r.groups.map((g) => `<tr title="${esc(g.stack ?? '')}"><td>${esc(g.msg)}</td><td class="n">${fmt(g.n)}</td><td class="n">${fmt(g.users)}</td><td>${esc(g.place ?? '')}</td>
+            <td>${new Date(g.last).toLocaleString('ko-KR')}</td><td class="no">${esc((g.ua ?? '').replace(/^Mozilla\/5\.0 /, '').slice(0, 60))}</td></tr>`).join('') || '<tr><td colspan="6" class="no">최근 3일 동안 에러가 없어요 🎉</td></tr>'}</tbody>`;
+      } catch (err) {
+        $('#errTable').innerHTML = `<tr><td class="err">${esc(err.message)}</td></tr>`;
+      }
+    }
+    $('#errReload').onclick = loadErrors;
+
+    /* ---------- 뽑기 확률 ---------- */
+
+    function renderRates() {
+      const cfg = { rates: status.rates ?? {} };
+      $('#rateTable').innerHTML = `<thead><tr><th>배너</th>${[1, 2, 3, 4, 5, 6].map((r) => `<th class="n">${RARITY[r].name} %</th>`).join('')}<th class="n">합계</th><th class="n">천장(회)</th><th>상태</th></tr></thead>
+        <tbody>${BANNERS.map((b0) => {
+          const b = bannerOf(b0.id, cfg), changed = Boolean(status.rates?.[b0.id]);
+          return `<tr data-b="${b.id}"><td>${b.icon} ${esc(b.name)}</td>${b.rates.map((r) => `<td class="n"><input type="number" min="0" max="100" step="any" value="${+(r * 100).toPrecision(8)}" aria-label="${esc(b.name)} 확률"></td>`).join('')}
+            <td class="n sum"></td><td class="n">${b.pity ? `<input type="number" min="10" max="1000" step="1" value="${b.pity}" data-pity aria-label="${esc(b.name)} 천장">` : '<span class="no">없음</span>'}</td>
+            <td>${changed ? '<span class="ok">바꾼 값</span>' : '<span class="no">기본값</span>'}</td></tr>`;
+        }).join('')}</tbody>`;
+      sums();
+    }
+    function sums() {
+      for (const tr of $$('#rateTable tbody tr')) {
+        const s = [...tr.querySelectorAll('input:not([data-pity])')].reduce((a, i) => a + (+i.value || 0), 0), el = tr.querySelector('.sum');
+        el.textContent = `${+s.toFixed(4)}%`;
+        el.classList.toggle('bad', Math.abs(s - 100) > 1e-6);
+      }
+    }
+    $('#rateTable').oninput = sums;
+    $('#rateSave').onclick = async () => {
+      const rates = {};
+      for (const tr of $$('#rateTable tbody tr')) {
+        const r = [...tr.querySelectorAll('input:not([data-pity])')].map((i) => Math.round((+i.value || 0) * 1e10) / 1e12), pity = tr.querySelector('[data-pity]');
+        rates[tr.dataset.b] = { rates: r, ...(pity ? { pity: +pity.value } : {}) };
+      }
+      if (!confirm('뽑기 확률을 바꿀까요? 30초 안에 모든 유저에게 적용돼요')) return;
+      try {
+        status.rates = (await api('admin-rates', { rates })).rates;
+        renderRates();
+        $('#rateErr').textContent = '저장했어요';
+      } catch (e) {
+        $('#rateErr').textContent = e.message;
+      }
+    };
+    $('#rateReset').onclick = async () => {
+      if (!confirm('모든 배너 확률을 기본값으로 되돌릴까요?')) return;
+      try {
+        status.rates = (await api('admin-rates', { reset: true })).rates;
+        renderRates();
+        $('#rateErr').textContent = '기본값으로 되돌렸어요';
+      } catch (e) {
+        $('#rateErr').textContent = e.message;
+      }
+    };
+
+    /* ---------- 💬 문의: 주제별 · 상태별 · 검색 · 자세히 보기(보낸 회원 정보) · 답변 · 주제 옮기기 ---------- */
+
+    let inq = { inquiries: [], songs: [] }, inqKind = 'all', inqStatus = 'open', inqId = null;
+    async function loadInquiries() {
+      inq = await api('admin-inquiries');
+      renderInquiries();
+    }
+    function renderInquiries() {
+      const all = inq.inquiries, open = all.filter((x) => x.status === 'open');
+      const cnt = (k, list) => (k === 'all' ? list : list.filter((x) => x.kind === k)).length;
+      $('#inqDot').hidden = !open.length;
+      $('#inqDot').textContent = open.length;
+      $('#inqKinds').innerHTML = [['all', '전체'], ...Object.entries(INQUIRY)].map(([k, name]) => `<button type="button" role="tab" data-k="${k}" aria-selected="${k === inqKind}">
+        ${name} <small>${fmt(cnt(k, all))}</small>${cnt(k, open) ? `<i title="답변 대기">${cnt(k, open)}</i>` : ''}</button>`).join('');
+      $$('#inqStatus button').forEach((b) => b.setAttribute('aria-selected', b.dataset.s === inqStatus));
+      const q = $('#inqSearch').value.trim().toLowerCase();
+      const rows = all.filter((x) => (inqKind === 'all' || x.kind === inqKind) && (inqStatus === 'all' || x.status === inqStatus)
+        && (!q || `${x.title} ${x.body} ${x.username ?? ''}`.toLowerCase().includes(q)));
+      if (!all.some((x) => x.id === inqId)) inqId = rows[0]?.id ?? null;
+      $('#inqCount').textContent = `${fmt(rows.length)}건 보는 중 · 답변 대기 ${fmt(open.length)}건 · 전체 ${fmt(all.length)}건`;
+      $('#inqList').innerHTML = rows.map((x) => `<li class="${x.id === inqId ? 'on' : ''}${x.status === 'open' ? ' open' : ''}" data-q="${x.id}">
+        <b>${esc(x.title)}</b><small>${time(x.created_at)}</small>
+        <span class="meta"><span class="kind ${esc(x.kind)}">${INQUIRY[x.kind] ?? esc(x.kind)}</span><small>${x.username ? esc(x.username) : '탈퇴한 회원'}</small>
+          ${x.status === 'done' ? '<small class="ok">✔ 답변 완료</small>' : ''}</span></li>`).join('')
+        || '<li class="no" style="cursor:default">여기에 맞는 문의가 없어요</li>';
+      renderInqDetail();
+      hbars($('#songReqs'), inq.songs.map((s) => ({ label: s.title, value: s.n, text: `${fmt(s.n)}번`, tip: `${fmt(s.n)}번 신청` })));
+      if (!inq.songs.length) $('#songReqs').innerHTML = '<li class="no">아직 노래 신청이 없어요</li>';
+    }
+    function renderInqDetail() {
+      const x = inq.inquiries.find((v) => v.id === inqId), box = $('#inqDetail');
+      if (!x) return void (box.innerHTML = '<p class="no">왼쪽에서 문의를 골라 주세요</p>');
+      box.innerHTML = `<div class="row"><span class="kind ${esc(x.kind)}">${INQUIRY[x.kind] ?? esc(x.kind)}</span>
+          <span class="${x.status === 'done' ? 'ok' : 'no'}">${x.status === 'done' ? `✔ 답변 완료 · ${time(x.replied_at)}` : '● 답변 대기'}</span>
+          <small>${new Date(x.created_at).toLocaleString('ko-KR')}</small>
+          <label class="kind-pick">주제 옮기기 <select id="inqKindSel">${Object.entries(INQUIRY).map(([k, n]) => `<option value="${k}"${k === x.kind ? ' selected' : ''}>${n}</option>`).join('')}</select></label></div>
+        <h3>${esc(x.title)}</h3>
+        <p class="body${x.body ? '' : ' none'}">${x.body ? esc(x.body) : '(내용 없이 제목만 보냈어요)'}</p>
+        ${x.username ? `<div class="who"><img src="/assets/avatars/${+x.avatar}.webp" alt=""><b>${esc(x.username)} <small>Lv.${levelOf(x.exp)} · ${fmt(x.plays)}번 연주</small></b>
+          <small>가입 ${time(x.joined)} · 마지막 접속 ${time(x.last_seen)}</small>
+          ${x.user_total > 1 ? `<button type="button" data-same="${esc(x.username)}">이 회원의 문의 ${fmt(x.user_total)}건 모두 보기</button>` : ''}</div>`
+          : '<p class="no">탈퇴한 회원의 문의예요 (답변을 우편으로 보낼 수 없어요)</p>'}
+        ${x.reply ? `<p class="replied">↳ 보낸 답변: ${esc(x.reply)}</p>` : ''}
+        <div class="reply-form">
+          <textarea id="replyText" rows="4" maxlength="1000" placeholder="답변 (회원 우편함으로 가요)"></textarea>
+          <div class="gift">선물 <input type="number" id="replyCoins" min="0" max="1000000" step="100" value="0" aria-label="선물 코인"> 코인
+            <input type="number" id="replyGems" min="0" max="100000" step="10" value="0" aria-label="선물 보석"> 보석</div>
+          <div class="row"><button class="btn" id="replySend">${x.status === 'done' ? '다시 답변하기' : '답변 보내기'}</button><small class="err" id="replyErr"></small></div>
+        </div>`;
+    }
+    $('#inqKinds').onclick = (e) => {
+      const b = e.target.closest('[data-k]');
+      if (!b) return;
+      inqKind = b.dataset.k;
+      renderInquiries();
+    };
+    $('#inqStatus').onclick = (e) => {
+      const b = e.target.closest('[data-s]');
+      if (!b) return;
+      inqStatus = b.dataset.s;
+      renderInquiries();
+    };
+    $('#inqSearch').oninput = renderInquiries;
+    $('#inqList').onclick = (e) => {
+      const li = e.target.closest('[data-q]');
+      if (!li) return;
+      inqId = +li.dataset.q;
+      renderInquiries();
+      if (matchMedia('(max-width: 760px)').matches) $('#inqDetail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    $('#inqDetail').addEventListener('click', async (e) => {
+      const same = e.target.closest('[data-same]');
+      if (same) {
+        $('#inqSearch').value = same.dataset.same;
+        inqKind = inqStatus = 'all';
+        return renderInquiries();
+      }
+      if (!e.target.closest('#replySend')) return;
+      const reply = $('#replyText').value.trim(), coins = +$('#replyCoins').value || 0, gems = +$('#replyGems').value || 0;
+      if (!reply && !coins && !gems && !confirm('답변 없이 \'답변 완료\'로만 표시할까요?')) return;
+      try {
+        await api('admin-reply', { id: inqId, reply, coins, gems });
+        await loadInquiries();
+        $('#replyErr').textContent = reply || coins || gems ? '보냈어요 (회원 우편함으로 갔어요)' : '답변 완료로 표시했어요';
+      } catch (err) {
+        $('#replyErr').textContent = err.message;
+      }
+    });
+    $('#inqDetail').addEventListener('change', async (e) => {
+      if (e.target.id !== 'inqKindSel') return;
+      try {
+        await api('admin-inquiry-kind', { id: inqId, kind: e.target.value });
+        await loadInquiries();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    /* ---------- 🟢 실시간: 지금 접속 중인 사람(게스트 포함) · 지금 보는 화면 · 멀티 방 ---------- */
+
+    const SCREEN = { title: '타이틀 · 로그인', home: '홈', songs: '곡 고르는 중', team: '팀 편성', gacha: '뽑기', shop: '상점', quests: '업적', rank: '랭킹', result: '결과 화면', multi: '멀티 로비' };
+    const screenOf = (s) => {
+      const [k, a, b] = String(s ?? '').split(':');
+      if (k === 'game') return ['play', `🎵 ${SONG[a]?.title ?? a} ${DIFF_NAME[b] ?? ''} 연주 중`];
+      if (k === 'mgame') return ['multi', `👥 멀티 대결 중 (방 ${a})`];
+      if (k === 'room') return ['multi', `👥 멀티 방 ${a}`];
+      return ['', SCREEN[k] ?? (k || '-')];
+    };
+    const ago = (t) => {
+      const s = Math.max(0, Math.round((Date.now() - new Date(t)) / 1000));
+      return s < 60 ? `${s}초 전` : `${Math.floor(s / 60)}분 전`;
+    };
+    const stay = (t) => {
+      const m = Math.max(0, Math.floor((Date.now() - new Date(t)) / 60000));
+      return m < 60 ? `${m}분째` : `${Math.floor(m / 60)}시간 ${m % 60}분째`;
+    };
+    let live = { people: [], rooms: [] }, liveTick = 0;
+    async function loadLive() {
+      try {
+        live = await api('admin-online');
+        renderLive();
+      } catch (e) {
+        $('#liveAt').textContent = e.message;
+      }
+    }
+    function renderLive() {
+      const p = live.people, members = p.filter((x) => x.username), playing = p.filter((x) => /^m?game:/.test(x.screen)), pc = p.filter((x) => x.device === 'pc');
+      $('#liveAt').textContent = `${new Date().toLocaleTimeString('ko-KR')} 기준`;
+      $('#liveDot').hidden = !p.length;
+      $('#liveDot').textContent = p.length;
+      $('#liveTiles').innerHTML = [
+        tile('<span class="dotlive"></span>지금 접속 중', fmt(p.length), { note: `회원 ${fmt(members.length)} · 게스트 ${fmt(p.length - members.length)}`, cls: 'live' }),
+        tile('지금 연주 중', fmt(playing.length), { note: `그중 멀티 대결 ${fmt(p.filter((x) => x.screen.startsWith('mgame:')).length)}명` }),
+        tile('멀티 방', fmt(live.rooms.length), { note: `${fmt(live.rooms.reduce((a, r) => a + (r.players?.length ?? 0), 0))}명 참여 중` }),
+        tile('기기', `🖥 ${fmt(pc.length)} · 📱 ${fmt(p.length - pc.length)}`, { note: 'PC(마우스 · 큰 화면) · 모바일' }),
+      ].join('');
+      const q = $('#liveSearch').value.trim().toLowerCase(), f = $('#liveFilter').value;
+      const rows = p.filter((x) => (f === 'all' || (f === 'member' ? x.username : f === 'guest' ? !x.username : /^m?game:/.test(x.screen)))
+        && (!q || `${x.username ?? '게스트'} ${screenOf(x.screen)[1]}`.toLowerCase().includes(q)));
+      $('#liveTable').innerHTML = `<thead><tr><th>누구</th><th>지금 화면</th><th>기기</th><th>이번 접속</th><th>마지막 신호</th></tr></thead>
+        <tbody>${rows.map((x) => {
+          const [cls, label] = screenOf(x.screen);
+          return `<tr><td>${x.username ? `<img src="/assets/avatars/${+x.avatar}.webp" alt="">${esc(x.username)} <small class="no">Lv.${levelOf(x.exp)}</small>` : '<span class="badge guest">게스트</span>'}</td>
+            <td>${cls ? `<span class="badge ${cls}">${esc(label)}</span>` : esc(label)}</td><td>${x.device === 'pc' ? '🖥 PC' : '📱 모바일'}</td>
+            <td>${stay(x.since)}</td><td class="no">${ago(x.seen_at)}</td></tr>`;
+        }).join('') || '<tr><td colspan="5" class="no">지금 접속 중인 사람이 없어요</td></tr>'}</tbody>`;
+      $('#roomTable').innerHTML = `<thead><tr><th>방 코드</th><th>상태</th><th>방장</th><th>참가자</th><th>곡</th><th>만든 시각</th></tr></thead>
+        <tbody>${live.rooms.map((r) => `<tr><td><b>${esc(r.code)}</b></td>
+          <td>${r.status === 'playing' ? '<span class="badge play">연주 중</span>' : r.status === 'done' ? '결과 보는 중' : '대기 중'}</td>
+          <td>${esc(r.host ?? '-')}</td><td>${(r.players ?? []).map(esc).join(', ')} <small class="no">(${(r.players ?? []).length}/6)</small></td>
+          <td>${esc(SONG[r.song]?.title ?? r.song)} · ${esc(DIFF_NAME[r.diff] ?? r.diff)}</td><td>${time(r.created_at)}</td></tr>`).join('')
+          || '<tr><td colspan="6" class="no">열려 있는 방이 없어요</td></tr>'}</tbody>`;
+    }
+    $('#liveReload').onclick = loadLive;
+    $('#liveSearch').oninput = $('#liveFilter').onchange = renderLive;
+    // 실시간 탭을 보고 있으면 10초마다, 아니면 1분마다 (탭 위 숫자)
+    setInterval(() => {
+      if (document.hidden || $('#dash').hidden || !$('#liveAuto').checked) return;
+      if (!$('#pane-live').hidden || ++liveTick % 6 === 0) loadLive();
+    }, 10000);
+
+    /* ---------- 불러오기 ---------- */
+
+    async function loadStats() {
+      try {
+        const [stats, st] = await Promise.all([api('admin-stats'), api('status')]);
+        loadErrors();
+        data = stats;
+        status = st;
+        $('#login').hidden = true;
+        $('#dash').hidden = false;
+        render();
+        renderStatus();
+        renderRates();
+        renderPicker();
+        loadInquiries().catch(() => {});
+        loadNotices().catch(() => {});
+        loadLive();
+      } catch (e) {
+        if (e.status !== 401) alert(e.message);
+        $('#dash').hidden = true;
+        $('#login').hidden = false;
+      }
+    }
+
+    $('#login form').onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      try {
+        await api('admin-login', { username: f.username.value.trim(), password: f.password.value });
+        f.reset();
+        $('#login .err').textContent = '';
+        loadStats();
+      } catch (err) {
+        $('#login .err').textContent = err.message;
+      }
+    };
+    $('#logout').onclick = async () => { await api('admin-logout', {}).catch(() => {}); location.reload(); };
+    $('#reload').onclick = loadStats;
+
+    /* ---------- 차트 ---------- */
+
+    // 14개 점 흐름선: 회색 선 + 오늘 점만 강조색
+    function spark(values) {
+      const max = Math.max(1, ...values), w = 100, h = 24, step = w / (values.length - 1 || 1);
+      const pts = values.map((v, i) => [i * step, h - (v / max) * h]);
+      const [lx, ly] = pts.at(-1);
+      return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts.map((p) => p.join(',')).join(' ')}" fill="none" stroke="var(--deemph)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+        <circle cx="${lx}" cy="${ly}" r="3" fill="var(--series)" stroke="var(--surface)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
+    }
+    // 숫자 카드. delta: 어제와 비교 (올라가면 좋음 = 초록 ▲ · 내려가면 빨강 ▼, 글자와 같이)
+    function tile(label, value, { delta, unit = '', note, trend, alert, cls = '' } = {}) {
+      const d = delta === undefined ? (note ? `<span class="delta">${note}</span>` : '')
+        : `<span class="delta ${delta > 0 ? 'up' : delta < 0 ? 'down' : ''}">${delta > 0 ? '▲' : delta < 0 ? '▼' : '–'} 어제보다 ${delta > 0 ? '+' : ''}${fmt(delta)}${unit}</span>`;
+      return `<div class="tile card${alert ? ' alert' : ''} ${cls}"><span class="lb">${label}</span><b>${value}</b>${d}${trend ? spark(trend) : ''}</div>`;
+    }
+
+    // 세로 막대: 한 차트 한 지표 · 가장 큰 날과 오늘만 숫자, 나머지는 툴팁 (모든 값은 아래 표에도)
+    function vbars(el, rows, key, unit) {
+      const max = Math.max(1, ...rows.map((r) => r[key])), top = rows.reduce((a, r, i) => (r[key] > rows[a][key] ? i : a), 0);
+      const nice = Math.ceil(max / (max > 10 ? 5 : 1)) * (max > 10 ? 5 : 1);
+      el.innerHTML = `<div class="vchart">${[1, 0.5].map((f) => `<div class="gl" style="bottom:${f * 100}%"><span>${fmt(nice * f)}</span></div>`).join('')}
+        <div class="vbars">${rows.map((r, i) => `<div class="vbar" tabindex="0" data-tip="${esc(r.day)}|${fmt(r[key])}${unit}">
+          <i style="height:${(r[key] / nice) * 100}%${r[key] ? '' : ';min-height:0'}"></i>${(i === top && r[key]) || (i === rows.length - 1) ? `<em style="bottom:${(r[key] / nice) * 100}%">${fmt(r[key])}</em>` : ''}</div>`).join('')}</div></div>
+        <div class="xlabels">${rows.map((r, i) => `<span>${i === rows.length - 1 ? '오늘' : `${+r.day.slice(3)}일`}</span>`).join('')}</div>`;
+    }
+
+    function hbars(el, rows) {
+      const max = Math.max(1, ...rows.map((r) => r.value));
+      el.innerHTML = rows.map((r) => `<li tabindex="0" data-tip="${esc(r.label)}|${esc(r.tip)}">
+        <span class="lb">${r.img ? `<img src="${r.img}" alt="">` : ''}${esc(r.label)}</span>
+        <span class="tr"><i style="width:${(r.value / max) * 100}%"></i></span><span class="v">${r.text ?? fmt(r.value)}</span></li>`).join('');
+    }
+
+    // 요일 × 시간 히트맵: 파랑 한 색의 5단계 (0은 회색) + 범례
+    function heatmap(cells) {
+      const grid = Array.from({ length: 7 }, () => Array(24).fill(0));
+      for (const c of cells) grid[c.dow - 1][c.h] = c.n;
+      const max = Math.max(1, ...grid.flat()), bin = (n) => (n ? Math.min(5, 1 + Math.floor((n / max) * 4.999)) : 0);
+      $('#heat').innerHTML = `<span></span>${Array.from({ length: 24 }, (_, h) => `<span>${h % 3 ? '' : h}</span>`).join('')}` +
+        grid.map((row, d) => `<span>${DOW[d]}</span>${row.map((n, h) => `<i class="cell" tabindex="0" style="background:var(--h${bin(n)})" data-tip="${DOW[d]}요일 ${h}시|${fmt(n)}회"></i>`).join('')}`).join('');
+      $('#heatLegend').innerHTML = `<i style="background:var(--h0)"></i>0 ${[1, 2, 3, 4, 5].map((b) => `<i style="background:var(--h${b})"></i>`).join('')} 많음 (가장 많은 칸 ${fmt(max)}회)`;
+      $('#heatTable').innerHTML = `<thead><tr><th>요일</th>${Array.from({ length: 24 }, (_, h) => `<th class="n">${h}시</th>`).join('')}<th class="n">합계</th></tr></thead>
+        <tbody>${grid.map((row, d) => `<tr><td>${DOW[d]}</td>${row.map((n) => `<td class="n">${n || ''}</td>`).join('')}<td class="n">${fmt(row.reduce((a, b) => a + b, 0))}</td></tr>`).join('')}</tbody>`;
+    }
+
+    const HOF = [
+      ['total', '🏆 종합 점수', (v) => compact(v)], ['firsts', '👑 곡 1위 개수', (v) => `${fmt(v)}곡`], ['level', '⭐ 레벨', (v) => `Lv.${levelOf(v)}`],
+      ['plays', '🎵 연주 횟수', (v) => `${fmt(v)}회`], ['combo', '🔥 최대 콤보', (v) => fmt(v)], ['fc', '💎 풀콤보', (v) => `${fmt(v)}회`],
+      ['chars', '🃏 친구 수집', (v) => `${fmt(v)}/${CHARS.length}`], ['pulls', '🎲 뽑기 횟수', (v) => `${fmt(v)}회`],
+      ['mwins', '👥 멀티 1등', (v) => `${fmt(v)}번`], ['gifts', '💝 친구 선물', (v) => `${fmt(v)}번`],
+    ];
+
+    function render() {
+      const t = data.totals, days = data.days, today = days.at(-1) ?? {}, yday = days.at(-2) ?? {};
+      $('#updated').textContent = `${new Date().toLocaleString('ko-KR')} 기준`;
+      const clearRate = t.plays ? Math.round((t.clears / t.plays) * 100) : 0;
+      $('#tilesToday').innerHTML = [
+        tile('<span class="dotlive"></span>지금 접속 중', fmt(t.online), { note: `회원 ${fmt(t.online_members)} · 게스트 ${fmt(t.online - t.online_members)} · 실시간 탭에서 자세히`, cls: 'live' }),
+        tile('오늘 가입', fmt(t.users_today), { delta: t.users_today - (yday.signups ?? 0), unit: '명', trend: days.map((d) => d.signups) }),
+        tile('오늘 연주한 회원', fmt(today.players ?? 0), { delta: (today.players ?? 0) - (yday.players ?? 0), unit: '명', trend: days.map((d) => d.players) }),
+        tile('오늘 플레이', fmt(t.plays_today), { delta: t.plays_today - (yday.plays ?? 0), unit: '회', trend: days.map((d) => d.plays) }),
+        tile('오늘 멀티 플레이', fmt(t.multi_today), { note: `지금 열린 방 ${fmt(t.rooms_now)}개 · 누적 ${fmt(t.multi_plays)}회` }),
+        tile('답변 대기 문의', fmt(t.open_inquiries), { note: t.open_inquiries ? '💬 문의 탭에서 답변해 주세요' : '모두 답변했어요', alert: t.open_inquiries > 0 }),
+      ].join('');
+      $('#tilesActive').innerHTML = [
+        tile('24시간 안에 접속', fmt(t.active_today), { note: `회원의 ${pct(t.active_today, t.users)}` }),
+        tile('7일 안에 접속', fmt(t.wau), { note: `회원의 ${pct(t.wau, t.users)}` }),
+        tile('30일 안에 접속', fmt(t.mau), { note: `회원의 ${pct(t.mau, t.users)}` }),
+        tile('재방문율', pct(t.back, t.back_base), { note: `최근 1주 가입 ${fmt(t.back_base)}명 중 하루 뒤에 또 온 ${fmt(t.back)}명` }),
+        tile('회원 1명당 플레이', (t.users ? (t.plays - t.guest_plays) / t.users : 0).toFixed(1), { note: '게스트 플레이 빼고' }),
+      ].join('');
+      $('#tilesTotal').innerHTML = [
+        tile('총 회원', fmt(t.users), { note: `최근 14일 +${fmt(days.reduce((a, d) => a + d.signups, 0))}명` }),
+        tile('총 플레이', compact(t.plays), { note: `클리어율 ${clearRate}% · 게스트 ${pct(t.guest_plays, t.plays)}` }),
+        tile('총 뽑기', compact(t.pulls), { note: `회원 1명당 ${fmt(t.users ? t.pulls / t.users : 0)}회` }),
+        tile('전설 이상 등장', compact(t.legends), { note: `그중 신화 ${fmt(t.mythics)}번 · 뽑기의 ${pct(t.legends, t.pulls)}` }),
+        tile('상점 구매', compact(t.buys), { note: '회원 누적' }),
+        tile('보유 코인 합계', compact(t.coins), { note: `1명당 ${compact(t.users ? t.coins / t.users : 0)}` }),
+        tile('보유 보석 합계', compact(t.gems), { note: `1명당 ${compact(t.users ? t.gems / t.users : 0)}` }),
+        tile('친구 관계', fmt(t.friendships ?? 0), { note: `대기 중인 신청 ${fmt(t.friend_requests ?? 0)}건` }),
+        tile('친구 선물', compact(t.gifts ?? 0), { note: `오늘 ${fmt(t.gifts_today ?? 0)}번` }),
+        tile('초월 보유 회원', fmt(t.gods ?? 0), { note: '창조신 · 파괴신 (0.00000001%)' }),
+        tile('최고 레벨', `Lv.${fmt(t.max_lv ?? 1)}`, { note: `멀티 방에 있는 사람 ${fmt(t.in_rooms ?? 0)}명` }),
+      ].join('');
+
+      // 레벨 분포 · 랭크 분포 · 문의 주제
+      const LV = [[1, 9], [10, 49], [50, 99], [100, 199], [200, 399], [400, 699], [700, 999], [1000, Infinity]];
+      hbars($('#levelBars'), LV.map(([a, b]) => {
+        const n = data.levels.filter((l) => l.lv >= a && l.lv <= b).reduce((s, l) => s + l.n, 0);
+        return { label: b === Infinity ? `Lv.${a} 이상` : `Lv.${a}~${b}`, value: n, text: `${fmt(n)}명`, tip: `${fmt(n)}명 · 회원의 ${pct(n, t.users)}` };
+      }));
+      const byRank = Object.fromEntries(data.ranks.map((r) => [r.rank, r.n])), rankSum = data.ranks.reduce((s, r) => s + r.n, 0);
+      hbars($('#rankBars'), ['S', 'A', 'B', 'C', 'D'].map((k) => ({ label: `${k} 랭크`, value: byRank[k] ?? 0, text: pct(byRank[k] ?? 0, rankSum), tip: `${fmt(byRank[k] ?? 0)}회` })));
+      const byKind = Object.fromEntries(data.kinds.map((k) => [k.kind, k]));
+      hbars($('#kindBars'), Object.entries(INQUIRY).map(([k, name]) => {
+        const x = byKind[k] ?? { n: 0, open: 0 };
+        return { label: name, value: x.n, text: `${fmt(x.n)}건${x.open ? ` <small>· 대기 ${fmt(x.open)}</small>` : ''}`, tip: `${fmt(x.n)}건 · 답변 대기 ${fmt(x.open)}건` };
+      }));
+
+      vbars($('#chSignups'), days, 'signups', '명 가입');
+      vbars($('#chPlayers'), days, 'players', '명 연주');
+      vbars($('#chPlays'), days, 'plays', '회 플레이');
+      $('#dayTable').innerHTML = `<thead><tr><th>날짜</th>${days.map((d) => `<th class="n">${esc(d.day)}</th>`).join('')}</tr></thead>
+        <tbody>${[['가입', 'signups'], ['연주한 회원', 'players'], ['플레이', 'plays']].map(([n, k]) => `<tr><td>${n}</td>${days.map((d) => `<td class="n">${fmt(d[k])}</td>`).join('')}</tr>`).join('')}</tbody>`;
+      heatmap(data.heat);
+
+      const byDiff = Object.fromEntries(data.diffs.map((d) => [d.diff, d]));
+      hbars($('#diffBars'), DIFFS.map((d) => {
+        const x = byDiff[d] ?? { plays: 0, clears: 0 };
+        return { label: DIFF_NAME[d], value: x.plays, text: `${fmt(x.plays)}회 <small>· 클리어 ${pct(x.clears, x.plays)}</small>`, tip: `${fmt(x.plays)}회 · 클리어 ${pct(x.clears, x.plays)}` };
+      }));
+
+      const bySong = Object.fromEntries(data.songs.map((s) => [s.song, s]));
+      const songRows = SONGS.map((s) => ({ s, st: bySong[s.id] ?? { plays: 0, clears: 0, avg_raw: 0, best: 0 } }));
+      hbars($('#songBars'), [...songRows].sort((a, b) => b.st.plays - a.st.plays)
+        .map(({ s, st }) => ({ label: s.title, value: st.plays, img: `/assets/${s.jacket ?? `jackets/${s.id}`}.webp`, tip: `${fmt(st.plays)}회 · 클리어 ${pct(st.clears, st.plays)}` })));
+
+      // 캐릭터 보유: 등급마다 묶어서 (신화 → 일반)
+      const owners = Object.fromEntries(data.owners.map((o) => [o.id, o.owners]));
+      $('#charGroups').innerHTML = [6, 5, 4, 3, 2, 1].map((r) => {
+        const list = CHARS.filter((c) => c.rarity === r), sum = list.reduce((a, c) => a + (owners[c.id] ?? 0), 0);
+        return `<div class="rgroup"><h3><span class="rb" style="background:${RARITY[r].color}">${RARITY[r].name}</span> ${list.length}명
+          <small>· 한 명이라도 가진 회원 수 합계 ${fmt(sum)} · 친구 1명당 평균 회원의 ${pct(sum / list.length, t.users)}</small></h3><ul class="hbars" data-r="${r}"></ul></div>`;
+      }).join('');
+      for (const ul of $$('#charGroups .hbars')) {
+        const r = +ul.dataset.r;
+        hbars(ul, CHARS.filter((c) => c.rarity === r).sort((a, b) => (owners[b.id] ?? 0) - (owners[a.id] ?? 0)).map((c) => ({
+          label: `${c.badge ? `${c.badge} ` : ''}${c.name}`, value: owners[c.id] ?? 0, img: face(c.id),
+          text: `${fmt(owners[c.id] ?? 0)}명`, tip: `${fmt(owners[c.id] ?? 0)}명 보유 · 회원의 ${pct(owners[c.id] ?? 0, t.users)}`,
+        })));
+      }
+
+      $('#hof').innerHTML = HOF.map(([k, title, show]) => {
+        const rows = data.hof.filter((h) => h.k === k);
+        return `<section class="card"><h3>${title}</h3><ol>${rows.map((h, i) => `<li><span class="m">${['🥇', '🥈', '🥉'][i] ?? i + 1}</span>
+          <img src="/assets/avatars/${+h.avatar}.webp" alt=""><span class="n">${esc(h.username)}</span><span class="v">${show(h.v)}</span></li>`).join('') || '<li class="none">아직 기록이 없어요</li>'}</ol></section>`;
+      }).join('');
+
+      $('#songTable').innerHTML = `<thead><tr><th>곡</th><th>작곡가</th><th class="n">플레이</th><th class="n">클리어</th><th class="n">클리어율</th><th class="n">평균 정확도</th><th class="n">최고 점수</th></tr></thead>
+        <tbody>${songRows.map(({ s, st }) => `<tr><td>${esc(s.title)}</td><td>${esc(s.composer)}</td><td class="n">${fmt(st.plays)}</td><td class="n">${fmt(st.clears)}</td>
+        <td class="n">${pct(st.clears, st.plays)}</td><td class="n">${st.plays ? `${(st.avg_raw / 10000).toFixed(1)}%` : '-'}</td><td class="n">${fmt(st.best)}</td></tr>`).join('')}</tbody>`;
+
+      renderMembers();
+      renderRecent(data.recent);
+    }
+
+    // 최근 플레이 (따로 새로고침 · 30초 자동)
+    function renderRecent(rows) {
+      $('#recentAt').textContent = `${new Date().toLocaleTimeString('ko-KR')} 기준`;
+      $('#recent').innerHTML = `<thead><tr><th>시간</th><th>플레이어</th><th>곡</th><th>난이도</th><th class="n">점수</th><th>랭크</th><th>결과</th></tr></thead>
+        <tbody>${rows.map((r) => `<tr><td>${time(r.played_at)}</td><td>${r.username ? esc(r.username) : '<span class="no">게스트</span>'}</td>
+        <td>${esc(SONG[r.song]?.title ?? r.song)}</td><td>${esc(DIFF_NAME[r.diff] ?? r.diff)}</td><td class="n">${fmt(r.score)}</td><td>${esc(r.rank)}</td>
+        <td class="${r.cleared ? 'ok' : 'no'}">${r.cleared ? '클리어' : '실패'}${r.multi ? ' <span class="badge multi">멀티</span>' : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="no">아직 플레이 기록이 없어요</td></tr>'}</tbody>`;
+    }
+    async function reloadRecent() {
+      try {
+        renderRecent(await api('admin-recent'));
+      } catch (e) {
+        $('#recentAt').textContent = e.message;
+      }
+    }
+    $('#recentReload').onclick = reloadRecent;
+    let autoT = null;
+    $('#recentAuto').onchange = (e) => {
+      clearInterval(autoT);
+      if (e.target.checked) autoT = setInterval(() => !document.hidden && reloadRecent(), 30000);
+    };
+
+    // 회원 목록: 검색 + 머리글 눌러 정렬
+    const COLS = [
+      ['username', '닉네임'], ['created_at', '가입일'], ['last_seen', '마지막 접속'], ['exp', '레벨', true], ['plays', '플레이', true],
+      ['clears', '클리어', true], ['s_ranks', 'S랭크', true], ['max_combo', '최대 콤보', true], ['power', '팀 점수', true],
+      ['chars', '친구', true], ['pulls', '뽑기', true], ['coins', '코인', true], ['gems', '보석', true],
+    ];
+    let sort = { key: 'created_at', dir: -1 };
+    function renderMembers() {
+      const q = $('#search').value.trim().toLowerCase();
+      const rows = data.members.filter((m) => m.username.toLowerCase().includes(q))
+        .sort((a, b) => (a[sort.key] > b[sort.key] ? 1 : a[sort.key] < b[sort.key] ? -1 : 0) * sort.dir);
+      $('#count').textContent = `${fmt(rows.length)}명 / 전체 ${fmt(data.members.length)}명`;
+      $('#members').innerHTML = `<thead><tr>${COLS.map(([k, label, n]) => `<th data-k="${k}" class="${n ? 'n' : ''}"
+        ${sort.key === k ? `aria-sort="${sort.dir > 0 ? 'ascending' : 'descending'}"` : ''}>${label}</th>`).join('')}</tr></thead>
+        <tbody>${rows.map((m) => `<tr><td><img src="/assets/avatars/${+m.avatar}.webp" alt="">${esc(m.username)}</td><td>${time(m.created_at)}</td><td>${time(m.last_seen)}</td>
+        <td class="n">Lv.${levelOf(m.exp)}</td><td class="n">${fmt(m.plays)}</td><td class="n">${fmt(m.clears)}</td><td class="n">${fmt(m.s_ranks)}</td><td class="n">${fmt(m.max_combo)}</td>
+        <td class="n">${fmt(m.power)}</td><td class="n">${fmt(m.chars)}/${CHARS.length}</td>
+        <td class="n">${fmt(m.pulls)}</td><td class="n">${fmt(m.coins)}</td><td class="n">${fmt(m.gems)}</td></tr>`).join('') || `<tr><td colspan="${COLS.length}" class="no">회원이 없어요</td></tr>`}</tbody>`;
+    }
+    $('#search').oninput = renderMembers;
+    $('#members').onclick = (e) => {
+      const th = e.target.closest('th');
+      if (!th) return;
+      sort = { key: th.dataset.k, dir: sort.key === th.dataset.k ? -sort.dir : -1 };
+      renderMembers();
+    };
+
+    // 막대 · 칸 툴팁 (마우스 · 키보드 포커스 모두)
+    const tip = $('#tip');
+    function showTip(el, x, y) {
+      const [label, value] = el.dataset.tip.split('|');
+      tip.replaceChildren(Object.assign(document.createElement('b'), { textContent: value }), document.createTextNode(label));
+      tip.hidden = false;
+      tip.style.left = `${Math.max(8, Math.min(x + 12, innerWidth - tip.offsetWidth - 8))}px`;
+      tip.style.top = `${Math.max(8, y - tip.offsetHeight - 10)}px`;
+    }
+    document.addEventListener('pointermove', (e) => {
+      const el = e.target.closest('[data-tip]');
+      el ? showTip(el, e.clientX, e.clientY) : (tip.hidden = true);
+    });
+    document.addEventListener('focusin', (e) => {
+      const el = e.target.closest('[data-tip]');
+      if (!el) return (tip.hidden = true);
+      const r = el.getBoundingClientRect();
+      showTip(el, r.left, r.top);
+    });
+
+    loadStats();
+  </script>
+</body>
+</html>

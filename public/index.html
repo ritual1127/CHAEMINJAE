@@ -2,9 +2,23 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="color-scheme" content="light only">
+  <meta name="format-detection" content="telephone=no">
   <meta name="theme-color" content="#ffd0e4">
-  <meta name="description" content="먼작귀 친구들과 함께하는 귀여운 모바일 웹 리듬게임">
+  <meta name="description" content="먼작귀 친구들과 누구나 아는 명곡을 신나게 연주하는 귀여운 리듬게임">
+  <!-- 링크 공유 미리보기 (카카오톡 · 디스코드 · X 등) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="먼작귀 리듬 파티">
+  <meta property="og:title" content="먼작귀 리듬 파티">
+  <meta property="og:description" content="먼작귀 친구들과 누구나 아는 명곡을 신나게 연주하는 리듬게임 · 137곡 · 난이도 8단계 · 캐릭터 52명 · 친구랑 멀티 대결">
+  <meta property="og:image" content="https://chaeminjae.vercel.app/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="먼작귀 리듬 파티 - 하치와레 · 치이카와 · 우사기">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://chaeminjae.vercel.app/og.png">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -24,18 +38,30 @@
     <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
     <symbol id="i-set" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></symbol>
     <symbol id="i-cup" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3.5 4M16 6h3a3 3 0 0 1-3.5 4M12 13v4M8 20h8"/></symbol>
-    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></symbol>
     <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
     <symbol id="i-retry" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.6-5.7M5 3.5V8h4.5"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5l10.5 6.5L8 18.5z" fill="currentColor"/></symbol>
     <symbol id="i-out" viewBox="0 0 24 24"><path d="M10 4H5.5v16H10M15 8l4 4-4 4M19 12H9.5"/></symbol>
-    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6.5 9.5V20h11V9.5M10 20v-5h4v5"/></symbol>
+    <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.6"/><circle cx="17.5" cy="16" r="2.6"/></symbol>
+    <symbol id="i-team" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.3"/><circle cx="17" cy="9.5" r="2.6"/><path d="M3 20a6 6 0 0 1 12 0M14.5 15.2A5 5 0 0 1 21 19.5"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><path d="M4 10h16v10H4zM3 7h18v3H3zM12 7v13M12 7c-1.5-3-5.5-3.5-5.5-1S10 7 12 7c2 0 5.5-.5 5.5-1S13.5 4 12 7"/></symbol>
+    <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1.2 12H6.2zM9 8V6.5a3 3 0 0 1 6 0V8"/></symbol>
+    <symbol id="i-medal" viewBox="0 0 24 24"><path d="M8 3l4 6 4-6M5.5 3h5M13.5 3h5"/><circle cx="12" cy="15" r="5.5"/><path d="M12 12.3l.9 1.8 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="12.5" rx="2.5"/><path d="M4.5 7.5l7.5 6 7.5-6"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z" fill="#ff7fa8" stroke="#4a3953" stroke-width="2"/></symbol>
+    <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#ffd25e" stroke="#4a3953" stroke-width="2.2"/><circle cx="12" cy="12" r="5.4" fill="none" stroke="#e8a92a" stroke-width="2"/></symbol>
+    <symbol id="i-gem" viewBox="0 0 24 24"><path d="M7 4h10l4 5-9 11L3 9z" fill="#8fd3ff" stroke="#4a3953" stroke-width="2.2" stroke-linejoin="round"/><path d="M3 9h18M9 4l3 16M15 4l-3 16" stroke="#4a3953" stroke-width="1.4" fill="none"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13M10.5 11v5.5M13.5 11v5.5"/></symbol>
+    <symbol id="i-friend" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/></symbol>
     <symbol id="cloud" viewBox="0 0 200 90"><path d="M30 85a28 28 0 0 1 2-55 38 38 0 0 1 70-14 30 30 0 0 1 48 10 30 30 0 0 1 22 59z" fill="#fff"/><path d="M30 85a28 28 0 0 1-8-10h160a30 30 0 0 1-10 10z" fill="#e9e4ff"/></symbol>
   </svg>
 
-  <div id="app">
-    <!-- 움직이는 배경: 하늘, 구름, 언덕, 꽃잎 파티클, 캐릭터 무대 -->
+  <div id="app" class="bare">
+    <!-- 움직이는 배경: 하늘, 구름, 언덕, 파티클, 캐릭터 무대 -->
     <div id="scene" data-mode="title" aria-hidden="true">
       <div class="sky"></div>
       <div class="sky night"></div>
@@ -58,21 +84,268 @@
       </svg>
       <canvas id="sceneFx"></canvas>
       <div class="stage">
-        <img class="buddy" src="assets/kurimanju.webp" style="--x:-1%;--y:7%;--dl:-.3s" alt="">
-        <img class="buddy" src="assets/shisa.webp" style="--x:81%;--y:10%;--dl:-.7s" alt="">
+        <img class="buddy" src="assets/faces/kurimanju.webp" style="--x:-1%;--y:7%;--dl:-.3s" alt="">
+        <img class="buddy" src="assets/faces/shisa.webp" style="--x:81%;--y:10%;--dl:-.7s" alt="">
         <img class="trio" src="assets/trio.webp" alt="하치와레, 치이카와, 우사기">
         <div class="bubble" hidden></div>
       </div>
     </div>
 
-    <!-- 타이틀 + 로그인/회원가입 -->
-    <section id="title" class="screen active">
-      <h1 class="logo"><span>먼</span><span>작</span><span>귀</span></h1>
-      <p class="ribbon">리듬 파티</p>
-      <button class="touch" id="touch">화면을 터치해 주세요</button>
+    <header id="topbar">
+      <button class="chip" id="profileBtn" aria-label="내 정보">
+        <span class="av" id="meAvatar"></span>
+        <span class="who"><b id="meName">게스트</b><span class="lvrow"><i class="lv" id="meLv">Lv.1</i><span class="exp"><i id="meExp"></i></span></span></span>
+      </button>
+      <div class="wallet">
+        <span class="money"><svg><use href="#i-coin"/></svg><b id="coins">0</b></span>
+        <span class="money"><svg><use href="#i-gem"/></svg><b id="gems">0</b></span>
+      </div>
+      <button class="icon-btn" data-friends aria-label="친구"><svg><use href="#i-friend"/></svg><i class="dot" id="friendDot" hidden></i></button>
+      <button class="icon-btn" id="mailBtn" aria-label="우편함"><svg><use href="#i-mail"/></svg><i class="dot" id="mailDot" hidden></i></button>
+      <button class="icon-btn" data-open="settings" aria-label="설정"><svg><use href="#i-set"/></svg></button>
+    </header>
 
+    <nav id="nav" aria-label="메뉴">
+      <button data-go="home"><svg><use href="#i-home"/></svg><span>홈</span></button>
+      <button data-go="songs"><svg><use href="#i-music"/></svg><span>연주</span></button>
+      <button data-go="team"><svg><use href="#i-team"/></svg><span>팀</span></button>
+      <button data-go="gacha"><svg><use href="#i-gift"/></svg><span>뽑기</span></button>
+      <button data-go="shop"><svg><use href="#i-bag"/></svg><span>상점</span></button>
+      <button data-go="quests"><svg><use href="#i-medal"/></svg><span>업적</span><i class="dot" id="questDot" hidden></i></button>
+      <button data-go="rank"><svg><use href="#i-cup"/></svg><span>랭킹</span></button>
+      <div class="nav-foot">
+        <button type="button" class="ask-btn" data-ask><span>💬</span><b>문의하기</b></button>
+        <small class="ver-label"></small>
+      </div>
+    </nav>
+
+    <main id="main">
+      <section id="home" class="screen">
+        <div class="home-top">
+          <div class="home-links">
+            <button type="button" class="notice-btn" id="noticeBtn"><span>📢</span><b>공지사항</b><i class="dot" id="noticeDot" hidden></i></button>
+            <button type="button" class="ask-btn" data-ask><span>💬</span><b>문의하기</b></button>
+          </div>
+          <div class="hero">
+            <h1 class="logo"><span>먼</span><span>작</span><span>귀</span></h1>
+            <p class="ribbon">리듬 파티</p>
+          </div>
+        </div>
+        <div class="spacer"></div>
+        <div class="home-panel">
+          <button class="btn pink play" id="playBtn"><svg><use href="#i-play"/></svg>연주하기</button>
+          <div class="home-cards">
+            <button class="mini" id="dailyCard"></button>
+            <button class="mini" id="teamCard" data-go="team"></button>
+            <button class="mini" id="missionCard"></button>
+            <button class="mini" id="rankCard" data-go="rank"></button>
+          </div>
+        </div>
+        <div class="ad-box" id="adBox" hidden></div>
+        <div class="home-foot"><small class="ver-label"></small></div>
+      </section>
+
+      <section id="songs" class="screen">
+        <div class="head">
+          <h2>곡 선택</h2>
+          <small class="count" id="songCount"></small>
+          <button type="button" class="btn small blue" data-multi>👥 멀티 플레이</button>
+        </div>
+        <label class="search"><svg><use href="#i-search"/></svg>
+          <input type="search" id="songSearch" placeholder="곡 제목 · 작곡가 검색 (초성도 돼요: ㅋㄴ)" autocomplete="off" enterkeyhint="search" aria-label="곡 검색"></label>
+        <div class="cats" id="genreTabs" role="tablist" aria-label="장르"></div>
+        <div class="song-list" id="songList"></div>
+      </section>
+
+      <!-- 멀티플레이 (PC): 방 만들기 · 참가하기 -->
+      <section id="multi" class="screen">
+        <div class="head"><h2>👥 멀티 플레이</h2><small class="count">PC · 휴대폰 같이 · 최대 10명</small></div>
+        <div class="mp-entry">
+          <div class="card-box mp-make">
+            <h3>🏠 방 만들기</h3>
+            <p class="hint">방을 만들면 참가 코드가 나와요. 친구에게 알려 주세요!</p>
+            <button type="button" class="btn pink big" id="mpCreate">방 만들기</button>
+          </div>
+          <form class="card-box mp-join" id="mpJoin" novalidate>
+            <h3>🔑 참가하기</h3>
+            <input id="mpCodeIn" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="숫자 4자리" autocomplete="off" spellcheck="false" aria-label="참가 코드">
+            <button class="btn blue big">참가하기</button>
+          </form>
+        </div>
+        <p class="err" id="mpErr" role="alert"></p>
+        <ul class="mp-rules card-box">
+          <li>방장이 곡과 난이도를 고르고, 모두 <b>준비 완료</b>를 누르면 방장이 시작해요</li>
+          <li>같은 곡을 동시에 연주해서 <b>연주 점수(정확도)</b>가 가장 높은 사람이 1등! 공평하게 팀 버프 · 부스터는 꺼져요</li>
+          <li>연주 중 반짝이는 <b>아이템 노트</b>를 치면 공격 1번 충전 (최대 3번) · <b>Space</b>(휴대폰은 ⚡ 버튼)로 발사 (설정에서 바꾸기) · 상대 화면이나 순위표를 누르면 목표를 바꿔요</li>
+          <li>공격은 5초: ☁️ <b>먹구름</b> 위쪽 가리기 · 🌀 <b>어질어질</b> 화면 흔들기 · ⚡ <b>번개 속도</b> 노트가 빨라져요 · 💣 <b>폭탄</b> 판정선이 연기로 덮여요</li>
+          <li>판마다 1등이 다음 방장! 방장은 왕관 버튼으로 넘기거나 ✕로 내보낼 수 있어요 · 30분 동안 연주가 없으면 방이 닫혀요</li>
+        </ul>
+      </section>
+
+      <!-- 멀티플레이 방: 참가 코드 · 3×2 자리 · 곡 고르기(방장) · 준비 · 시작 · 결과 -->
+      <section id="room" class="screen">
+        <div class="head">
+          <h2>멀티 방</h2>
+          <button type="button" class="room-code" id="roomCode" title="눌러서 참가 코드 복사"></button>
+          <small class="count" id="roomCount"></small>
+          <button type="button" class="btn small butter" id="roomInvite">👫 친구 초대</button>
+          <button type="button" class="btn small plain" id="roomLeave"><svg><use href="#i-out"/></svg>방 나가기</button>
+        </div>
+        <div class="room-grid">
+          <div class="room-left">
+            <div class="room-seats" id="roomSeats"></div>
+            <div class="card-box room-result" id="roomResult" hidden></div>
+            <div class="card-box room-board" id="roomBoard" hidden></div>
+          </div>
+          <div class="room-right">
+            <div class="card-box room-song">
+              <img id="roomJacket" alt="">
+              <div><b id="roomTitle"></b><span class="tag" id="roomDiff"></span><small id="roomMeta"></small></div>
+            </div>
+            <div class="card-box room-pick" id="roomPick">
+              <label class="sortsel">곡 <select id="roomSongSel" aria-label="곡 고르기"></select></label>
+              <div class="diffs" id="roomDiffs" role="radiogroup" aria-label="난이도"></div>
+              <div class="bot-add"><label class="sortsel">🤖 AI 실력
+                <select id="botSkill" aria-label="AI 실력"><option value="easy">쉬움</option><option value="normal" selected>보통</option><option value="hard">어려움</option><option value="pro">고수</option></select></label>
+                <button type="button" class="btn small butter" id="addBot">AI 넣기</button></div>
+            </div>
+            <p class="hint room-hint" id="roomHint"></p>
+            <div class="row room-btns">
+              <button type="button" class="btn pink big" id="roomReady">준비 완료!</button>
+              <button type="button" class="btn pink big" id="roomStart">시작!</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="team" class="screen">
+        <div class="team-top">
+          <div class="head">
+            <h2>내 팀</h2>
+            <span class="tpower">팀 점수 <b id="teamPower">0</b></span>
+            <button class="btn small butter" id="autoTeam">추천 편성</button>
+            <button class="btn small pink" id="levelAll">⬆ 모두 레벨 업</button>
+          </div>
+          <div class="slots" id="slots"></div>
+          <p class="hint" id="teamHint">카드를 꾹 눌러서 칸으로 끌어다 놓아 보세요</p>
+        </div>
+        <div class="buffbox card-box" id="teamBuffs"></div>
+        <div class="rtabs">
+          <div class="seg small" id="rarityTabs">
+            <button type="button" data-r="-1">보유중</button>
+            <button type="button" data-r="6">초월</button>
+            <button type="button" data-r="5">신화</button>
+            <button type="button" data-r="4">전설</button>
+            <button type="button" data-r="3">영웅</button>
+            <button type="button" data-r="2">희귀</button>
+            <button type="button" data-r="1">일반</button>
+          </div>
+          <label class="sortsel">정렬
+            <select id="rosterSort" aria-label="카드 정렬">
+              <option value="power">파워순</option>
+              <option value="rarity">등급순</option>
+              <option value="stage">레벨순</option>
+              <option value="name">이름순</option>
+            </select>
+          </label>
+          <small id="rosterCount"></small>
+        </div>
+        <div class="roster" id="roster"></div>
+      </section>
+
+      <section id="gacha" class="screen">
+        <div class="btabs" id="bannerTabs" role="tablist" aria-label="뽑기 종류"></div>
+        <div class="banner" id="bannerView"></div>
+        <div class="row pulls">
+          <button class="btn blue big" id="pull1"><span>1회 뽑기</span><small></small></button>
+          <button class="btn pink big" id="pull10"><span>10회 뽑기</span><small></small></button>
+          <button class="btn butter until" id="pullUntil"><span>🎯 등급 확정 뽑기</span><small>원하는 등급이 나올 때까지 자동으로</small></button>
+        </div>
+        <ul class="gacha-info" id="gachaInfo"></ul>
+      </section>
+
+      <section id="shop" class="screen">
+        <div class="head"><h2>상점</h2><small class="count" id="shopWallet"></small></div>
+        <div class="shop-tabs" id="shopTabs" role="tablist" aria-label="상점 분류">
+          <button type="button" role="tab" data-tab="cards">🃏 오늘의 카드</button>
+          <button type="button" role="tab" data-tab="special">🎲 특별</button>
+          <button type="button" role="tab" data-tab="boost">🍪 부스터</button>
+          <button type="button" role="tab" data-tab="gems">💎 보석 · 코인</button>
+          <button type="button" role="tab" data-tab="songs">🎵 악보</button>
+          <button type="button" role="tab" data-tab="faces">🖼 프로필</button>
+        </div>
+        <div class="shop-pane" data-pane="cards"><p class="shop-note">매일 0시에 바뀌어요 · 없는 친구는 데려오고, 있는 친구는 레벨 업 카드 · <span id="cardsLeft"></span></p><div class="shop-grid cards" id="shopCards"></div></div>
+        <div class="shop-pane" data-pane="special"><p class="shop-note">코인으로 사는 행운 상자 · 할인 세트 · 경험치 물약</p><div class="shop-grid" id="shopSpecial"></div></div>
+        <div class="shop-pane" data-pane="boost"><p class="shop-note">연주를 시작할 때 골라 쓰는 1회용 아이템</p><div class="shop-grid" id="shopBoost"></div></div>
+        <div class="shop-pane" data-pane="gems"><p class="shop-note">많이 바꿀수록 오늘 가격이 올라요</p><div class="shop-grid" id="shopGems"></div></div>
+        <div class="shop-pane" data-pane="songs"><p class="shop-note">곡을 사면 모든 난이도를 연주할 수 있어요</p><div class="shop-grid" id="shopSongs"></div></div>
+        <div class="shop-pane" data-pane="faces"><p class="shop-note">프로필 사진은 내 정보에서 바꿀 수 있어요</p><div class="shop-grid faces" id="shopAvatars"></div></div>
+      </section>
+
+      <section id="quests" class="screen">
+        <div class="head"><h2>업적</h2></div>
+        <div class="seg" id="questTabs">
+          <button type="button" data-tab="today">오늘의 보상</button>
+          <button type="button" data-tab="ach">업적 <small id="achCount"></small></button>
+        </div>
+        <div class="qpane" id="todayPane">
+          <div class="daily" id="daily"></div>
+          <div class="online card-box" id="online"></div>
+          <h3 class="sub">오늘의 미션 <small>매일 0시에 새로 바뀌어요</small></h3>
+          <ul class="quest-list" id="missionList"></ul>
+        </div>
+        <div class="qpane" id="achPane" hidden>
+          <div class="cats" id="achCats"></div>
+          <select class="ach-song" id="achSong" hidden aria-label="곡 고르기"></select>
+          <div class="ach-bar"><span id="achSum"></span><button class="btn small pink" id="claimAll">모두 받기</button></div>
+          <ul class="quest-list" id="questList"></ul>
+          <button type="button" class="btn plain more" id="achMore" hidden>더 보기</button>
+        </div>
+      </section>
+
+      <section id="rank" class="screen">
+        <div class="head">
+          <h2>랭킹</h2>
+          <div class="seg small" id="rankMode">
+            <button type="button" data-mode="song">곡별</button>
+            <button type="button" data-mode="total">종합</button>
+          </div>
+        </div>
+        <div class="seg small period" id="rankPeriod" role="radiogroup" aria-label="기간">
+          <button type="button" data-p="all">전체</button>
+          <button type="button" data-p="month">최근 30일</button>
+          <button type="button" data-p="week">최근 7일</button>
+          <button type="button" data-p="day">오늘</button>
+        </div>
+        <div id="rankSongPane" class="rank-pick">
+          <div class="rank-song">
+            <button type="button" class="icon-btn" id="rankPrev" aria-label="이전 곡"><svg><use href="#i-back"/></svg></button>
+            <img id="rankJacket" alt="">
+            <select id="rankSongSel" aria-label="곡 고르기"></select>
+            <button type="button" class="icon-btn flip" id="rankNext" aria-label="다음 곡"><svg><use href="#i-back"/></svg></button>
+          </div>
+          <div class="seg small diffseg" id="rankDiff"></div>
+        </div>
+        <div class="rank-body">
+          <div class="rank-side">
+            <div class="rank-title" id="rankTitle"></div>
+            <div class="my-rank" id="myRank"></div>
+            <div class="podium" id="podium"></div>
+          </div>
+          <ol class="ranklist big" id="rankList"></ol>
+        </div>
+      </section>
+    </main>
+
+    <!-- 타이틀 + 로그인/회원가입 -->
+    <section id="title" class="screen full active">
+      <div class="hero">
+        <h1 class="logo"><span>먼</span><span>작</span><span>귀</span></h1>
+        <p class="ribbon">리듬 파티</p>
+      </div>
+      <button class="touch" id="touch">화면을 터치해 주세요</button>
       <form id="auth" class="sheet" hidden novalidate>
-        <div class="seg" role="tablist">
+        <div class="seg">
           <button type="button" data-mode="login" aria-pressed="true">로그인</button>
           <button type="button" data-mode="signup" aria-pressed="false">회원가입</button>
         </div>
@@ -87,56 +360,45 @@
         <button class="btn pink big" id="authSubmit">로그인</button>
         <button type="button" class="link" id="guest">게스트로 둘러보기</button>
       </form>
-    </section>
-
-    <!-- 로비 -->
-    <section id="lobby" class="screen">
-      <div class="topbar">
-        <button class="chip" id="profileBtn" aria-label="내 정보">
-          <img id="meAvatar" src="assets/avatars/1.webp" alt="">
-          <span class="who"><b id="meName">게스트</b><span class="lvrow"><i class="lv" id="meLv">Lv.1</i><span class="exp"><i id="meExp"></i></span></span></span>
-        </button>
-        <button class="icon-btn" data-open="settings" aria-label="설정"><svg><use href="#i-set"/></svg></button>
-      </div>
-      <h1 class="logo small"><span>먼</span><span>작</span><span>귀</span></h1>
-      <p class="ribbon small">리듬 파티</p>
-      <div class="spacer"></div>
-      <button class="btn pink play" data-go="select"><svg><use href="#i-play"/></svg>플레이!</button>
-      <div class="row">
-        <button class="btn blue" data-go="rank"><svg><use href="#i-cup"/></svg>랭킹</button>
-        <button class="btn butter" id="profileBtn2"><svg><use href="#i-user"/></svg>내 정보</button>
-      </div>
-    </section>
-
-    <!-- 곡 선택 -->
-    <section id="select" class="screen">
-      <div class="header">
-        <button class="icon-btn" data-go="lobby" aria-label="뒤로"><svg><use href="#i-back"/></svg></button>
-        <h2>곡 선택</h2>
-        <button class="icon-btn" data-open="settings" aria-label="설정"><svg><use href="#i-set"/></svg></button>
-      </div>
-      <div class="carousel" id="carousel"></div>
-      <div class="dots" id="dots"></div>
-      <div class="seg diff" id="diffSeg">
-        <button type="button" data-diff="easy">EASY <small></small></button>
-        <button type="button" data-diff="normal">NORMAL <small></small></button>
-      </div>
-      <p class="best" id="best"></p>
-      <button class="btn pink big" id="start"><svg><use href="#i-play"/></svg>시작!</button>
+      <small class="ver-label title-ver"></small>
     </section>
 
     <!-- 게임 -->
-    <section id="game" class="screen">
+    <section id="game" class="screen full">
       <canvas id="field"></canvas>
       <div class="hud">
         <button class="icon-btn" id="pauseBtn" aria-label="일시정지"><svg><use href="#i-pause"/></svg></button>
         <div class="songbar"><b id="gTitle"></b><span class="progress"><i id="gProg"></i></span></div>
         <div class="score" id="gScore">0</div>
       </div>
+      <div class="hp top"><svg><use href="#i-heart"/></svg><span class="bar"><i></i></span><b></b></div>
+      <aside class="gside left">
+        <h3>우리 팀</h3>
+        <ul class="gteam" id="gTeam"></ul>
+        <div class="chips" id="gBuffs"></div>
+        <div class="hp"><svg><use href="#i-heart"/></svg><span class="bar"><i></i></span><b></b></div>
+      </aside>
+      <aside class="gside right">
+        <h3>SCORE</h3>
+        <p class="big" id="gScore2">0</p>
+        <h3>COMBO</h3>
+        <p class="big" id="gCombo2">0</p>
+        <ul class="gcount" id="gCount"></ul>
+      </aside>
+      <!-- 멀티: 양옆에 다른 참가자 화면 · 오른쪽 위 순위표 · 공격 -->
+      <div class="mp-col left" id="mpLeft"></div>
+      <div class="mp-col right" id="mpRight">
+        <section class="mp-board"><h3>순위표</h3><ol id="mpBoard"></ol></section>
+        <button type="button" class="mp-atk" id="mpAtk"><b>⚡ 공격</b><span class="mp-charges" id="mpCharges"></span><small id="mpAtkHint"></small></button>
+        <div class="mp-cards" id="mpCards"></div>
+      </div>
+      <div class="mp-alert" id="mpAlert" hidden></div>
+      <button type="button" class="stall" id="stall" hidden>🔇 소리가 멈췄어요 · 화면을 눌러 주세요</button>
       <div class="combo" id="gCombo" hidden><b>0</b><small>COMBO</small></div>
       <div class="judge" id="gJudge"></div>
-      <div class="keys" id="keyHint">D · F · J · K 또는 화면 터치</div>
-      <div class="overlay" id="ready" hidden><p class="readytext">준비~</p></div>
+      <div class="timing" id="gTiming"></div>
+      <div class="cheer" id="cheer" hidden><img alt=""><p></p></div>
+      <div class="overlay" id="ready" hidden><p class="readytext"></p></div>
       <div class="overlay" id="paused" hidden>
         <div class="panel">
           <h2>잠깐 쉬어요</h2>
@@ -148,40 +410,103 @@
     </section>
 
     <!-- 결과 -->
-    <section id="result" class="screen">
+    <section id="result" class="screen full">
       <div class="panel result">
         <div class="rhead"><img id="rJacket" alt=""><div><b id="rTitle"></b><span class="tag" id="rDiff"></span></div></div>
-        <div class="stamp" id="rRank">S</div>
-        <p class="rmsg" id="rMsg"></p>
-        <p class="rscore" id="rScore">0</p>
-        <p class="badges"><span class="badge new" id="rNew" hidden>NEW RECORD!</span><span class="badge fc" id="rFc" hidden></span></p>
-        <ul class="stats" id="rStats"></ul>
-        <p class="note" id="rNote"></p>
+        <div class="rbody">
+          <div class="rleft">
+            <div class="stamp" id="rRank">S</div>
+            <p class="rclear" id="rClear"></p>
+            <p class="rscore" id="rScore">0</p>
+            <p class="rbonus" id="rBonus"></p>
+            <p class="badges"><span class="badge new" id="rNew" hidden>NEW RECORD!</span><span class="badge fc" id="rFc" hidden></span></p>
+          </div>
+          <div class="rright">
+            <ul class="stats" id="rStats"></ul>
+            <p class="board" id="rBoard" hidden></p>
+            <div class="rewards" id="rRewards"></div>
+            <p class="note" id="rNote"></p>
+          </div>
+        </div>
       </div>
       <div class="row">
         <button class="btn blue" id="retry"><svg><use href="#i-retry"/></svg>다시하기</button>
-        <button class="btn pink" data-go="select">곡 선택</button>
+        <button class="btn pink" data-go="songs">곡 목록</button>
+      </div>
+      <div class="celebrate" id="celebrate" hidden>
+        <p class="nr">NEW RECORD!</p>
+        <p class="nr-sub" id="nrSub"></p>
       </div>
     </section>
 
-    <!-- 랭킹 -->
-    <section id="rank" class="screen">
-      <div class="header">
-        <button class="icon-btn" data-go="back" aria-label="뒤로"><svg><use href="#i-back"/></svg></button>
-        <h2>랭킹</h2>
-        <span class="icon-gap"></span>
+    <!-- 뽑기 결과: 카드는 직접 눌러야 뒤집힌다 -->
+    <div class="overlay reveal" id="reveal" hidden>
+      <p class="reveal-hint" id="revealHint">카드를 눌러서 뒤집어 보세요!</p>
+      <div class="reveal-grid" id="revealGrid"></div>
+      <div class="row">
+        <button class="btn plain" id="revealAll">한 번에 열기</button>
+        <button class="btn pink" id="revealOk" disabled>확인</button>
       </div>
-      <div class="songtabs" id="rankSongs"></div>
-      <div class="seg diff" id="rankDiff">
-        <button type="button" data-diff="easy">EASY</button>
-        <button type="button" data-diff="normal">NORMAL</button>
+    </div>
+    <div class="overlay newcard" id="newCard" hidden>
+      <div class="nc-box">
+        <p class="nc-new">NEW!</p>
+        <div class="nc-card" id="ncCard"></div>
+        <p class="nc-rarity" id="ncRarity"></p>
+        <h2 id="ncName"></h2>
+        <p class="nc-line" id="ncLine"></p>
+        <small>눌러서 계속하기</small>
       </div>
-      <ol class="ranklist" id="rankList"></ol>
-    </section>
+    </div>
 
-    <div class="overlay loading" id="loading" hidden><img src="assets/chiikawa.webp" alt=""><p>곡 준비 중…</p></div>
+    <div class="overlay loading" id="loading" hidden><img src="assets/faces/chiikawa.webp" alt=""><p>곡 준비 중…</p></div>
+    <div class="overlay maint" id="maint" hidden>
+      <div class="panel">
+        <img src="assets/faces/hachiware.webp" alt="">
+        <h2>서버 점검 중</h2>
+        <p id="maintReason"></p>
+        <small id="maintSince"></small>
+        <button class="btn pink" id="maintRetry">다시 확인하기</button>
+        <small id="maintHint" hidden>관리자는 관리자 페이지에서 '점검 중 미리보기'를 켜면 들어갈 수 있어요</small>
+        <a class="link" href="/admin/">관리자 로그인</a>
+      </div>
+    </div>
+    <p class="maint-bar" id="maintBar" hidden>점검 모드 켜짐 · 관리자 미리보기 중 (다른 유저는 점검 화면)</p>
+    <aside class="side-ads" id="sideAds" hidden aria-label="광고"><div class="side-ad left" id="sideAdL"></div><div class="side-ad right" id="sideAdR"></div></aside>
+    <button type="button" class="room-bar" id="roomBar" hidden></button>
+    <button type="button" class="sched-bar" id="schedBar" hidden></button>
     <div class="toast" id="toast" role="status"></div>
   </div>
+
+  <dialog id="songDlg" class="wide">
+    <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
+    <div class="sd-grid">
+      <div class="sd-top">
+        <img id="sdJacket" alt="">
+        <div><h2 id="sdTitle"></h2><p id="sdMeta"></p><p class="best" id="sdBest"></p></div>
+      </div>
+      <div class="diffs" id="sdDiff" role="radiogroup" aria-label="난이도"></div>
+      <section class="sd-rank" aria-label="랭킹">
+        <h3><svg><use href="#i-cup"/></svg>랭킹 <small id="sdRankDiff"></small></h3>
+        <div class="sd-me" id="sdMe"></div>
+        <ol class="ranklist compact" id="sdRankList"></ol>
+      </section>
+      <div class="sd-box sd-buffs"><span>팀 버프</span><div class="chips" id="sdBuffs"></div></div>
+      <div class="sd-box sd-boost"><span>부스터</span><div class="boosters" id="sdBoosters"></div></div>
+      <div class="sd-start"><button class="btn pink big" id="sdStart">시작!</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="charDlg">
+    <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
+    <div class="cd-card" id="cdCard"></div>
+    <p class="cd-line" id="cdLine" hidden></p>
+    <h2 id="cdName"></h2>
+    <p class="cd-sub" id="cdSub"></p>
+    <div class="cd-level" id="cdLevel"></div>
+    <ol class="cd-stages" id="cdStages"></ol>
+    <button class="btn pink" id="cdTeam"></button>
+  </dialog>
 
   <dialog id="settings">
     <h2>설정</h2>
@@ -190,23 +515,195 @@
     <label class="slider"><span>싱크 조절 <b id="offsetVal"></b></span>
       <input type="range" id="offset" min="-200" max="200" step="5">
       <small>음악보다 노트가 빨리 오면 +, 늦게 오면 −</small></label>
+    <label class="slider"><span>음악 크기 <b id="musicVolVal"></b></span>
+      <input type="range" id="musicVol" min="0" max="100" step="5"></label>
+    <label class="slider"><span>효과음 크기 <b id="sfxVolVal"></b></span>
+      <input type="range" id="sfxVol" min="0" max="100" step="5"></label>
     <label class="toggle"><span>로비 음악</span><input type="checkbox" id="music"></label>
-    <label class="toggle"><span>타격음</span><input type="checkbox" id="hitsfx"></label>
-    <p class="hint">PC에서는 D · F · J · K 키로 플레이해요</p>
+    <label class="toggle"><span>노트 칠 때 '틱' 소리</span><input type="checkbox" id="hitsound"></label>
+    <div class="keys">
+      <span>키보드 키 <small>누르고 원하는 키를 입력하세요 · Esc 일시정지</small></span>
+      <div class="keygrid" id="keyGrid"></div>
+      <div class="keygrid atk"><button type="button" id="atkKeyBtn"></button></div>
+      <button type="button" class="btn small plain" id="keyReset">기본값 (D · F · J · K · Space)</button>
+    </div>
     <form method="dialog"><button class="btn pink">닫기</button></form>
   </dialog>
 
   <dialog id="profile">
-    <img class="bigav" id="pAvatar" src="assets/avatars/1.webp" alt="">
-    <h2 id="pName"></h2>
+    <span class="bigav" id="pAvatar"></span>
+    <div class="pname"><h2 id="pName"></h2><button type="button" class="btn small plain" id="renameBtn">닉네임 변경</button></div>
+    <form class="rename" id="renameForm" hidden novalidate>
+      <input name="username" maxlength="12" placeholder="새 닉네임 (2~12자)" autocomplete="off">
+      <button class="btn small pink">바꾸기</button>
+      <small id="renameNote"></small>
+    </form>
+    <div class="plevel" id="pLevel"></div>
+    <ul class="perks" id="pPerks"></ul>
+    <div class="row"><button type="button" class="btn small butter" id="pLevelBtn">🎖 레벨 혜택 · 테두리 보기</button><button type="button" class="btn small blue" data-friends>👫 친구</button></div>
     <p class="pplays" id="pPlays"></p>
+    <p class="plabel">테두리 고르기 <small>(10레벨마다 새 테두리)</small></p>
+    <div class="frames" id="pFrames"></div>
     <ul class="pbest" id="pBest"></ul>
-    <p class="plabel">프로필 친구 바꾸기</p>
+    <p class="plabel">프로필 사진 바꾸기 <small>(더 많은 사진은 상점에서)</small></p>
     <div class="avatars" id="profileAvatars"></div>
     <div class="row">
       <button class="btn plain" id="logout"><svg><use href="#i-out"/></svg>로그아웃</button>
-      <form method="dialog"><button class="btn pink">닫기</button></form>
     </div>
+    <form method="dialog"><button class="btn pink">닫기</button></form>
+  </dialog>
+
+  <dialog id="mailDlg">
+    <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
+    <h2>우편함</h2>
+    <div class="mail-top"><small id="mailSum"></small><button type="button" class="btn small plain" id="mailClean">읽은 우편 지우기</button><button type="button" class="btn small pink" id="mailAll">모두 받기</button></div>
+    <ul class="mail-list" id="mailList"></ul>
+  </dialog>
+
+  <!-- 월간 출석부 -->
+  <dialog id="attendDlg">
+    <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
+    <h2 id="attendHead">출석부</h2>
+    <p class="attend-sum" id="attendSum"></p>
+    <ol class="attend-grid" id="attendGrid"></ol>
+    <button type="button" class="btn pink big" id="attendGo">출석하기</button>
+  </dialog>
+
+  <!-- 공지사항: 버전 · 날짜별 업데이트 내역 -->
+  <dialog id="noticeDlg">
+    <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
+    <h2>📢 공지사항</h2>
+    <ul class="notice-list" id="noticeList"><li class="empty">불러오는 중…</li></ul>
+  </dialog>
+
+  <!-- 처음 가입하면 한 번: 축하 + 간단한 사용법 -->
+  <dialog id="welcome" class="welcome">
+    <div class="w-art" id="wArt"></div>
+    <h2 id="wTitle"></h2>
+    <p class="w-text" id="wText"></p>
+    <div class="w-dots" id="wDots"></div>
+    <div class="row">
+      <button type="button" class="btn plain" id="wPrev">이전</button>
+      <button type="button" class="btn pink" id="wNext">다음</button>
+    </div>
+  </dialog>
+
+  <!-- 팀이 꽉 찼을 때 바꿀 친구 고르기 -->
+  <dialog id="swapDlg">
+    <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
+    <h2>누구랑 바꿀까요?</h2>
+    <p class="swap-title" id="swapTitle"></p>
+    <div class="swap-list" id="swapList"></div>
+  </dialog>
+
+  <!-- 등급 확정 뽑기 -->
+  <dialog id="untilDlg">
+    <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
+    <h2>🎯 등급 확정 뽑기</h2>
+    <div class="until-pane" id="untilSetup">
+      <p class="hint"><b id="untilBanner"></b>에서 고른 등급 이상이 나올 때까지 한 장씩 계속 뽑아요</p>
+      <div class="until-grade" id="untilGrade"></div>
+      <label class="sortsel">최대
+        <select id="untilMax" aria-label="최대 뽑기 횟수"><option value="30">30장</option><option value="100" selected>100장</option><option value="300">300장</option></select>
+        까지만 뽑기</label>
+      <p class="until-cost" id="untilCost"></p>
+      <button type="button" class="btn pink big" id="untilGo">뽑기 시작!</button>
+    </div>
+    <div class="until-pane" id="untilResult" hidden>
+      <p class="until-head" id="untilHead"></p>
+      <div class="until-hit" id="untilHit"></div>
+      <div class="until-sum" id="untilSum"></div>
+      <div class="until-grid" id="untilGrid"></div>
+      <button type="button" class="btn pink" id="untilOk">확인</button>
+    </div>
+  </dialog>
+
+  <!-- 점검 예고 -->
+  <dialog id="schedDlg" class="sched">
+    <img src="assets/faces/usagi.webp" alt="">
+    <h2>🛠 점검 예정 안내</h2>
+    <p class="sched-when" id="schedWhen"></p>
+    <p class="sched-msg" id="schedMsg"></p>
+    <small>점검 시간에는 게임을 할 수 없어요. 그 전에 보상을 꼭 챙겨 주세요!</small>
+    <form method="dialog"><button class="btn pink">알겠어요</button></form>
+  </dialog>
+
+  <!-- 진화 연출 -->
+  <dialog id="evoDlg" class="evo-fx">
+    <div class="ef-card" id="efCard"></div>
+    <p class="ef-msg" id="efMsg"></p>
+  </dialog>
+
+  <!-- 연주하기 (PC): 싱글 · 멀티 고르기 -->
+  <dialog id="modeDlg">
+    <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
+    <h2>어떻게 연주할까요?</h2>
+    <div class="mode-pick">
+      <button type="button" class="mode" data-go="songs"><span>🎵</span><b>싱글 플레이</b><small>혼자서 곡을 골라 연주해요</small></button>
+      <button type="button" class="mode multi" data-multi><span>👥</span><b>멀티 플레이</b><small>참가 코드로 친구를 불러 최대 10명이 대결!</small></button>
+    </div>
+  </dialog>
+
+  <!-- 레벨 혜택: 1~1000레벨 테두리 · 보상 -->
+  <dialog id="levelDlg">
+    <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
+    <h2>🎖 레벨 혜택</h2>
+    <p class="hint" id="lvNow"></p>
+    <ol class="lv-list" id="lvList"></ol>
+  </dialog>
+
+  <!-- 친구 -->
+  <dialog id="friendsDlg">
+    <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
+    <h2>👫 친구</h2>
+    <p class="hint" id="frSum"></p>
+    <form class="fr-add" id="frAdd" novalidate>
+      <input id="frName" maxlength="12" placeholder="친구 닉네임" autocomplete="off" aria-label="친구 닉네임">
+      <button class="btn small pink">친구 신청</button>
+    </form>
+    <p class="err" id="frErr" role="alert"></p>
+    <ul class="fr-list" id="frIn" hidden></ul>
+    <ul class="fr-list" id="frOut" hidden></ul>
+    <h3 class="sub">내 친구</h3>
+    <ul class="fr-list" id="frList"></ul>
+  </dialog>
+
+  <dialog id="giftDlg">
+    <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
+    <h2>🎁 선물하기</h2>
+    <p class="gf-who" id="gfWho"></p>
+    <div class="gf-opts" id="gfOpts"></div>
+    <small class="hint" id="gfLeft"></small>
+  </dialog>
+
+  <dialog id="userDlg">
+    <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
+    <div class="u-body" id="uBody"></div>
+  </dialog>
+
+  <!-- 멀티 초대 받음 -->
+  <dialog id="inviteDlg">
+    <h2>👥 멀티 초대!</h2>
+    <p class="inv-who" id="invWho"></p>
+    <p>참가 코드 <b class="inv-code" id="invCode"></b></p>
+    <p class="hint" id="invNote"></p>
+    <div class="row">
+      <form method="dialog"><button class="btn plain">나중에</button></form>
+      <button type="button" class="btn pink" id="invGo">같이 하기!</button>
+    </div>
+  </dialog>
+
+  <dialog id="askDlg">
+    <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
+    <h2>문의하기</h2>
+    <div class="cats ask-kinds" id="askKind" role="radiogroup" aria-label="문의 주제"></div>
+    <label class="field"><span id="askTitleLbl">노래 제목 · 가수</span><input id="askTitle" maxlength="60" autocomplete="off"></label>
+    <label class="field"><span>내용 <small>(선택)</small></span><textarea id="askBody" maxlength="1000" rows="3"></textarea></label>
+    <p class="hint" id="askNote"></p>
+    <p class="err" id="askErr" role="alert"></p>
+    <button type="button" class="btn pink" id="askSend">보내기</button>
+    <h3 class="sub">내 문의</h3>
+    <ul class="ask-list" id="askList"></ul>
   </dialog>
 </body>
 </html>
