@@ -140,6 +140,9 @@
     #memberDlg .act input { width: 100%; }
     #memberDlg .banned { padding: 6px 10px; color: #fff; background: #e5487f; border-radius: 10px; }
     #memberDlg .x { float: right; }
+    #memberDlg .temp { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 6px 8px; background: #fff7d6; border-radius: 8px; }
+    #memberDlg .temp code { font-size: 18px; user-select: all; }
+    #memberDlg .temp small { color: #8a7c90; font-size: 11px; }
     th[aria-sort="ascending"]::after { content: ' ▲'; }
     th[aria-sort="descending"]::after { content: ' ▼'; }
     td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
@@ -789,10 +792,12 @@
             <form class="act form" data-a="wallet"><b>💰 코인 · 보석 주기/빼기</b><input name="coins" type="number" placeholder="코인 (빼려면 -)"><input name="gems" type="number" placeholder="보석 (빼려면 -)"><input name="reason" placeholder="우편 내용 (선택)"><button class="btn small">적용</button></form>
             <form class="act form" data-a="ban"><b>⛔ 이용 정지</b><input name="days" type="number" min="1" max="36500" value="7" placeholder="일 수"><input name="reason" placeholder="사유 (유저에게 보여요)"><button class="btn small">정지하기</button>
               ${u.banned_until ? '<button type="button" class="btn small plain" data-quick="unban">정지 풀기</button>' : ''}</form>
+            <form class="act form" data-a="password"><b>🔑 임시 비밀번호 정하기</b>
+              ${u.temp_pw ? `<p class="temp">지금 임시 비밀번호 <code>${esc(u.temp_pw)}</code><small>${new Date(u.temp_pw_at).toLocaleString('ko-KR')}에 정함</small></p>` : '<p class="no">정한 임시 비밀번호가 없어요</p>'}
+              <input name="pw" maxlength="64" placeholder="새 임시 비밀번호 (4자 이상)" autocomplete="off"><button class="btn small">이걸로 바꾸기</button></form>
             <form class="act form" data-a="rename"><b>✏️ 닉네임 바꾸기</b><input name="to" maxlength="12" placeholder="새 닉네임"><button class="btn small">바꾸기</button></form>
             <div class="act"><b>🛠 기타</b>
               <button type="button" class="btn small plain" data-quick="logout">강제 로그아웃</button>
-              <button type="button" class="btn small plain" data-quick="password">임시 비밀번호 만들기</button>
               <button type="button" class="btn small plain" data-quick="wipe-scores">랭킹 기록 모두 지우기</button></div>
           </div>
           <p class="err" id="mErr"></p>
@@ -803,12 +808,11 @@
       }
     }
     const ASK = { ban: '정지할까요? 바로 로그아웃되고 기간 동안 로그인할 수 없어요', 'wipe-scores': '이 회원의 랭킹 기록을 모두 지울까요? 되돌릴 수 없어요',
-      password: '비밀번호를 임시 비밀번호로 바꿀까요? (본인 확인 뒤 전달해 주세요)', logout: '모든 기기에서 로그아웃시킬까요?', rename: '닉네임을 바꿀까요?', wallet: '재화를 바꿀까요?', unban: '정지를 풀까요?' };
+      password: '비밀번호를 이 임시 비밀번호로 바꿀까요? 그 회원은 바로 로그아웃돼요 (본인 확인 뒤 전달해 주세요)', logout: '모든 기기에서 로그아웃시킬까요?', rename: '닉네임을 바꿀까요?', wallet: '재화를 바꿀까요?', unban: '정지를 풀까요?' };
     async function memberAction(action, extra = {}) {
       if (!confirm(`${mName}: ${ASK[action] ?? '진행할까요?'}`)) return;
       try {
         const r = await api('admin-user-action', { name: mName, action, ...extra });
-        if (action === 'password') alert(`임시 비밀번호: ${r.temp}\n(이 창을 닫으면 다시 볼 수 없어요)`);
         if (action === 'rename') mName = extra.to;
         await openMember(mName);
         $('#mErr').textContent = '처리했어요';
@@ -824,6 +828,10 @@
       if (a === 'wallet') memberAction(a, { coins: Math.trunc(+v('coins') || 0), gems: Math.trunc(+v('gems') || 0), reason: v('reason') });
       if (a === 'ban') memberAction(a, { days: Math.trunc(+v('days') || 7), reason: v('reason') });
       if (a === 'rename') memberAction(a, { to: v('to') });
+      if (a === 'password') {
+        if (v('pw').length < 4) return ($('#mErr').textContent = '임시 비밀번호는 4자 이상');
+        memberAction(a, { pw: v('pw') });
+      }
     });
     $('#memberDlg').addEventListener('click', (e) => {
       const q = e.target.closest('[data-quick]');

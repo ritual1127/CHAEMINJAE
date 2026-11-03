@@ -21,7 +21,7 @@ const rand = () => randomInt(R48) / R48; // 뽑기는 서버 난수로 (48비트
 const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
 const WELCOME = { title: '🎉 먼작귀 리듬 파티에 온 걸 환영해요!', body: '시작 선물로 보석 500개를 보내요. 매일 출석 · 미션 · 접속 보상도 꼭 챙겨 가세요!', gems: 500 };
 // 이 버전으로 처음 배포될 때 공지사항에 한 번 올라가는 업데이트 내역 (관리자 페이지에서 고칠 수 있다)
-const SCHEMA = 2; // 표 구조를 바꿀 때마다 +1 (같은 버전에서도 init이 다시 돈다)
+const SCHEMA = 3; // 표 구조를 바꿀 때마다 +1 (같은 버전에서도 init이 다시 돈다)
 const RELEASE = {
   title: '대규모 업데이트! 137곡 · 친구 · 레벨 1000 · 초월 등급',
   body: [
@@ -223,6 +223,8 @@ const init = () => (ready ??= (async () => {
             INSERT INTO notices (version, title, body) SELECT ${VERSION}, ${RELEASE.title}, ${RELEASE.body} FROM s`;
   // 회원 정지 (관리자): 정지 기간 · 사유
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS banned_until TIMESTAMPTZ, ADD COLUMN IF NOT EXISTS ban_reason TEXT`;
+  // 관리자가 정해 준 임시 비밀번호 (관리자 화면에 계속 보여 주려고 따로 둔다)
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS temp_pw TEXT, ADD COLUMN IF NOT EXISTS temp_pw_at TIMESTAMPTZ`;
   await sql`INSERT INTO app_settings (key, value) VALUES (${`ready:${VERSION}:${SCHEMA}`}, 'true'::jsonb) ON CONFLICT (key) DO NOTHING`;
 })().catch((e) => { ready = null; throw e; }));
 
@@ -1423,9 +1425,10 @@ const routes = {
         await sql`UPDATE users SET total_score = 0 WHERE id = ${u.id}`;
         boards.clear();
         return res.json({ ok: true });
-      case 'password': { // 임시 비밀번호로 바꾸고 화면에 한 번 보여 준다 (본인 확인 뒤 관리자가 전달)
-        const temp = randomBytes(6).toString('base64url');
-        await sql`UPDATE users SET pw = ${hashPw(temp)} WHERE id = ${u.id}`;
+      case 'password': { // 관리자가 정한 임시 비밀번호로 바꾼다 (관리자 화면에 계속 보임 · 본인 확인 뒤 전달)
+        const temp = typeof b.pw === 'string' ? b.pw.trim() : '';
+        if (temp.length < 4 || temp.length > 64) return res.status(400).json({ error: '임시 비밀번호는 4~64자' });
+        await sql`UPDATE users SET pw = ${hashPw(temp)}, temp_pw = ${temp}, temp_pw_at = now() WHERE id = ${u.id}`;
         await sql`DELETE FROM sessions WHERE user_id = ${u.id}`;
         return res.json({ ok: true, temp });
       }
@@ -1438,7 +1441,8 @@ const routes = {
   async 'GET admin-user'(req, res) {
     if (!(await adminOk(req))) return adminOnly(res);
     const name = text(req.query.name, 20);
-    const [u] = await sql`SELECT id, username, avatar, lv, frame, total_score::float8 AS total, created_at, last_seen, save, banned_until, ban_reason FROM users WHERE username = ${name}`;
+    const [u] = await sql`SELECT id, username, avatar, lv, frame, total_score::float8 AS total, created_at, last_seen, save, banned_until, ban_reason, temp_pw, temp_pw_at
+                          FROM users WHERE username = ${name}`;
     if (!u) return res.status(404).json({ error: '그런 닉네임은 없어요' });
     const s = normalize(u.save);
     const [[f], plays] = await Promise.all([
@@ -1449,6 +1453,7 @@ const routes = {
     res.json({
       username: u.username, avatar: u.avatar, lv: u.lv, frame: u.frame, total: u.total, created_at: u.created_at, last_seen: u.last_seen,
       banned_until: u.banned_until && new Date(u.banned_until) > new Date() ? u.banned_until : null, ban_reason: u.ban_reason,
+      temp_pw: u.temp_pw, temp_pw_at: u.temp_pw_at,
       coins: s.coins, gems: s.gems, exp: s.exp, stats: { plays: s.stats.plays, pulls: s.stats.pulls, mwins: s.stats.mwins, gifts: s.stats.gifts, levelUps: s.stats.levelUps },
       chars: Object.entries(s.chars).filter(([id]) => CHAR[id]).map(([id, lv]) => ({ id, name: CHAR[id].name, rarity: CHAR[id].rarity, lv, dup: s.dup[id] ?? 0 }))
         .sort((a, b) => b.rarity - a.rarity || b.lv - a.lv),
