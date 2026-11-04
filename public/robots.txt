@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin/
 Disallow: /api/
 
-Sitemap: https://smallcute.online/sitemap.xml
+Sitemap: https://www.smallcute.online/sitemap.xml
