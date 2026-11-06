@@ -1,6 +1,6 @@
 // 리듬게임 엔진 + 소리 (곡 합성, 타격음, 캐릭터 목소리, 효과음)
 // 곡(멜로디 · 반주 · 베이스 · 드럼)은 미리 한 번에 합성해 틀어 두고, 납작한 노트가 판정선에 닿을 때 누른다.
-import { compile, makeChart, playSong } from './songs.js';
+import { compile, makeChart, playSong, midi } from './songs.js';
 
 // 구형 iOS Safari(15 이하) · 일부 안드로이드 웹뷰에는 roundRect가 없어서, 없으면 그리기가 통째로 멈춘다 → 직접 만든다
 if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
@@ -26,6 +26,7 @@ export const rankOf = (raw) => (raw >= 950000 ? 'S' : raw >= 850000 ? 'A' : raw 
 
 const INK = '#4a3953';
 const ITEM_ICON = { fog: '☁️', shake: '🌀', speed: '⚡', bomb: '💣' }; // 멀티 아이템 노트 (rules.js ATTACKS와 같은 종류)
+const JCOLOR = { perfect: '#ffe08d', great: '#ffd6e6', good: '#c4f3dc' }; // 판정별 타격 이펙트 색
 const freq = (m) => 440 * 2 ** ((m - 69) / 12);
 
 // '#rrggbb' 두 색을 섞기 (노트 윗면 하이라이트용)
@@ -65,6 +66,12 @@ const INSTR = {
   flute: { h: [1, 0.18, 0.05, 0.02], a: 0.05, d: 3 },
   koto: { h: [1, 0.55, 0.35, 0.18, 0.1, 0.05], a: 0.002, d: 0.32, ring: true, ringAt: 12, ringVol: 0.12 },
   guitar: { h: saw(10, 1).map((v, i) => v * (i % 2 ? 0.75 : 1)), a: 0.004, d: 1.3, det: [-7, 7] },
+  // 파티 · 축제: 곧게 뻗는 트럼펫 · 나일론 기타(스트럼 · 기타론 베이스) · 아코디언 · 클라리넷 · 마림바
+  trumpet: { h: [1, 0.95, 0.8, 0.62, 0.46, 0.32, 0.22, 0.14, 0.08, 0.05], a: 0.016, d: 2.8 },
+  nylon: { h: [1, 0.5, 0.32, 0.14, 0.08, 0.04], a: 0.002, d: 0.42 },
+  accordion: { h: [1, 0.62, 0.5, 0.36, 0.3, 0.2, 0.14, 0.1], a: 0.025, det: [-9, 9] },
+  clarinet: { h: [1, 0.04, 0.55, 0.03, 0.3, 0.02, 0.14, 0, 0.07], a: 0.02, d: 3.2 },
+  marimba: { h: [1, 0, 0, 0.28], a: 0.002, d: 0.24, ring: true, ringAt: 24, ringVol: 0.16 },
 };
 
 // 한 주기 파형표. 높은 음은 나이퀴스트를 넘는 배음을 빼서 거친 소리(앨리어싱)를 막는다
@@ -161,7 +168,13 @@ function drumKit() {
   const ohat = filter(make(0.32, (t) => noise() * Math.exp(-t / 0.09)), 'high', 6500, 0.7);
   let p3 = 0;
   const boom = make(0.9, (t) => Math.sin((p3 += (2 * Math.PI * (42 + 60 * Math.exp(-t / 0.04))) / SR)) * Math.exp(-t / 0.35));
-  return (kit = { kick, snare, hat, crash, clap, ohat, boom });
+  // 라틴 타악기: 셰이커(마라카스) · 카우벨 · 콩가
+  const shaker = filter(make(0.07, (t) => noise() * Math.min(1, t / 0.012) * Math.exp(-t / 0.022)), 'high', 6000, 0.7);
+  const sq = (f, t) => (((f * t) % 1) < 0.5 ? 1 : -1);
+  const bell = filter(make(0.22, (t) => (sq(540, t) + sq(800, t)) * Math.exp(-t / 0.06)), 'band', 800, 1.6);
+  let p4 = 0;
+  const conga = peakNorm(make(0.2, (t) => Math.sin((p4 += (2 * Math.PI * (190 + 70 * Math.exp(-t / 0.012))) / SR)) * Math.exp(-t / 0.07) + noise() * 0.25 * Math.exp(-t / 0.004)));
+  return (kit = { kick, snare, hat, crash, clap, ohat, boom, shaker, bell, conga });
 }
 
 function addSample(out, smp, t, vol) {
@@ -195,8 +208,12 @@ function reverb(x, spread) {
   return y;
 }
 
-// 마디 칸 수(6 · 8 · 12 · 16)별 [킥, 스네어, 하이햇, 박수, 열린 하이햇, 808] 패턴 (뒤쪽 줄은 없어도 된다)
+// 마디 칸 수(6 · 8 · 12 · 16)별 [킥, 스네어, 하이햇, 박수, 열린 하이햇, 808, 셰이커, 카우벨, 콩가] 패턴 (뒤쪽 줄은 없어도 된다)
 const DRUMS = {
+  // 파티 · 축제: 네 박 킥 + 셰이커 + 카우벨(3 · 3 · 2) + 콩가 / 삼바: 당겨 치는 킥 + 16분 셰이커
+  fiesta: { 8: ['x.x.x.x.', '..x...x.', '', '', '', '', 'xxxxxxxx', 'x..x..x.', '...x..xx'],
+    16: ['x...x...x...x...', '....x.......x...', '', '', '', '', 'x.xxx.xxx.xxx.xx', 'x..x..x...x.x...', '..x...xx..x...xx'] },
+  samba: { 16: ['x...x..xx...x..x', '....x.......x...', '', '', '', '', 'xxxxxxxxxxxxxxxx', 'x.x..x.x.x..x.x.', '..x...xx..x...xx'] },
   light: { 6: ['x.....', '......', 'x.x.x.'], 8: ['x.......', '....x...', 'x.x.x.x.'], 16: ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.'] },
   dance: { 8: ['x.x.x.x.', '..x...x.', '.x.x.x.x'], 16: ['x...x...x...x...', '....x.......x...', '..x...x...x...x.'] },
   half: { 8: ['x.....x.', '....x...', 'x.x.x.x.'], 16: ['x...........x...', '........x.......', 'x.x.x.x.x.x.x.x.'] },
@@ -231,8 +248,18 @@ function drumPattern(bar, per) {
 // 코드의 i번째 구성음 (근음부터 위로 쌓기)
 const tone = (ch, i) => ch.root + ch.tones[i % ch.tones.length] + 12 * Math.floor(i / ch.tones.length);
 
+// 쿵짝 반주: 박마다 베이스(근음 · 5음 번갈아), 박 사이마다 화음 (마리아치 · 폴카)
+const oompah = (low, high, vol) => (ch, s, first, len, sub) => (s % sub === 0 ? [[ch.bass - 12 + ((s / sub) % 2 ? 7 : 0), sub * 0.9, 0.16, low]]
+  : s % sub === sub >> 1 ? [0, 1, 2].map((i) => [tone(ch, i) + 12, sub * 0.4, vol, high]) : []);
+// 멜로디 아래 화음 (트럼펫 두 대): 3도(없으면 4도) 아래의 코드 구성음, 지나가는 음이면 조 안의 3도. pcs: 조의 음(0~11) · shift: 조옮김
+const third = (m, ch, pcs, shift) => {
+  const pc = (x) => (((x - shift) % 12) + 12) % 12, tones = ch ? ch.tones.map((x) => pc(ch.root + x)) : [];
+  return m - ([3, 4, 5].find((d) => tones.includes(pc(m - d))) ?? (pcs.has(pc(m - 3)) ? 3 : 4));
+};
 // 반주 음형: 마디 안 s번째 칸에서 칠 음들 [미디, 길이(칸), 세기]. first = 코드가 바뀐 첫 칸, len = 코드 길이(칸)
 const STYLES = {
+  ranchera: oompah('nylon', 'nylon', 0.06),
+  polka: oompah(undefined, 'accordion', 0.04),
   alberti: (ch, s) => [[tone(ch, [0, 2, 1, 2][s % 4]), 1.6, 0.1]],
   waltz: (ch, s) => (s === 0 ? [[ch.bass - 12, 4, 0.15]] : s % 2 ? [] : [[tone(ch, 1) + 12, 1, 0.07], [tone(ch, 2) + 12, 1, 0.07]]),
   march: (ch, s) => (s % 4 === 0 ? [[ch.bass - 12, 2, 0.15]] : s % 4 === 2 ? [[tone(ch, 1) + 12, 1, 0.07], [tone(ch, 2) + 12, 1, 0.07]] : []),
@@ -298,9 +325,25 @@ export function renderPCM(song) {
       if (pat[3]?.[s] === 'x') addSample(drums, kit.clap, t, 0.26);
       if (pat[4]?.[s] === 'x') addSample(drums, kit.ohat, t, 0.07);
       if (pat[5]?.[s] === 'x') addSample(drums, kit.boom, t, 0.5);
+      if (pat[6]?.[s] === 'x') addSample(drums, kit.shaker, t, s % c.sub ? 0.05 : 0.08);
+      if (pat[7]?.[s] === 'x') addSample(drums, kit.bell, t, 0.13);
+      if (pat[8]?.[s] === 'x') addSample(drums, kit.conga, t, 0.24);
     }
   }
-  for (const n of c.melody) addNote(bus, kind, n.midi, n.t, n.dur, kind === 'organ' ? 0.2 : kind === 'saw' || kind === 'chip' ? 0.17 : 0.25);
+  const mvol = kind === 'organ' ? 0.2 : kind === 'saw' || kind === 'chip' ? 0.17 : kind === 'trumpet' ? 0.21 : 0.25;
+  for (const n of c.melody) addNote(bus, kind, n.midi, n.t, n.dur, mvol);
+  // 3도 아래 화음 (song.harm = 조 이름 'F' 또는 음 목록 'D Eb F# …'): 구간마다 켜고 끌 수 있다
+  if (song.harm) {
+    const pcs = new Set(song.harm.includes(' ') ? song.harm.split(' ').map((x) => midi(`${x}4`) % 12) : [0, 2, 4, 5, 7, 9, 11].map((x) => (midi(`${song.harm}4`) + x) % 12));
+    for (const n of c.melody) {
+      const bar = c.bars[n.bar];
+      if (!bar.harm) continue;
+      const ch = bar.chords[Math.min(bar.chords.length - 1, Math.floor(((n.t - bar.t) / bar.dt + 1e-6) / (c.per / bar.chords.length)))];
+      addNote(bus, kind, third(n.midi, ch, pcs, bar.shift), n.t, n.dur, mvol * 0.5);
+    }
+  }
+  // 받아 치는 가락 (멜로디가 쉬는 틈에 다른 악기가)
+  for (const n of c.alt) addNote(bus, song.voice2 ?? 'nylon', n.midi, n.t, n.dur, 0.16);
   // EDM 펌핑: 킥이 칠 때마다 반주 · 멜로디 소리를 잠깐 줄였다가 올린다 (사이드체인)
   if (song.pump && kicks.length) {
     let k = 0;
@@ -501,19 +544,20 @@ export const sound = {
     });
   },
 
-  // 노트를 쳤을 때 '틱' 소리. 판정이 좋을수록 밝게
-  hit(name) {
+  // 노트를 쳤을 때 '틱' 소리. 판정이 좋을수록 밝게. m: 그 노트의 음(미디) — 멜로디 노트는 그 음 높이로 울려서 직접 연주하는 느낌
+  hit(name, m = 0) {
     if (!this.ctx) return;
     const ctx = this.ctx, t = ctx.currentTime, v = 0.22 * this.vol.sfx;
     noiseHit(ctx, this.out, this.noise, t, v * (name === 'good' ? 0.5 : 0.8), 'highpass', 3800, 0.035);
-    if (name === 'good') return;
+    if (name === 'good' && !m) return;
     const o = ctx.createOscillator(), g = ctx.createGain();
-    o.frequency.value = name === 'perfect' ? 1760 : 1318;
-    g.gain.setValueAtTime(v * 0.5, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+    o.type = m ? 'triangle' : 'sine';
+    o.frequency.value = m ? freq(m + 12) : name === 'perfect' ? 1760 : 1318;
+    g.gain.setValueAtTime(v * (name === 'good' ? 0.3 : 0.55), t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + (m ? 0.16 : 0.06));
     o.connect(g).connect(this.out);
     o.start(t);
-    o.stop(t + 0.08);
+    o.stop(t + (m ? 0.18 : 0.08));
   },
 
   // 캐릭터 목소리: 글자 수만큼 음절을 옹알옹알 (캐릭터마다 음높이 · 음색이 다르다)
@@ -657,6 +701,8 @@ export class Game {
     this.ptr = [0, 0, 0, 0];
     this.holding = [null, null, null, null];
     this.flash = [0, 0, 0, 0];
+    this.beam = [0, 0, 0, 0]; // 노트를 친 칸을 타고 올라가는 빛기둥
+    this.punch = 0; // 칠 때마다 판 전체가 '쿵' 하고 튀는 정도
     this.fx = [];
     this.bi = 0;
     this.total = this.tiles.length + this.tiles.filter((n) => n.hold).length; // 롱노트는 누름 + 뗌 두 번 판정
@@ -781,7 +827,7 @@ export class Game {
     }
     this.ptr[lane]++;
     n.hitAt = performance.now();
-    if (this.hitsound) sound.hit(j.name);
+    if (this.hitsound) sound.hit(j.name, n.fill ? 0 : n.midi);
     if (n.hold) {
       n.state = 1;
       this.holding[lane] = n;
@@ -810,6 +856,7 @@ export class Game {
     if (name === 'miss') {
       this.combo = 0;
       this.damage(tail ? 4 : 8);
+      if (!tail) this.burst(lane, 'miss');
     } else {
       this.combo++;
       this.acc += this.dead ? v * 0.1 : v; // 멀티에서 체력이 0이 된 뒤에는 점수가 10%만 오른다 (연타로 점수 올리기 막기)
@@ -819,7 +866,10 @@ export class Game {
         this.onHp(this.hp, this.maxHp, 'heal');
       }
       if (!tail) this.burst(lane, name);
-      if (this.combo % 50 === 0) this.onCombo?.(this.combo);
+      if (this.combo % 50 === 0) {
+        this.milestone();
+        this.onCombo?.(this.combo);
+      }
     }
     if (this.running) this.onJudge(name, this.combo, this.score, dt, lane);
   }
@@ -849,14 +899,38 @@ export class Game {
     });
   }
 
+  // 노트를 친 순간: 판정 색 충격파 + 빛기둥 + 불꽃 + 노트가 깨져 튀는 조각 + 판 전체가 '쿵'. 판정이 좋을수록 크게
   burst(lane, name) {
     const x = this.left + (lane + 0.5) * this.cw, y = this.jy, now = performance.now();
-    const color = name === 'wrong' ? '#b9adc4' : this.lanes[lane].color;
-    this.fx.push({ ring: true, x, y, color, born: now });
-    if (name === 'wrong') return;
-    for (let i = 0; i < (name === 'perfect' ? 10 : 5); i++) {
-      const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.4, sp = 160 + Math.random() * 280;
-      this.fx.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, color: i % 3 ? color : '#fff', size: 5 + Math.random() * 6, born: now });
+    if (this.fx.length > 240) this.fx.splice(0, this.fx.length - 240); // 노트가 몰려도 느려지지 않게 오래된 것부터 버린다
+    if (name === 'wrong' || name === 'miss') return void this.fx.push({ ring: true, x, y, color: name === 'miss' ? '#ff6b8a' : '#b9adc4', born: now, k: 0.8 });
+    const color = this.lanes[lane].color, power = { perfect: 1, great: 0.6 }[name] ?? 0.35;
+    this.punch = Math.min(1.8, this.punch + power);
+    this.beam[lane] = Math.max(this.beam[lane], power);
+    this.fx.push({ ring: true, x, y, color: JCOLOR[name] ?? color, born: now, k: 1 + power * 0.7, fill: true });
+    if (name === 'perfect') this.fx.push({ ring: true, x, y, color: '#fff', born: now + 60, k: 2 });
+    for (let i = 0, n = Math.round(4 + power * 12); i < n; i++) {
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.6, sp = 180 + Math.random() * 340 * (0.6 + power * 0.6);
+      this.fx.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, color: i % 3 ? color : i % 2 ? '#fff' : JCOLOR[name] ?? '#fff', size: 5 + Math.random() * (5 + power * 5), born: now });
+    }
+    for (let i = 0; i < 4; i++) { // 노트가 네 조각으로 깨져 튄다
+      this.fx.push({ shard: true, x: x + (i - 1.5) * this.nw * 0.22, y, vx: (i - 1.5) * 170 + (Math.random() - 0.5) * 80, vy: -(140 + Math.random() * 220),
+        rot: Math.random() * 3, vr: (Math.random() - 0.5) * 14, color: i % 2 ? color : this.light[lane], size: this.nh * 0.42, born: now });
+    }
+  }
+
+  // 50콤보마다: 네 칸 모두 충격파 + 판정선에서 꽃가루가 솟는다
+  milestone() {
+    const now = performance.now();
+    this.punch = 1.8;
+    for (let l = 0; l < 4; l++) {
+      const x = this.left + (l + 0.5) * this.cw;
+      this.beam[l] = 1;
+      this.fx.push({ ring: true, x, y: this.jy, color: '#ffe08d', born: now + l * 35, k: 2.4, fill: true });
+      for (let i = 0; i < 9; i++) {
+        this.fx.push({ x: x + (Math.random() - 0.5) * this.cw, y: this.jy, vx: (Math.random() - 0.5) * 260, vy: -(320 + Math.random() * 420),
+          color: ['#ffe08d', '#ff8db6', '#8fd3ff', '#fff'][i % 4], size: 7 + Math.random() * 7, born: now + l * 35, life: 0.9 });
+      }
     }
   }
 
@@ -919,6 +993,14 @@ export class Game {
     g.save();
     if (now - (this.shakeAt ?? 0) < 160) g.translate((Math.random() - 0.5) * 8, 0);
     if (shake) sway(g, left + fw / 2, jy, fw, shake, now);
+    // 칠 때마다 판정선을 중심으로 판 전체가 살짝 커졌다 돌아온다 ('쿵' 하는 손맛)
+    this.punch *= 0.84;
+    if (this.punch > 0.02) {
+      const z = 1 + this.punch * 0.011;
+      g.translate(left + fw / 2, jy);
+      g.scale(z, z);
+      g.translate(-(left + fw / 2), -jy);
+    }
 
     // 무대 판
     g.fillStyle = fever ? `rgba(60, 24, 70, ${0.66 + pulse * 0.08})` : 'rgba(28, 18, 52, .64)';
@@ -946,6 +1028,17 @@ export class Game {
         g.globalAlpha = 1;
         this.flash[l] *= this.holding[l] ? 0.95 : 0.86;
       }
+      if (this.beam[l] > 0.02) { // 친 칸을 타고 위로 솟는 빛기둥 (가운데가 밝다)
+        const b = this.beam[l], top = jy - H * (0.45 + b * 0.4), bg = g.createLinearGradient(0, jy, 0, top);
+        bg.addColorStop(0, '#fff');
+        bg.addColorStop(0.35, this.light[l]);
+        bg.addColorStop(1, 'rgba(255,255,255,0)');
+        g.globalAlpha = Math.min(0.8, b * 0.7);
+        g.fillStyle = bg;
+        g.fillRect(x + cw * 0.22, top, cw * 0.56, jy - top);
+        g.globalAlpha = 1;
+        this.beam[l] *= this.holding[l] ? 0.93 : 0.8;
+      }
     }
     g.fillStyle = 'rgba(255,255,255,.12)';
     for (let i = 1; i < 4; i++) g.fillRect(left + i * cw - 1, 0, 2, H);
@@ -957,9 +1050,15 @@ export class Game {
       if (y > 0 && y < jy - nh / 2) g.fillRect(left, y - 1, fw, 2);
     }
 
-    // 판정선 + 노트 받침
-    g.fillStyle = `rgba(255,141,182,${0.16 + pulse * 0.22})`;
+    // 판정선 + 노트 받침. 콤보가 쌓일수록 달아오르고, 100콤보부터는 무지개로 일렁인다 (+ 불씨가 솟는다)
+    const heat = Math.min(1, this.combo / 100);
+    g.fillStyle = fever ? `hsla(${(now / 6) % 360}, 95%, 72%, ${0.34 + pulse * 0.26})` : `rgba(255,141,182,${0.16 + heat * 0.16 + pulse * 0.22})`;
     g.fillRect(left, jy - nh / 2 - 7, fw, nh + 14);
+    if (fever && now - (this.ember ?? 0) > 70 && this.fx.length < 200) {
+      this.ember = now;
+      this.fx.push({ x: left + Math.random() * fw, y: jy, vx: (Math.random() - 0.5) * 40, vy: -(90 + Math.random() * 130), up: true,
+        color: `hsl(${(now / 6 + Math.random() * 90) % 360}, 95%, 75%)`, size: 3 + Math.random() * 4, born: now, life: 0.9 });
+    }
     for (let l = 0; l < 4; l++) {
       const x = left + (l + 0.5) * cw, p = this.flash[l], s = 1 + p * 0.1;
       g.beginPath();
@@ -1045,18 +1144,40 @@ export class Game {
     // 타격 이펙트
     this.fx = this.fx.filter((f) => {
       const age = (now - f.born) / 1000;
+      if (age < 0) return true; // 조금 뒤에 터지는 이펙트 (겹 충격파)
       if (f.ring) {
         if (age > 0.35) return false;
+        const k = f.k ?? 1, r = cw * 0.32 * k * (1 + age * 3);
         g.beginPath();
-        g.arc(f.x, f.y, cw * 0.32 * (1 + age * 3), 0, Math.PI * 2);
+        g.arc(f.x, f.y, r, 0, Math.PI * 2);
+        if (f.fill && age < 0.1) { // 터지는 순간 번쩍
+          g.globalAlpha = (1 - age / 0.1) * 0.55;
+          g.fillStyle = f.color;
+          g.fill();
+        }
         g.strokeStyle = f.color;
         g.globalAlpha = 1 - age / 0.35;
-        g.lineWidth = 5 * (1 - age / 0.35) + 1;
+        g.lineWidth = (5 * (1 - age / 0.35) + 1) * Math.min(1.8, k);
         g.stroke();
+      } else if (f.shard) { // 깨진 노트 조각: 돌면서 떨어진다
+        if (age > 0.5) return false;
+        g.save();
+        g.translate(f.x + f.vx * age, f.y + f.vy * age + 900 * age * age);
+        g.rotate(f.rot + f.vr * age);
+        g.globalAlpha = 1 - age / 0.5;
+        g.fillStyle = f.color;
+        g.beginPath();
+        g.roundRect(-f.size, -f.size / 2, f.size * 2, f.size, f.size * 0.3);
+        g.fill();
+        g.lineWidth = 2;
+        g.strokeStyle = INK;
+        g.stroke();
+        g.restore();
       } else {
-        if (age > 0.55) return false;
-        const x = f.x + f.vx * age, y = f.y + f.vy * age + 700 * age * age, r = f.size * (1 - age / 0.55);
-        g.globalAlpha = 1 - age / 0.55;
+        const life = f.life ?? 0.55;
+        if (age > life) return false;
+        const x = f.x + f.vx * age, y = f.y + f.vy * age + (f.up ? 0 : 700 * age * age), r = f.size * (1 - age / life);
+        g.globalAlpha = 1 - age / life;
         g.fillStyle = f.color;
         g.beginPath();
         g.moveTo(x, y - r);

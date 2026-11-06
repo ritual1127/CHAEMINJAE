@@ -7,7 +7,7 @@ import {
   MAX_LEVEL, MAX_LV, TOP, FREE_AVATARS, AVATAR_PRICE, RENAME_COINS, VERSION, INQUIRY, MP, ATTACKS, ATTACK_KINDS, GIFT,
   act, normalize, teamBuffs, teamPower, powerOf, valueAt, bestTeam, unlocked, ownedAvatar, claimable, missionsReady, onlineReady,
   levelOf, today, dayOf, cardsOf, cardPrice, LUCKY, BOT_SKILL, botAttacks, CARD_SHOP, POTION, pickupOf, pickupEnds, bannerOf, priceOf, attendOf, mpOrder, mpTarget, itemize,
-  copiesFor, coinsFor, canLevel, achView, achCtx, achCount, tierName, expProgress, levelReward, perksOf, frameInfo, frameTier, frameOfSave,
+  copiesFor, coinsFor, canLevel, achView, achCtx, achCount, tierName, expProgress, levelReward, perksOf, frameInfo, frameTier, frameOfSave, REF,
 } from './rules.js';
 
 const $ = (s) => document.querySelector(s);
@@ -332,7 +332,7 @@ async function pollMail(force) {
 const hello = () => doAct({ type: 'hello' }).catch(() => {});
 
 function enter(me) {
-  state.me = me ? { username: me.username } : null;
+  state.me = me ? { username: me.username, code: me.code } : null;
   state.save = me ? me.save : normalize(load('guestSave', null));
   state.unread = me?.unread ?? 0;
   hello();
@@ -357,7 +357,31 @@ function avatarGrid(el, list, get, set) {
 }
 avatarGrid($('#signupAvatars'), Array.from({ length: FREE_AVATARS }, (_, i) => i + 1), () => pickAvatar, (n) => (pickAvatar = n));
 
-function openAuth(mode = 'login') {
+// 초대 링크(?c=친구 코드)로 들어왔으면 기억해 뒀다가 가입 칸에 채운다 (가입할 때까지 남는다)
+const refCode = (() => {
+  const c = new URLSearchParams(location.search).get('c') ?? '';
+  if (/^\d{6,10}$/.test(c)) store('ref', c);
+  return load('ref', '');
+})();
+$('#auth').code.value = refCode;
+
+// 공유: 휴대폰은 공유 창(카카오톡 등), 안 되면 링크를 복사. 내 친구 코드가 붙은 주소라 이 링크로 가입하면 초대 보상이 온다
+const inviteUrl = () => `${location.origin}/${state.me?.code ? `?c=${state.me.code}` : ''}`;
+async function share(msg, url = inviteUrl()) {
+  try {
+    if (navigator.share) return void (await navigator.share({ title: '먼작귀 리듬 파티', text: msg, url }));
+  } catch (e) {
+    if (e?.name === 'AbortError') return; // 공유 창을 그냥 닫음
+  }
+  try {
+    await navigator.clipboard.writeText(`${msg} ${url}`);
+    toast('복사했어요! 친구에게 붙여 넣어 보내 주세요');
+  } catch {
+    toast(url);
+  }
+}
+
+function openAuth(mode = refCode ? 'signup' : 'login') {
   $('#touch').hidden = true;
   $('#auth').hidden = false;
   setAuthMode(mode);
@@ -366,7 +390,7 @@ function openAuth(mode = 'login') {
 function setAuthMode(mode) {
   authMode = mode;
   $$('#auth .seg button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.mode === mode));
-  $('#auth .signup-only').hidden = mode !== 'signup';
+  $$('#auth .signup-only').forEach((el) => (el.hidden = mode !== 'signup'));
   $('#authSubmit').textContent = mode === 'login' ? '로그인' : '가입하고 시작!';
   $('#auth').password.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
   $('#auth .err').textContent = '';
@@ -389,13 +413,17 @@ $('#auth').addEventListener('submit', async (e) => {
   const f = e.target, btn = $('#authSubmit');
   const body = { username: f.username.value.trim(), password: f.password.value };
   if (!body.username || !body.password) return ($('#auth .err').textContent = '닉네임과 비밀번호를 적어 주세요');
-  if (authMode === 'signup') body.avatar = pickAvatar;
+  if (authMode === 'signup') {
+    body.avatar = pickAvatar;
+    if (f.code.value.trim()) body.code = Number(f.code.value.trim());
+  }
   btn.disabled = true;
   try {
     const me = await api(authMode, body);
     if (me.admin) return location.assign('/admin/');
     enter(me);
     sound.sfx('ok');
+    if (authMode === 'signup') store('ref', ''); // 친구 코드는 한 번 쓰면 끝
     f.reset();
     $('#auth').hidden = true;
     $('#touch').hidden = false;
@@ -1833,6 +1861,11 @@ async function finish(r) {
   countUp($('#rScore'), r.score);
   sound.sfx(r.cleared ? 'fan' : 'back', 0.12);
   if (r.cleared && 'SA'.includes(r.rank)) confetti();
+  // 자랑 · 공유 · (게스트) 가입 권유
+  state.last = { song, diff, r };
+  $('#boastBtn').hidden = !(state.me && r.cleared);
+  $('#boastBtn').disabled = false;
+  $('#joinBtn').hidden = Boolean(state.me);
 
   const before = claimable(state.save).length;
   try {
@@ -1857,6 +1890,33 @@ async function finish(r) {
   }
   renderTop();
 }
+
+// 결과 자랑: 친구들 우편함으로 (서버에 있는 이 곡 최고 기록이 간다 · 하루 5번) / 링크로 공유 (내 친구 코드가 붙은 주소)
+$('#boastBtn').onclick = async () => {
+  const l = state.last, b = $('#boastBtn');
+  if (!l) return;
+  b.disabled = true;
+  try {
+    const r = await api('boast', { song: l.song.id, diff: l.diff });
+    state.save = r.save;
+    sound.sfx('ok');
+    toast(`친구 ${r.sent}명에게 자랑했어요! 📣 (오늘 ${r.left}번 남음)`);
+  } catch (e) {
+    toast(e.message);
+    b.disabled = false;
+  }
+};
+$('#shareBtn').onclick = () => {
+  const l = state.last;
+  if (!l) return;
+  sound.sfx('tap');
+  share(`🎵 먼작귀 리듬 파티 '${l.song.title}' ${DIFF_NAME[l.diff]} ${fmt(l.r.score)}점 · ${l.r.rank} 랭크${l.r.fullCombo ? ' · 풀콤보' : ''}! 너도 해 볼래?`);
+};
+$('#joinBtn').onclick = () => {
+  sound.sfx('tap');
+  show('title');
+  openAuth('signup');
+};
 
 function celebrate(score, prev, board) {
   $('#nrSub').textContent = prev ? `지난 기록보다 +${fmt(score - prev)}점!` : '첫 기록 달성!';
@@ -2111,6 +2171,10 @@ function renderFriends() {
   if (!fr) return;
   const gifted = new Set(fr.gifts), left = fr.giftMax - fr.gifts.length, inRoom = Boolean(mp.code);
   $('#frSum').innerHTML = `친구 <b>${fr.friends.length}</b> / ${fr.max}명 · 오늘 선물 <b>${Math.max(0, left)}</b>번 남음`;
+  $('#frCode').innerHTML = `<span>내 친구 코드 <b>${fr.code}</b></span>
+    <button type="button" class="btn small plain" data-copycode>코드 복사</button><button type="button" class="btn small pink" data-invitelink>초대 링크 보내기</button>
+    <small>친구가 이 코드로 가입하면 친구는 보석 ${REF.join}개 + 바로 서로 친구! 그 친구가 ${REF.plays}곡 연주하면 나도 보석 ${REF.invite}개
+      · 지금까지 초대 ${fmt(fr.invited)}명 (보상 ${fr.invitedPaid}/${REF.max}명)</small>`;
   $('#frIn').hidden = !fr.incoming.length;
   $('#frIn').innerHTML = `<h3 class="sub">받은 신청 <small>${fr.incoming.length}</small></h3>` + fr.incoming.map((u) => `<li class="frow">
     ${framed(u.avatar, u.frame, 'sm')}<span class="who"><b data-user="${esc(u.username)}">${esc(u.username)}</b><small>Lv.${fmt(u.lv)} · ${ago(u.created_at)}</small></span>
@@ -2177,6 +2241,15 @@ $('#gfOpts').onclick = async (e) => {
 $('#friendsDlg').addEventListener('click', async (e) => {
   const t = e.target, id = (k) => +t.closest(`[data-${k}]`)?.dataset[k];
   try {
+    if (t.closest('[data-copycode]')) {
+      await navigator.clipboard.writeText(String(fr.code)).catch(() => {});
+      sound.sfx('ok');
+      return toast(`친구 코드 ${fr.code}를 복사했어요`);
+    }
+    if (t.closest('[data-invitelink]')) {
+      sound.sfx('tap');
+      return share(`🎵 먼작귀 리듬 파티 같이 하자! 이 링크(친구 코드 ${fr.code})로 가입하면 보석 ${REF.join}개를 더 받아`);
+    }
     if (t.closest('[data-accept]')) {
       await api('friend-accept', { id: id('accept') });
       sound.sfx('ok');
@@ -2269,7 +2342,25 @@ document.addEventListener('click', (e) => {
 
 /* ---------- 우편함 ---------- */
 
-const MAILICON = { gift: '🎁', rank: '🏁', reply: '💌', system: '📢', friend: '💝' };
+const MAILICON = { gift: '🎁', rank: '🏁', reply: '💌', system: '📢', friend: '💝', boast: '📣' };
+// 쿠폰 코드: 맞으면 선물이 우편으로 온다
+$('#couponForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const code = $('#couponCode').value.trim();
+  if (!code) return;
+  try {
+    const r = await api('coupon', { code });
+    $('#couponCode').value = '';
+    state.unread = r.unread;
+    sound.sfx('coin');
+    toast(`쿠폰 선물이 우편으로 왔어요! ${rewardText(r)}`);
+    mails = (await api('mail')).mails;
+    renderMail();
+    renderTop();
+  } catch (err) {
+    toast(err.message);
+  }
+};
 let mails = [];
 
 async function openMail() {

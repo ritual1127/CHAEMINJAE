@@ -59,6 +59,13 @@ const sweep = (chords, oct) => chords.map((name) => {
   return [3, 2, 1, 2, 3, 2, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2].map(t).join(' ');
 }).join(' | ');
 
+// 파티 곡 재료. 라 쿠카라차: 후렴(못갖춘마디 '도도도'는 앞 마디 끝에) · 후렴 사이사이 기타가 받아 치는 가락 / R16: 16칸 쉼
+const CUCA = 'F5 - - A5 - C5 C5 C5 | F5 - - A5 - - - . | F5 F5 E5 E5 D5 D5 C5 - | - - - - . C5 C5 C5 |' +
+  'E5 - - G5 - C5 C5 C5 | E5 - - G5 - - - . | C6 D6 C6 Bb5 A5 G5 F5 - | ';
+const CUCA_ALT = '. . . . . . . . | . . . . . C6 A5 F5 | . . . . . . . . | . E5 G5 Bb5 . . . . |' +
+  '. . . . . . . . | . . . . . Bb5 G5 E5 | . . . . . . . . | . A5 C6 F6 . . . .';
+const R16 = '. . . . . . . . . . . . . . . .';
+
 export const SONGS = [
   {
     id: 'twinkle', genre: 'classic', title: '작은 별 변주곡', composer: '모차르트', bpm: 104, meter: 4,
@@ -99,7 +106,7 @@ export const SONGS = [
     jacket: 'cards/shisa', jc: '#ffe2c4',
     sections: {
       I: ['C|G7', '. . . . . . . . | . . . . . . . .'],
-      A: ['C|C|C|C|C|C|C|G|C|C7|F|F|C|C|G7|C',
+      A: ['C|C|C|C|C|C|C|G|C|C7|C7|C7 F|C|C|G7|C',
         '. . C5 - E5 - F5 - | G5 - - - - - - - | . . C5 - E5 - F5 - | G5 - - - - - - - |' +
         '. . C5 - E5 - F5 - | G5 - - - E5 - - - | C5 - - - E5 - - - | D5 - - - - - - - |' +
         'E5 - - - E5 - D5 - | C5 - - - . . C5 - | E5 - - - G5 - - - | G5 - - - F5 - - - |' +
@@ -119,6 +126,81 @@ export const SONGS = [
         'C5 C5 C5 E5 - - G5 - | C5 C5 C5 E5 - - G5 - | C6 - D6 C6 Bb5 A5 G5 - | F5 - - - - - . .'],
       B: { from: 'A', bpm: 170 },
       O: ['F', 'F5 - A5 - C6 - F6 -', { bpm: 170 }],
+    },
+  },
+  // ── 파티 · 축제: 트럼펫 두 대(3도 화음) · 기타 스트럼 · 라틴 타악기 · 조옮김 · 점점 빨라지기 ──
+  {
+    // 후렴 + 절(멕시코 민요 원래 가락) + 한 음 올려 더 빠르게. 전주 팡파르와 기타가 받는 가락은 이 게임용 편곡
+    id: 'cucafiesta', genre: 'party', title: '라 쿠카라차 피에스타 (마리아치)', composer: '멕시코 민요', bpm: 160, meter: 4,
+    price: 0, style: 'ranchera', voice: 'trumpet', voice2: 'nylon', drums: 'fiesta', harm: 'F', order: 'IBVBLKMO',
+    jacket: 'cards/usagi', jc: '#fff0b8',
+    sections: {
+      I: ['F|F|C7|C7', 'C5 F5 A5 C6 - - - - | C6 A5 C6 F6 - - - - | E6 - D6 - C6 - Bb5 - | G5 - E5 - . C5 C5 C5'],
+      A: ['F|F|F C7|C7|C7|C7|C7|F', `${CUCA}- - - - . C5 C5 C5`, { alt: CUCA_ALT }],
+      B: ['F|F|F C7|C7|C7|C7|C7|F', `${CUCA}- - - - . . . .`, { alt: CUCA_ALT }],
+      V: ['F|F|F|C7|C7|C7|C7|F',
+        'C5 C5 F5 F5 A5 A5 . . | C6 - - A5 - - - . | C6 D6 C6 Bb5 A5 C6 . . | Bb5 - - G5 - - - . |' +
+        'C5 C5 E5 E5 G5 G5 . . | Bb5 - - G5 - - - . | C6 D6 C6 Bb5 A5 G5 . . | A5 - - F5 - C5 C5 C5',
+        { harm: false, drums: 'march',
+          alt: '. . . . . . A4 C5 | . . . . . F5 A5 C6 | . . . . . . A4 C5 | . . . . . E5 G5 Bb5 |' +
+            '. . . . . . G4 Bb4 | . . . . . G5 Bb5 C6 | . . . . . . E5 G5 | . . . . . . . .' }],
+      L: ['D7', '. . . . . D5 D5 D5', { drums: 'build' }],
+      K: { from: 'A', shift: 2, bpm: 176 },
+      M: { from: 'B', shift: 2, bpm: 190 },
+      O: ['F C7|F', 'F5 A5 C6 F6 - . C6 C6 | F6 - - - . . . .', { shift: 2, bpm: 190 }],
+    },
+  },
+  {
+    // 유대 민요 (이델손 채보 1918): 처음엔 느긋하게, 돌 때마다 빨라진다
+    id: 'havanagila', genre: 'party', title: '하바 나길라 (점점 빨라져요!)', composer: '유대 민요', bpm: 132, meter: 4, sub: 4,
+    price: 0, style: 'polka', voice: 'clarinet', voice2: 'accordion', drums: 'march', order: 'IAABBCDEFO',
+    jacket: 'cards/kani', jc: '#ffe1c2',
+    sections: {
+      I: ['D|D', `${R16} | ${R16}`],
+      A: ['D|D|Cm|D Cm D D',
+        'D5 - - - D5 - - - - - F#5 - Eb5 - D5 - | F#5 - - - F#5 - - - - - A5 - G5 - F#5 - |' +
+        'G5 - - - G5 - - - - - Bb5 - A5 - G5 - | F#5 - - - Eb5 D5 Eb5 - D5 - - - - - - -'],
+      B: ['D|Cm|Cm|D Cm D D',
+        'F#5 - F#5 - - - Eb5 - D5 - D5 - D5 - - - | Eb5 - Eb5 - - - D5 - C5 - C5 - C5 - - - |' +
+        'C5 - - - Eb5 - - D5 C5 - C5 - G5 - - - | F#5 - - - Eb5 D5 Eb5 - D5 - - - - - - -', { bpm: 144, drums: 'fiesta' }],
+      C: ['Gm|Gm|Gm|Gm|Cm|Cm|D7|D|Gm',
+        'G5 - - - - - - - G5 - - - - - - - | G5 - - - G5 - - - G5 - - - G5 - - - |' +
+        'G5 - G5 - Bb5 - - A5 G5 - Bb5 - A5 - G5 - | G5 - G5 - Bb5 - - A5 G5 - Bb5 - A5 - G5 - |' +
+        'A5 - A5 - C6 - - Bb5 A5 - C6 - Bb5 - A5 - | A5 - A5 - C6 - - Bb5 A5 - C6 - Bb5 - A5 - |' +
+        'A5 - A5 - D6 - - - D5 - D5 - D6 - - - | . . D5 - D5 - D5 - Bb5 - A5 - G5 - F#5 - | G5 - - - - - - - - - - - . . . .',
+        { bpm: 152, drums: 'fiesta',
+          alt: `${R16} | Bb4 - - - Bb4 - - - D5 - - - D5 - - - | ${R16} | ${R16} | ${R16} | ${R16} | ${R16} | ${R16} | ${R16}` }],
+      D: { from: 'A', bpm: 168, drums: 'fiesta' },
+      E: { from: 'B', bpm: 176 },
+      F: { from: 'C', bpm: 188 },
+      O: ['Gm', 'G5 - - - - - - - . . . . . . . .', { bpm: 188 }],
+    },
+  },
+  {
+    // 이 게임용 창작곡: 삼바 리듬(쉬었다 당겨 치기) + 트럼펫이 부르면 마림바가 받는 가락
+    id: 'sambaura', genre: 'party', title: '우라! 삼바 카니발', composer: '먼작귀 사운드', bpm: 116, meter: 4, sub: 4,
+    price: 0, style: 'dembow', voice: 'trumpet', voice2: 'marimba', bass: 'walk', drums: 'samba', harm: 'C', order: 'IABALKO',
+    jacket: 'cards/chiikawa', jc: '#c9f2d0',
+    sections: {
+      I: ['C|G7', `${R16} | ${R16}`, { alt: 'C5 - - E5 - - G5 - C6 - - G5 - - E5 - | D5 - - F5 - - G5 - B5 - - G5 - - D5 -' }],
+      A: ['C|C|F|G7|C|Am|Dm G7|C',
+        'E5 - G5 - - E5 G5 - C6 - - - . . G5 - | A5 - G5 - - E5 - - G5 - - - . . . . |' +
+        'F5 - A5 - - F5 A5 - C6 - - - . . A5 - | B5 - A5 - - G5 - - D5 - - - . . . . |' +
+        'E5 - G5 - - E5 G5 - C6 - - - . . C6 - | E6 - D6 - - C6 - - A5 - - - . . . . |' +
+        'F5 - A5 - - D6 - - C6 - B5 - A5 - G5 - | C6 - - - - - . . C6 - C6 - C6 - . .',
+        { alt: `${R16} | . . . . . . . . . . . . E5 G5 C6 . | ${R16} | . . . . . . . . . . . . G5 B5 D6 . |` +
+          `${R16} | . . . . . . . . . . . . A5 C6 E6 . | ${R16} | ${R16}` }],
+      B: ['F|F|C|C|F|F|D7|G7',
+        'A5 - - A5 - - A5 - C6 - - A5 - - F5 - | A5 - - - - - . . . . . . . . . . |' +
+        'G5 - - G5 - - G5 - C6 - - G5 - - E5 - | G5 - - - - - . . . . . . . . . . |' +
+        'A5 - - A5 - - A5 - C6 - - A5 - - F5 - | A5 - - - - - . . . . . . . . . . |' +
+        'F#5 - - A5 - - C6 - D6 - - C6 - - A5 - | B5 - - - D6 - - - G6 - - - . . . .',
+        { harm: false,
+          alt: `${R16} | . . . . . . . . C5 - F5 - A5 - C6 - | ${R16} | . . . . . . . . G4 - C5 - E5 - G5 - |` +
+            `${R16} | . . . . . . . . F5 - A5 - C6 - F6 - | ${R16} | ${R16}` }],
+      L: ['A7', 'A5 - B5 - C#6 - D6 - E6 - - - . . . .', { drums: 'build', harm: false }],
+      K: { from: 'A', shift: 2, bpm: 126 },
+      O: ['C', 'C6 - - - . . . . . . . . . . . .', { shift: 2, bpm: 126 }],
     },
   },
   {
@@ -416,7 +498,7 @@ export const SONGS = [
     jacket: 'cards/ramen_armor', jc: '#fbf1cc',
     sections: {
       I: ['C', '. . . . . . . .'],
-      A: ['C|C|G|G C|C|C|G|G C|G|G|D|G|C|C|F|G C',
+      A: ['C|C|G|C G C C|C|C|G|C G C C|G|G|D|G|C|C|F|G C C C',
         'G5 - - F5 E5 - D5 - | C5 - D5 - E5 - C5 - | D5 E5 F5 D5 E5 - - D5 | C5 - B4 - C5 - - - |' +
         'G5 - - F5 E5 - D5 - | C5 - D5 - E5 - C5 - | D5 E5 F5 D5 E5 - - D5 | C5 - B4 - C5 - - - |' +
         'D5 - - E5 F5 - D5 - | E5 - - F5 G5 - D5 - | E5 F#5 G5 A5 B5 C6 B5 - | A5 - G5 - - - - - |' +
@@ -583,7 +665,7 @@ export const SONGS = [
     jacket: 'cards/pajama_pink', jc: '#fff0f6',
     sections: {
       I: ['C', '. . . . . . G4 -'],
-      A: ['C|G C|F C|G G7|C|G C|F C|G7 C',
+      A: ['C|G C|F C|G G7|C|G C|F F C G7|C',
         'C5 - - C5 C5 - G4 - | D5 - - B4 C5 - G4 - | C5 - F5 - F5 - E5 D5 | C5 - B4 - C5 - D5 G4 |' +
         'C5 - - C5 C5 - G4 - | D5 - - B4 C5 - G4 - | C5 - F5 - E5 - D5 - | C5 - - - . . G4 -'],
       B: ['F|C|G|C|F|C|G7|C',
@@ -805,7 +887,7 @@ export const SONGS = [
     jacket: 'cards/chiikawa', jc: '#ffd9e8',
     sections: {
       I: ['Am', '. . . . . . . .'],
-      A: ['Am|Am|Am|Dm|Am|E|Am|Dm|Am|E|Am|Am|Dm|E',
+      A: ['Am Esus4|Am Esus4|Am|Dm|Am|E|Am|Dm|Am|E|Am Esus4|Am Esus4|Dm|E',
         'A4 - A4 - B4 - - - | A4 - A4 - B4 - - - | A4 - B4 - C5 - B4 - | A4 - B4 A4 F4 - - - | E4 - C4 - E4 - F4 - | E4 - E4 C4 B3 - - - | A4 - B4 - C5 - B4 - |' +
         'A4 - B4 A4 F4 - - - | E4 - C4 - E4 - F4 - | E4 - E4 C4 B3 - - - | A4 - A4 - B4 - - - | A4 - A4 - B4 - - - | E4 - F4 - B4 A4 F4 - | E4 - - - - - - -'],
       B: { from: 'A', shift: 12, bpm: 108, drums: 'half' },
@@ -859,7 +941,7 @@ export const SONGS = [
     jacket: 'cards/tiha', jc: '#dfeaea',
     sections: {
       I: ['C', '. . . . . G4'],
-      A: ['C|C|C|G|C|C|C|G|C|C|C|G|C|C|C|G',
+      A: ['C|C|G7|C|C|C|G7|C|C|C|G7|C|C|C|G7|C',
         'C5 - C5 C5 - D5 | E5 - - E5 - - | E5 - D5 C5 - D5 | E5 - - C5 - - | E5 - - E5 - F5 | G5 - - G5 - - | F5 - E5 F5 - G5 | E5 - - - - - |' +
         'C5 - - C5 - D5 | E5 - - E5 - - | D5 - C5 D5 - E5 | C5 - - G4 - - | C5 - C5 C5 - D5 | E5 - - E5 - - | D5 - C5 D5 - E5 | C5 - - - - G4'],
       B: { from: 'A', bpm: 138, shift: 2 },
@@ -886,7 +968,7 @@ export const SONGS = [
     jacket: 'cards/kurimanju', jc: '#ffe0e0',
     sections: {
       I: ['D', '. . . . . . . .'],
-      A: ['D|G A7|D|G D|D|G A7|D|D|A7|D G|D A7|D',
+      A: ['D|G D A7 D|D G G A7|A7 D D D|D|G A7|D|D|A7|D G|D A7|D',
         'D5 - - C#5 B4 - - A4 | G4 - - F#4 E4 - D4 - | A4 - B4 - - B4 C#5 - | - C#5 D5 - - - - - | D5 D5 C#5 B4 A4 - - A4 | G4 F#4 D5 - C#5 B4 A4 - |' +
         'A4 G4 F#4 - F#4 F#4 F#4 F#4 | F#4 G4 A4 - - - G4 F#4 | E4 E4 E4 E4 E4 F#4 G4 - | - F#4 E4 D4 D5 - B4 - | A4 - - G4 F#4 - G4 - | F#4 - E4 - D4 - - -'],
       B: { from: 'A', bpm: 126, shift: 2, drums: 'dance' },
@@ -911,8 +993,8 @@ export const SONGS = [
     sections: {
       I: ['G', '. . . . . . . .'],
       A: ['G|G D|C D|G', 'G4 - G4 - G4 - A4 - | G4 - G4 - D4 - - - | E4 - D4 - E4 - F#4 - | G4 - - - G4 - - -'],
-      B: ['G|G D|C D|G', 'D5 - C5 - B4 - A4 - | B4 - A4 - G4 - - - | E4 - D4 - E4 - F#4 - | G4 - - - G4 - - -'],
-      C: ['D|G D|G C|G D G', 'D4 - D4 - E4 - F#4 - | G4 - G4 - A4 - - - | D5 - C5 - B4 - A4 - | G4 - C5 - G4 - - -', { drums: 'rock', bpm: 132 }],
+      B: ['G|G D G G|C D|G', 'D5 - C5 - B4 - A4 - | B4 - A4 - G4 - - - | E4 - D4 - E4 - F#4 - | G4 - - - G4 - - -'],
+      C: ['D|G D|G C|G C G G', 'D4 - D4 - E4 - F#4 - | G4 - G4 - A4 - - - | D5 - C5 - B4 - A4 - | G4 - C5 - G4 - - -', { drums: 'rock', bpm: 132 }],
       O: ['G', 'G4 - D5 - G5 - - -', { bpm: 132 }],
     },
   },
@@ -952,7 +1034,7 @@ export const SONGS = [
     sections: {
       I: ['Em', '. . . . . . . .'],
       A: ['Em|Em|Em D|G B7', 'E4 - E4 - B4 - B4 - | A4 - G4 - F#4 - E4 - | D4 - E4 - F#4 - G4 - | A4 - B4 - - - . .'],
-      B: ['G|Em|Am B7|Em|G|Em|Am B7|Em',
+      B: ['G|Em|Am B7|Em|G|Em|Am B7|B7 Em',
         'B4 - C5 - A4 - B4 - | C5 - D5 - E5 - B4 - | A4 - G4 - E4 - F#4 - | G4 - A4 - B4 - - - |' +
         'B4 - C5 - B4 - B4 - | A4 - G4 - F#4 - E4 - | G4 - F#4 - E4 - G4 - | F#4 - - - E4 - - -', { drums: 'dance' }],
       O: ['Em', 'E5 - B4 - E4 - - -'],
@@ -1014,7 +1096,7 @@ export const SONGS = [
       A: ['Cm|Ab|Eb|Bb|Cm|Ab|Bb|Cm',
         'G5 - Eb5 - C5 - Eb5 G5 | Ab5 - G5 - Eb5 - C5 - | G5 - Eb5 - Bb4 - Eb5 G5 | Bb5 - Ab5 - G5 - F5 - |' +
         'G5 - Eb5 - C5 - Eb5 G5 | Ab5 - G5 - Eb5 - C5 - | Bb5 - G5 - F5 - D5 - | C5 - - - . . . .', { drums: 'half' }],
-      B: ['Ab|Eb|Bb|G', 'C5 C5 Eb5 Eb5 G5 G5 C6 C6 | Bb5 Bb5 Ab5 Ab5 G5 G5 F5 F5 | Eb5 Eb5 F5 F5 G5 G5 Ab5 Ab5 | Bb5 - - - B5 - - -', { drums: 'build' }],
+      B: ['Ab|Eb|Bb|Gm G', 'C5 C5 Eb5 Eb5 G5 G5 C6 C6 | Bb5 Bb5 Ab5 Ab5 G5 G5 F5 F5 | Eb5 Eb5 F5 F5 G5 G5 Ab5 Ab5 | Bb5 - - - B5 - - -', { drums: 'build' }],
       D: ['Cm|Ab|Eb|Bb|Cm|Ab|Bb|Cm',
         'C6 - C6 Bb5 G5 - C6 - | Ab5 - Ab5 G5 Eb5 - Ab5 - | G5 - G5 F5 Eb5 - G5 - | F5 - Eb5 D5 Bb4 - D5 - |' +
         'C6 - C6 Bb5 G5 - C6 - | Ab5 - Ab5 G5 Eb5 - C6 - | D6 - C6 Bb5 G5 - F5 - | C5 - - - . . . .'],
@@ -1142,7 +1224,7 @@ export const SONGS = [
       A: ['Em|D|Em|C|Em|D|C|Em',
         'E5 - - - G5 - - - | F#5 - - - D5 - - - | E5 - - - G5 - B5 - | A5 - - - . . . . |' +
         'E5 - - - G5 - - - | F#5 - - - D5 - - - | C5 - - - D5 - - - | E5 - - - . . . .', { drums: 'half' }],
-      B: ['C|C|B|B', 'B4 - - - B4 - - - | C5 - - - C5 - - - | D5 - D5 - D#5 - D#5 - | E5 E5 E5 E5 E5 E5 E5 E5', { drums: 'build' }],
+      B: ['CM7|C|Bm B|B', 'B4 - - - B4 - - - | C5 - - - C5 - - - | D5 - D5 - D#5 - D#5 - | E5 E5 E5 E5 E5 E5 E5 E5', { drums: 'build' }],
       D: ['Em|D|Em|C|Em|D|C|Em',
         'E4 E4 . E4 G4 . E4 . | F#4 F#4 . F#4 A4 . D4 . | E4 E4 . E4 G4 . B4 . | A4 - G4 - F#4 - D4 - |' +
         'E4 E4 . E4 G4 . E4 . | F#4 F#4 . F#4 A4 . D4 . | C5 - B4 - A4 - B4 - | E4 - - - . . . .'],
@@ -1171,7 +1253,7 @@ export const SONGS = [
     jacket: 'cards/pajama_purple', jc: '#e3d2ff',
     sections: {
       I: ['Dm|Bb', '. . . . . . . . | . . . . . . . .', { drums: 'light' }],
-      A: ['Dm|Bb|C|Am', 'D5 - F5 - A5 - G5 F5 | E5 - - - C5 - D5 E5 | F5 - E5 - D5 - C5 - | A4 - - - . . . .', { drums: 'half' }],
+      A: ['Dm|Am|C|Am', 'D5 - F5 - A5 - G5 F5 | E5 - - - C5 - D5 E5 | F5 - E5 - D5 - C5 - | A4 - - - . . . .', { drums: 'half' }],
       B: ['Bb|C|Bb|A', 'Bb4 - C5 - D5 - E5 - | F5 - G5 - A5 - - - | Bb5 - A5 - G5 - F5 - | E5 - - - E5 - - -', { drums: 'build' }],
       C: ['Dm|Bb|C|Am|Dm|Bb|C A|Dm',
         'A5 - A5 G5 F5 - D5 - | F5 - F5 E5 D5 - C5 - | D5 - D5 E5 F5 - G5 - | A5 - - - . . A5 C6 |' +
@@ -1188,7 +1270,7 @@ export const SONGS = [
       I: ['E|B', '. . . . . . . . | . . . . . . . .'],
       A: ['E|B|C#m|A', 'B4 - E5 - G#5 - F#5 E5 | D#5 - - - B4 - - - | C#5 - E5 - G#5 - A5 G#5 | F#5 - - - . . . .', { drums: 'half' }],
       B: ['A|C#m|B|B', 'A5 - G#5 - F#5 - E5 - | G#5 - F#5 - E5 - C#5 - | D#5 - E5 - F#5 - G#5 - | B5 - - - B5 - - -', { drums: 'build' }],
-      C: ['E|B|C#m|A|E|B|A B|E',
+      C: ['E|B|C#m|AM7|E|B|A B|E',
         'B5 - G#5 - E5 - G#5 - | B5 - C#6 - B5 - F#5 - | A5 - G#5 - E5 - C#5 - | E5 - F#5 - G#5 - - - |' +
         'B5 - G#5 - E5 - G#5 - | B5 - C#6 - E6 - D#6 - | C#6 - B5 - A5 - F#5 - | E5 - - - . . . .'],
       D: ['E|C#m|B|E', 'E6 - D#6 - B5 - G#5 - | C#6 - B5 - G#5 - E5 - | A5 - G#5 - F#5 - D#5 - | E5 - - - . . . .'],
@@ -1202,7 +1284,7 @@ export const SONGS = [
     sections: {
       I: ['F#m|D', '. . . . . . . . | . . . . . . . .'],
       A: ['F#m|D|A|E', 'F#5 - - - E5 - C#5 - | D5 - - - A4 - - - | C#5 - - - E5 - A5 - | G#5 - - - . . . .', { drums: 'half' }],
-      B: ['D|A|D|E', 'A5 - B5 - C#6 - D6 - | C#6 - B5 - A5 - F#5 - | D5 - E5 - F#5 - G#5 - | A5 - - - G#5 - - -', { drums: 'build' }],
+      B: ['D|A|D|Esus4 E', 'A5 - B5 - C#6 - D6 - | C#6 - B5 - A5 - F#5 - | D5 - E5 - F#5 - G#5 - | A5 - - - G#5 - - -', { drums: 'build' }],
       C: ['F#m|D|A|E|F#m|D|E|F#m',
         'C#6 - A5 - F#5 - A5 - | B5 - A5 - F#5 - D5 - | E5 - A5 - C#6 - E6 - | D6 - C#6 - B5 - - - |' +
         'C#6 - A5 - F#5 - A5 - | B5 - A5 - F#5 - D5 - | E5 - G#5 - B5 - G#5 - | F#5 - - - . . . .'],
@@ -1217,7 +1299,7 @@ export const SONGS = [
     sections: {
       I: ['G|D', '. . . . . . . . | . . . . . . . .'],
       A: ['G|Em|C|D', 'D5 D5 B4 - D5 - G5 - | E5 E5 C5 - E5 - G5 - | A5 - G5 - E5 - D5 - | B4 - - - . . . .', { drums: 'half' }],
-      B: ['C|Am|C|D', 'C5 - D5 - E5 - G5 - | A5 - G5 - E5 - D5 - | C5 - D5 - E5 - F#5 - | G5 - - - A5 - - -', { drums: 'build' }],
+      B: ['C|Am|C|Dsus4 D', 'C5 - D5 - E5 - G5 - | A5 - G5 - E5 - D5 - | C5 - D5 - E5 - F#5 - | G5 - - - A5 - - -', { drums: 'build' }],
       C: ['G|D|Em|C|G|D|C D|G',
         'G5 G5 . G5 A5 . B5 . | D6 - B5 - A5 - G5 - | E5 E5 . E5 F#5 . G5 . | A5 - - - . . . . |' +
         'G5 G5 . G5 A5 . B5 . | D6 - E6 - D6 - B5 - | C6 - B5 - A5 - F#5 - | G5 - - - . . . .'],
@@ -1231,7 +1313,7 @@ export const SONGS = [
     jacket: 'cards/pajama_purple', jc: '#2a1838',
     sections: {
       I: ['Cm|Ab', '. . . . . . . . | . . . . . . . .'],
-      A: ['Cm|Ab|Bb|G', 'C5 - C5 - Eb5 - C5 - | Bb4 - Ab4 - G4 - - - | C5 - C5 - Eb5 - G5 - | F5 - Eb5 - D5 - - -', { drums: 'half' }],
+      A: ['Cm|Ab Eb|Bb|G', 'C5 - C5 - Eb5 - C5 - | Bb4 - Ab4 - G4 - - - | C5 - C5 - Eb5 - G5 - | F5 - Eb5 - D5 - - -', { drums: 'half' }],
       B: ['Ab|Bb|Ab|G', 'Ab4 - Bb4 - C5 - D5 - | Eb5 - F5 - G5 - - - | Ab5 - G5 - F5 - Eb5 - | D5 - - - G5 - - -', { drums: 'build' }],
       C: ['Cm|Ab|Bb|Eb|Cm|Ab|Bb G|Cm',
         'G5 - G5 - G5 Ab5 G5 - | F5 - Eb5 - C5 - - - | G5 - G5 - G5 Bb5 Ab5 - | G5 - F5 - Eb5 - - - |' +
@@ -1261,7 +1343,7 @@ export const SONGS = [
     jacket: 'cards/chiikawa', jc: '#ffe0ec',
     sections: {
       I: ['Eb|Bb', '. . . . . . . . | . . . . . . . .'],
-      A: ['Eb|Bb|Cm|Ab', 'G5 - G5 Ab5 Bb5 - G5 - | F5 - - - D5 - - - | Eb5 - Eb5 F5 G5 - C6 - | Bb5 - Ab5 - G5 - - -', { drums: 'half' }],
+      A: ['Eb|Bb|Cm|Ab Eb', 'G5 - G5 Ab5 Bb5 - G5 - | F5 - - - D5 - - - | Eb5 - Eb5 F5 G5 - C6 - | Bb5 - Ab5 - G5 - - -', { drums: 'half' }],
       B: ['Ab|Eb|Bb|Bb', 'Ab5 - G5 - F5 - Eb5 - | G5 - F5 - Eb5 - D5 - | F5 - Eb5 - D5 - C5 - | D5 - - - Bb4 - - -', { drums: 'build' }],
       C: ['Eb|Bb|Cm|Ab|Eb|Bb|Ab Bb|Eb',
         'Eb6 - D6 - Bb5 - G5 - | F5 - G5 - Bb5 - - - | C6 - Bb5 - G5 - Eb5 - | Ab5 - G5 - F5 - - - |' +
@@ -1276,7 +1358,7 @@ export const SONGS = [
     jacket: 'cards/hachiware', jc: '#30264a',
     sections: {
       I: ['Gm|Eb', '. . . . . . . . | . . . . . . . .', { drums: 'build' }],
-      A: ['Gm|Eb|F|D', 'G4 - Bb4 - D5 - C5 Bb4 | A4 - - - F4 - - - | G4 - Bb4 - D5 - F5 - | F#5 - - - . . . .', { drums: 'half' }],
+      A: ['Gm|F|Eb|D', 'G4 - Bb4 - D5 - C5 Bb4 | A4 - - - F4 - - - | G4 - Bb4 - D5 - F5 - | F#5 - - - . . . .', { drums: 'half' }],
       B: ['Eb|Bb|F|D', 'Eb5 - D5 - C5 - Bb4 - | D5 - C5 - Bb4 - A4 - | C5 - D5 - Eb5 - F5 - | F#5 - - - F#5 - - -', { drums: 'build' }],
       C: ['Gm|F|Eb|D|Gm|F|Eb D|Gm',
         'G5 - G5 - Bb5 - A5 G5 | F5 - - - D5 - - - | Eb5 - Eb5 - G5 - F5 Eb5 | D5 - - - . . . . |' +
@@ -1455,7 +1537,7 @@ export const SONGS = [
       A: ['G|Bm|Em|C|G|Bm|C D|G',
         'B5 - B5 - A5 - G5 - | F#5 - - - D5 - - - | G5 - G5 - F#5 - E5 - | E5 - - - . . . . |' +
         'B5 - B5 - A5 - G5 - | F#5 - A5 - D6 - C6 - | B5 - A5 - G5 - F#5 - | G5 - - - . . . .'],
-      C: ['G|Em|C|D|G|Em|C D|G',
+      C: ['G|Em|C|D Em|G|Em|C D|G',
         'D6 - B5 - D6 - E6 - | D6 - B5 - A5 - - - | C6 - A5 - C6 - D6 - | C6 - A5 - G5 - - - |' +
         'D6 - B5 - D6 - E6 - | G6 - F#6 - E6 - D6 - | C6 - B5 - A5 - F#5 - | G5 - - - . . . .'],
       D: { from: 'C', shift: 2 },
@@ -1754,7 +1836,7 @@ export const SONGS = [
       A: ['D|Bm|G|A|D|Bm|G A|D',
         'F#5 - A5 - D6 - A5 - | F#5 - D5 - B4 - D5 - | G5 - B5 - D6 - B5 - | A5 - - - E5 - - - |' +
         'F#5 - A5 - D6 - F#6 - | E6 - D6 - B5 - A5 - | G5 - F#5 - E5 - C#5 - | D5 - - - . . . .'],
-      B: ['G|A|F#m|Bm|G|A|G A|D', 'B5 - - - A5 - G5 - | A5 - - - G5 - F#5 - | G5 - - - F#5 - E5 - | F#5 - - - D5 - - - | B5 - - - A5 - G5 - | A5 - - - C#6 - E6 - | D6 - C#6 - B5 - A5 - | D6 - - - . . . .'],
+      B: ['G|A|Em|Bm|G|A|G A|D', 'B5 - - - A5 - G5 - | A5 - - - G5 - F#5 - | G5 - - - F#5 - E5 - | F#5 - - - D5 - - - | B5 - - - A5 - G5 - | A5 - - - C#6 - E6 - | D6 - C#6 - B5 - A5 - | D6 - - - . . . .'],
       C: { from: 'A', shift: 5, bpm: 148 },
       O: ['G', 'G5 - D6 - G6 - . .', { bpm: 148 }],
     },
@@ -2020,9 +2102,10 @@ export const SONGS = [
   },
 ];
 
-export const SONG = Object.fromEntries(SONGS.map((s) => [s.id, s]));
+// 요청에서 온 곡 id로 바로 찾는 표라서, 'constructor'처럼 물려받은 이름이 곡으로 보이지 않게 원형 없는 객체로 만든다
+export const SONG = Object.assign(Object.create(null), Object.fromEntries(SONGS.map((s) => [s.id, s])));
 export const GENRES = {
-  classic: '클래식', kids: '동요', folk: '민요 · 포크', carol: '캐럴',
+  party: '파티 · 축제', classic: '클래식', kids: '동요', folk: '민요 · 포크', carol: '캐럴',
   edm: 'EDM', kpop: 'K-POP 스타일', retro: '복고 · 트로트', phonk: '퐁크 · 힙합', chip: '칩튠', lofi: '로파이', rock: '록', jazz: '재즈 · 래그타임',
 };
 
@@ -2044,8 +2127,8 @@ const up = (ch, k) => (ch && k ? { ...ch, root: ch.root + k, bass: ch.bass + k }
 // 곡 → 마디·멜로디 목록 (시간은 초 단위, 구간마다 템포가 바뀔 수 있음)
 export function compile(song) {
   const sub = song.sub ?? 2, per = song.meter * sub;
-  const bars = [], melody = [], starts = {}, seen = {};
-  let t = 0, step = 0, cur = null, si = -1;
+  const bars = [], melody = [], alt = [], starts = {}, seen = {};
+  let t = 0, step = 0, cur = null, acur = null, si = -1;
   for (const k of song.order) {
     const sec = song.sections[k];
     if (!sec) throw new Error(`${song.id}: 구간 ${k} 없음`);
@@ -2056,23 +2139,30 @@ export function compile(song) {
     const opt = Array.isArray(sec) ? base : { ...base, ...sec };
     const dt = 60 / (opt.bpm ?? song.bpm) / sub, shift = opt.shift ?? 0, drums = opt.drums ?? song.drums, key = ((shift % 12) + 12) % 12;
     starts[k] ??= t;
-    const cb = chords.split('|'), mb = mel.split('|');
-    if (cb.length !== mb.length) throw new Error(`${song.id}/${k}: 코드 ${cb.length}마디, 멜로디 ${mb.length}마디`);
+    // alt: 멜로디가 쉬는 틈에 다른 악기가 받아 치는 가락 (소리만 · 노트로는 안 나온다). harm: 멜로디 3도 아래 화음을 같이 낼지
+    const cb = chords.split('|'), mb = mel.split('|'), ab = opt.alt?.split('|');
+    if (cb.length !== mb.length || (ab && ab.length !== cb.length)) throw new Error(`${song.id}/${k}: 코드 ${cb.length}마디, 멜로디 ${mb.length}마디${ab ? `, 받는 가락 ${ab.length}마디` : ''}`);
+    acur = null;
     cb.forEach((c, i) => {
-      const tokens = mb[i].trim().split(/\s+/);
-      if (tokens.length !== per) throw new Error(`${song.id}/${k} ${i + 1}마디: ${tokens.length}칸 (필요 ${per}칸)`);
-      bars.push({ t, dt, chords: c.trim().split(/\s+/).map((n) => up(chord(n), key)), key: k, first: i === 0, last: i === cb.length - 1, drums });
+      const tokens = mb[i].trim().split(/\s+/), at = ab?.[i].trim().split(/\s+/);
+      if (tokens.length !== per || (at && at.length !== per)) throw new Error(`${song.id}/${k} ${i + 1}마디: ${tokens.length}칸${at ? ` · 받는 가락 ${at.length}칸` : ''} (필요 ${per}칸)`);
+      bars.push({ t, dt, chords: c.trim().split(/\s+/).map((n) => up(chord(n), key)), key: k, first: i === 0, last: i === cb.length - 1, drums, shift, harm: opt.harm ?? Boolean(song.harm) });
+      at?.forEach((tk, j) => {
+        if (tk === '-') { if (acur) acur.dur += dt; }
+        else if (tk === '.') acur = null;
+        else alt.push(acur = { t: t + j * dt, dur: dt, midi: midi(tk) + shift });
+      });
       for (const tk of tokens) {
         if (tk === '-') { if (cur) { cur.dur += dt; cur.steps++; } }
         else if (tk === '.') cur = null;
-        else melody.push(cur = { t, dur: dt, steps: 1, step, midi: midi(tk) + shift, si, rep });
+        else melody.push(cur = { t, dur: dt, steps: 1, step, midi: midi(tk) + shift, si, rep, bar: bars.length - 1 });
         t += dt;
         step++;
       }
     });
   }
   bars.at(-1).end = true;
-  return { per, sub, bars, melody, starts, duration: t };
+  return { per, sub, bars, melody, alt, starts, duration: t };
 }
 
 // 난이도별 노트 간격 하한(초). easy · normal은 예전 채보와 똑같이 나오도록 맞춘 값
@@ -2113,20 +2203,39 @@ const bounce = (l, d) => {
   if (x < 0) x = -x;
   return Math.max(0, Math.min(3, x));
 };
-export function makeChart(song, diff) {
+// 칸 c를 붙이면 끝이 두 칸만 오가는 트릴(…ABAB + A)로 몇 개째인지
+function trillLen(h, c) {
+  const k = h.length;
+  if (!k || h[k - 1] === c) return 1;
+  let m = 2;
+  while (k - m >= 0 && h[k - m] === (m % 2 ? h[k - 1] : c)) m++;
+  return m;
+}
+// 칸 c를 붙이면 끝의 p개짜리 모양이 r번 연달아 똑같이 나오는지
+function repeats(h, c, p, r) {
+  if (h.length < p * r - 1) return false;
+  const s = [...h.slice(-(p * r - 1)), c];
+  for (let i = p; i < s.length; i++) if (s[i] !== s[i - p]) return false;
+  return true;
+}
+const COUNT = new Map(); // 곡:난이도 → 노트 수
+const countOf = (song, diff) => COUNT.get(`${song.id}:${diff}`) ?? makeChart(song, diff).tiles.length;
+export function makeChart(song, diff, thin = true) {
   const { melody, per, sub, bars } = compile(song), sp = SPEED[diff] ?? 1, di = DIFFS.indexOf(diff);
   // W: 같은 칸을 이 시간(빨라진 곡 기준 초) 안에 또 치지 않게. 어려운 난이도일수록 조금 짧게 허용
   const rnd = seeded(hashStr(`${song.id}:${diff}`)), W = ({ master: 0.16, extreme: 0.15, inferno: 0.14, chaos: 0.13 }[diff] ?? 0.2) * sp;
   const gap = GAP[diff], dbl = { normal: per * 2, hard: per, expert: per / 2, master: sub, extreme: sub, inferno: sub, chaos: 1 }[diff];
-  // 마디마다 가락 모양. 바로 앞 마디와 똑같은 마디(반복 리프 · 오스티나토)는 레인 모양을 바꿔서 같은 모양이 계속 나오지 않게
-  const sig = new Map();
+  // 마디마다 가락 모양: 음 높이가 아니라 오르내림 · 박자로 본다 (한 음씩 올려 되풀이하는 가락도 같은 모양으로 쳐서 레인 모양을 바꾼다)
+  const sig = new Map(), head = new Map(), span = new Map();
   for (const n of melody) {
-    const b = Math.floor(n.step / per);
-    sig.set(b, `${sig.get(b) ?? ''}${n.step % per}:${n.midi},`);
+    const b = Math.floor(n.step / per), r = span.get(b >> 1);
+    if (!head.has(b)) head.set(b, n.midi);
+    sig.set(b, `${sig.get(b) ?? ''}${n.step % per}:${n.midi - head.get(b)},`);
+    span.set(b >> 1, r ? [Math.min(r[0], n.midi), Math.max(r[1], n.midi)] : [n.midi, n.midi]); // 구절(두 마디)의 가장 낮은 · 높은 음
   }
-  const mel = [];
+  const mel = [], hist = [], TR = di < 2 ? 4 : 6; // hist: 지금까지 멜로디 레인 / TR: 두 칸만 오가는 트릴 최대 길이
   let base = 1, prev = null, lastT = -1, si = -1, tf = LANE_TF[0], wrap = true, lastTf = 0, trill = 1, accent = false;
-  let bar = -1, btf = LANE_TF[0], lastB = 0, run = 0, dir = 0, used = new Map();
+  let bar = -1, btf = LANE_TF[0], lastB = 0, run = 0, dir = 0, used = new Map(), phrase = -1, mode = -1, roll = 1;
   for (const n of melody) {
     if (n.si !== si) {
       // 새 구간 첫 노트는 동시치기로 '쾅' (드롭 · 후렴이 시작되는 느낌, HARD부터)
@@ -2151,16 +2260,27 @@ export function makeChart(song, diff) {
       lastB = k;
       bar = b;
     }
+    // 구절(두 마디)마다 노트가 움직이는 방식을 바꾼다 (곡마다 · 구절마다 손 모양이 달라지게)
+    // 0 가락 따라 한 칸씩(크게 뛰면 두 칸) · 1 넓게 건너뛰기 · 2 한쪽으로 쓸어 가기 · 3 음 높이대로 자리 잡기
+    if (b >> 1 !== phrase) {
+      phrase = b >> 1;
+      const last = mode;
+      do mode = [0, 0, 1, 2, 3, 3][Math.floor(rnd() * 6)]; while (mode === last);
+      roll = rnd() < 0.5 ? 1 : -1;
+    }
     if (prev && n.midi !== prev.midi) {
-      let step = Math.sign(n.midi - prev.midi) * (Math.abs(n.midi - prev.midi) > 4 ? 2 : 1);
+      const big = Math.abs(n.midi - prev.midi) > 4, [lo, hi] = span.get(phrase);
+      let step = mode === 2 ? roll : Math.sign(n.midi - prev.midi) * ((mode === 1) !== big ? 2 : 1);
       run = Math.sign(step) === dir ? run + 1 : 1;
       dir = Math.sign(step);
       if (run > 4) { // 한 방향 계단이 길어지면 한 번 꺾는다
         step = -step;
         dir = -dir;
         run = 1;
+        roll = -roll;
       }
-      base = wrap ? (base + step + 4) % 4 : bounce(base, step);
+      base = mode === 3 && hi > lo ? Math.round((3 * (n.midi - lo)) / (hi - lo)) : wrap ? (base + step + 4) % 4 : bounce(base, step);
+      if (mode === 2 && !wrap) roll = base === 3 ? -1 : base === 0 ? 1 : roll; // 끝에 닿으면 돌아온다
     } else if (prev && di >= 1 && n.t - (prev.t + prev.dur) < 0.3) {
       // 같은 음이 쉼 없이 이어지면 (롱노트 끝 포함) 한 칸 연타(잭) 대신 옆 칸과 번갈아 (트릴)
       base = bounce(base, trill);
@@ -2169,10 +2289,20 @@ export function makeChart(song, diff) {
     prev = n;
     if ((diff === 'easy' && n.step % 2) || n.t - lastT < gap - 1e-6) continue;
     let lane = btf(tf(base));
-    const last = mel.at(-1);
-    if (last && lane === last.lane && n.t - last.t < W) lane = bounce(lane, rnd() < 0.5 ? 1 : -1); // 모양이 바뀌는 경계에서도 같은 칸 연타는 피한다
+    // 똑같은 모양이 이어지지 않게: 같은 칸 연타(빠르면 한 번도 · 느려도 세 번은 안 됨) · 긴 트릴 · 같은 3 ~ 4개 모양 세 번 · 같은 8개 모양 두 번
+    const quick = n.t - lastT < W;
+    const dull = (c) => (hist.length > 0 && c === hist.at(-1) && (quick || c === hist.at(-2)))
+      || trillLen(hist, c) > TR || repeats(hist, c, 3, 3) || repeats(hist, c, 4, 3) || repeats(hist, c, 8, 2);
+    if (dull(lane)) {
+      const ok = [0, 1, 2, 3].filter((c) => !dull(c)).sort((x, y) => Math.abs(x - lane) - Math.abs(y - lane)); // 원래 자리에서 가까운 칸부터
+      if (ok.length) lane = ok[Math.floor(rnd() * Math.min(2, ok.length))];
+      else if (quick && lane === hist.at(-1)) lane = bounce(lane, rnd() < 0.5 ? 1 : -1);
+    }
+    hist.push(lane);
     lastT = n.t;
-    mel.push({ t: n.t, dur: n.dur, lane, midi: n.midi, hold: n.steps >= 3 && n.dur >= 0.5, pair: Boolean(dbl && n.step % dbl === 0) || accent });
+    // CHAOS: 아주 빠른 음이 이어질 때 모든 음을 동시치기로 하면 두 손이 같은 모양만 번갈아 치게 된다 → 빠른 음은 하나 건너 하나만 동시치기
+    const pair = (Boolean(dbl && n.step % dbl === 0) && !(thin && diff === 'chaos' && quick && mel.at(-1)?.pair)) || accent;
+    mel.push({ t: n.t, dur: n.dur, lane, midi: n.midi, hold: n.steps >= 3 && n.dur >= 0.5, pair });
     accent = false;
   }
   // 동시치기 짝: 쉬운 난이도는 멀리(두 손), 어려운 난이도는 아무 칸이나. 앞뒤 W초 안의 노트 · 끝나는 롱노트와 같은 칸은 피한다
@@ -2193,8 +2323,13 @@ export function makeChart(song, diff) {
     const pool = (di < 4 || rnd() < 0.5) && far.length ? far : any;
     if (pool.length) tiles.push({ t: n.t, dur: Math.min(n.dur, 0.3), lane: pool[Math.floor(rnd() * pool.length)], midi: n.midi - 12, hold: false });
   }
-  for (const n of tiles) delete n.pair;
   if (FILL[diff]) fill(tiles, bars, per, sub, FILL[diff], gap, rnd, W);
+  // 어려운 난이도가 바로 아래 난이도보다 노트가 적으면 안 된다: 모자라면 자리가 없어 비워 둔 칸을 조금 너그럽게 채운다
+  const need = di > 0 && FILL[diff] ? countOf(song, DIFFS[di - 1]) - tiles.length : 0;
+  if (need > 0) fill(tiles, bars, per, sub, { ...FILL[diff], max: need }, gap, rnd, W * 0.5);
+  if (thin && diff === 'chaos' && tiles.length < countOf(song, DIFFS[di - 1])) return makeChart(song, diff, false); // 그래도 모자라면 예전처럼 모든 음을 동시치기로
+  COUNT.set(`${song.id}:${diff}`, tiles.length);
+  for (const n of tiles) delete n.pair;
   tiles.sort((a, b) => a.t - b.t || a.lane - b.lane);
   if (sp !== 1) for (const n of tiles) { n.t /= sp; n.dur /= sp; } // 빨라진 곡 시간에 맞춘다
   return { tiles };
@@ -2202,11 +2337,12 @@ export function makeChart(song, diff) {
 
 // 멜로디가 쉬거나 길게 끄는 칸에 반주(코드) 박자 노트를 끼워 넣는다. 롱노트를 누르는 동안엔 그 레인을 피하고, 앞뒤 W초 안의 노트와 같은 칸도 피한다
 function fill(tiles, bars, per, sub, opt, gap, rnd, W) {
-  const first = tiles[0]?.t ?? 0, last = tiles.at(-1)?.t ?? 0;
+  const first = Math.min(...tiles.map((n) => n.t)), last = Math.max(...tiles.map((n) => n.t)), n0 = tiles.length;
   for (const bar of bars) {
     if (!bar.chords[0]) continue;
     const step = opt.beat ? sub : bar.dt > opt.slow ? 0.5 : 1;
     for (let s = 0; s < per; s += step) {
+      if (tiles.length - n0 >= (opt.max ?? Infinity)) return; // 모자란 만큼만 더 채울 때
       const t = bar.t + s * bar.dt;
       if (t <= first || t >= last || tiles.some((n) => Math.abs(n.t - t) < gap)) continue;
       const held = tiles.filter((n) => n.hold && t > n.t - 0.01 && t < n.t + n.dur + 0.05).map((n) => n.lane);

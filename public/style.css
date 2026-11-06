@@ -2193,3 +2193,23 @@ dialog.evo-fx[open] { align-items: center; animation: popIn .3s cubic-bezier(.3,
 .pwform input { height: 40px; padding: 0 12px; font: inherit; font-size: 16px; border: 2px solid var(--ink); border-radius: 12px; }
 .pwform small { font-size: 12px; color: var(--ink2); }
 .pwform small.bad { color: #e5487f; }
+
+/* ---------- v4.1: 친구 코드 · 자랑 · 공유 · 쿠폰 ---------- */
+.fr-code { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; padding: 10px 12px; background: #fff7d6; border: 2px solid #f0dc9a; border-radius: 14px; }
+.fr-code span { flex: 1; min-width: 130px; font-size: 15px; }
+.fr-code b { font-size: 22px; letter-spacing: 1px; color: #e5487f; user-select: all; }
+.fr-code small { flex-basis: 100%; font-size: 12px; line-height: 1.45; color: var(--ink2); }
+.coupon { display: flex; gap: 6px; margin: 8px 0 4px; }
+.coupon input { flex: 1; min-width: 0; height: 38px; padding: 0 12px; font: inherit; font-size: 16px; border: 3px solid var(--ink); border-radius: 12px; }
+#result > .row.share-row { gap: 8px; }
+#result > .row.share-row .btn { padding-block: 8px; font-size: 16px; }
+#auth #guest { align-self: stretch; }
+@media (orientation: landscape) and (min-width: 640px) and (max-height: 540px) {
+  #result > .row.share-row .btn { padding-block: 5px; font-size: 14px; }
+}
+/* 휴대폰: 장르 칩 13개가 네 줄을 차지해 곡 목록이 화면 아래로 밀리던 문제 → 한 줄로 두고 옆으로 민다 */
+@media (max-width: 639px) {
+  #genreTabs { flex-wrap: nowrap; padding-bottom: 2px; overflow-x: auto; scrollbar-width: none; }
+  #genreTabs::-webkit-scrollbar { display: none; }
+  #genreTabs button { flex: none; }
+}

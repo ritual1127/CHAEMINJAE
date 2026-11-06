@@ -8,7 +8,7 @@ import {
   act, newSave, normalize, teamBuffs, teamPower, powerOf, bestTeam, GameError, MAX_LEVEL, MAX_LV, CHARS, CHAR, BANNERS, BANNER, RARITY, TOP, GOD_RATE,
   ACH_TRACKS, ACH_TRACK, ACH_TOTAL, ACH_CATS, achCount, achView, claimedOf, MISSIONS, weekOf, pickupOf, pickupEnds, SERVER_ONLY, claimable, bannerOf, priceOf, SHOP,
   ATTEND, attendOf, today, copiesFor, copiesToMax, coinsFor, levelOf, expAt, expNeed, expProgress, levelReward, perksOf, frameInfo, frameTier, frameOfSave,
-  mpOrder, mpTarget, INQUIRY, MP, ATTACKS, itemize, GIFT, valueAt,
+  mpOrder, mpTarget, INQUIRY, MP, ATTACKS, itemize, GIFT, valueAt, REF, BOAST_MAX,
 } from '../public/rules.js';
 
 const low = () => 0.01; // 가장 흔한 결과(일반 · 목록 첫 친구)가 나오는 난수
@@ -515,4 +515,78 @@ test('멀티 아이템 노트: 같은 판이면 모두 같은 자리 · 약 6.5�
   }
   const other = itemize(makeChart(SONG.canon, 'hard').tiles, 'canon:hard:4').filter((n) => n.item).map((n) => n.t).join();
   assert.notEqual(other, itemize(makeChart(SONG.canon, 'hard').tiles, 'canon:hard:3').filter((n) => n.item).map((n) => n.t).join(), '판이 바뀌면 자리도 바뀐다');
+});
+
+/* ---------- v4.1: 기록 검증 · 똑같은 모양 막기 · 물려받은 이름 · 자랑 ---------- */
+
+test('연주 기록 검증 (서버만): 시작한 기록 · 걸린 시간 · 그 시간에 가능한 점수 · 팀 버프만큼의 점수', () => {
+  const total = 10, cfg = { chart: () => ({ ms: 30000, total, at: (t) => Math.min(total, Math.floor(t / 3)) }) }; // 30초짜리 곡 · 3초마다 판정 하나
+  const s = act(newSave(), { type: 'start', song: 'twinkle', diff: 'normal' }).save, mult = 1 + teamBuffs(s).score / 100;
+  const fin = (x = {}) => ({ type: 'finish', song: 'twinkle', diff: 'normal', raw: 1e6, score: Math.round(1e6 * mult), combo: total, rank: 'S',
+    cleared: true, fullCombo: true, allPerfect: true, perfect: total, ...x });
+  const fail = { cleared: false, fullCombo: false, allPerfect: false };
+  const cheats = (save, a, c = cfg) => assert.throws(() => act(save, a, Math.random, c), (e) => e instanceof GameError && e.cheat === true);
+  const at = (ms) => ({ ...s, run: { ...s.run, at: Date.now() - ms } }); // ms 전에 시작한 것처럼
+  assert.ok(mult > 1 && s.run.k === 'twinkle:normal');
+  cheats(newSave(), fin()); // 시작 없이 기록만
+  cheats(s, fin()); // 시작하자마자 끝
+  cheats(at(20000), fin()); // 곡이 끝나기 전에 클리어
+  cheats(at(31000), fin({ score: 3e6 })); // 팀 버프보다 큰 점수
+  cheats(at(31000), fin({ rank: 'A' })); // 점수와 다른 랭크
+  cheats(at(31000), fin({ combo: total + 1 })); // 판정 수보다 긴 콤보
+  cheats(at(31000), fin({ perfect: 2 })); // PERFECT 2개로는 100%가 안 나온다
+  cheats(at(31000), fin({ song: 'ode' })); // 시작한 곡과 다른 곡
+  const done = act(at(31000), fin(), Math.random, cfg);
+  assert.ok(done.result.cleared && done.result.newBest && !done.save.run, '제대로 친 기록은 통과 · 시작 기록은 한 번 쓰면 끝');
+  cheats(done.save, fin()); // 같은 시작으로 두 번
+  // 쓰러진 판: 12초면 판정 4개까지
+  cheats(at(12000), fin({ ...fail, raw: 9e5, score: 9e5, rank: 'A', combo: 4, perfect: 4 }));
+  assert.equal(act(at(12000), fin({ ...fail, raw: 4e5, score: Math.round(4e5 * mult), rank: 'D', combo: 4, perfect: 4 }), Math.random, cfg).result.cleared, false);
+  // 멀티: 방의 판(cfg.mrun)이 곡 길이만큼 지나야 · 버프 없는 점수 · 판마다 한 번
+  const room = { ...cfg, mrun: { k: 'twinkle:normal', e: 31000, m: '1234:1:99' } };
+  cheats(newSave(), fin({ multi: true, score: 1e6 }), cfg); // 방에 없음
+  cheats(newSave(), fin({ multi: true, score: 1e6 }), { ...cfg, mrun: { ...room.mrun, e: 5000 } }); // 판이 막 시작함
+  cheats(newSave(), fin({ multi: true }), room); // 멀티에서는 팀 버프가 꺼진다
+  const won = act(newSave(), fin({ multi: true, score: 1e6 }), Math.random, room);
+  assert.ok(won.result.cleared);
+  cheats(won.save, fin({ multi: true, score: 1e6 }), room); // 같은 판 두 번
+  // 게스트(브라우저에서 도는 act)는 검사하지 않는다
+  assert.ok(act(newSave(), fin({ score: 1e6 })).result.cleared);
+});
+
+test('똑같은 모양이 이어지지 않는다 (모든 곡): 같은 칸 3연타 · 긴 트릴 · 같은 4개 모양 세 번 · 같은 8개 모양 두 번 없음', () => {
+  for (const song of SONGS) {
+    for (const diff of ['easy', 'normal', 'hard']) {
+      const tiles = makeChart(song, diff).tiles.filter((n) => !n.fill), top = new Map(), L = [];
+      for (const n of tiles) top.set(n.t, Math.max(top.get(n.t) ?? -1, n.midi));
+      for (const n of tiles) if (n.midi === top.get(n.t)) L.push(n.lane); // 동시치기 짝(한 옥타브 아래)은 빼고 멜로디만
+      const cap = diff === 'hard' ? 6 : 4, where = (i) => `${song.id} ${diff} ${i}번째`;
+      let trill = 2;
+      for (let i = 2; i < L.length; i++) {
+        assert.ok(!(L[i] === L[i - 1] && L[i] === L[i - 2]), `${where(i)}: 같은 칸 3연타`);
+        trill = L[i] === L[i - 2] && L[i] !== L[i - 1] ? trill + 1 : 2;
+        assert.ok(trill <= cap, `${where(i)}: 트릴 ${trill}개`);
+      }
+      const rep = (i, p, r) => i >= p * r - 1 && Array.from({ length: p * (r - 1) }, (_, k) => L[i - k] === L[i - k - p]).every(Boolean);
+      for (let i = 0; i < L.length; i++) assert.ok(!rep(i, 4, 3) && !rep(i, 8, 2), `${where(i)}: 같은 모양 반복`);
+    }
+  }
+});
+
+test("물려받은 이름('constructor' · '__proto__')은 곡 · 친구 · 배너 · 업적으로 통하지 않는다", () => {
+  for (const k of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
+    for (const t of [SONG, CHAR, BANNER, ACH_TRACK]) assert.equal(t[k], undefined, k);
+  }
+  for (const a of [{ type: 'levelUp', id: 'constructor' }, { type: 'buy', item: 'song:constructor' }, { type: 'claim', id: '__proto__' }, { type: 'start', song: 'toString', diff: 'easy' }]) {
+    assert.throws(() => act(newSave(), a), GameError, JSON.stringify(a));
+  }
+  assert.equal(bannerOf('constructor').id, 'std', '없는 배너는 기본 배너');
+});
+
+test('점수 자랑은 하루 BOAST_MAX번 · 서버만 부를 수 있다 · 친구 코드 보상 값', () => {
+  let s = newSave();
+  for (let i = 0; i < BOAST_MAX; i++) s = act(s, { type: 'boast' }).save;
+  assert.throws(() => act(s, { type: 'boast' }), /하루/);
+  assert.ok(SERVER_ONLY.has('boast'));
+  assert.ok(REF.base >= 100000 && REF.join > 0 && REF.invite > 0 && REF.plays >= 1 && REF.max >= 1);
 });

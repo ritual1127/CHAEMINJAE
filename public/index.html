@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://www.smallcute.online/">
   <meta property="og:site_name" content="먼작귀 리듬 파티">
   <meta property="og:title" content="먼작귀 리듬 파티">
-  <meta property="og:description" content="먼작귀 친구들과 누구나 아는 명곡을 신나게 연주하는 리듬게임 · 137곡 · 난이도 8단계 · 캐릭터 52명 · 친구랑 멀티 대결">
+  <meta property="og:description" content="먼작귀 친구들과 누구나 아는 명곡을 신나게 연주하는 리듬게임 · 140곡 · 난이도 8단계 · 캐릭터 52명 · 친구랑 멀티 대결">
   <meta property="og:image" content="https://www.smallcute.online/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -33,6 +33,8 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap">
   <link rel="preload" as="image" href="assets/trio.webp">
   <link rel="stylesheet" href="style.css">
+  <!-- 검색 결과에 게임으로 보이게 (구조화 데이터) -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"먼작귀 리듬 파티","url":"https://www.smallcute.online/","image":"https://www.smallcute.online/og.png","description":"누구나 아는 명곡 140곡을 신나게 연주하는 무료 웹 리듬게임. 설치 없이 휴대폰 · PC에서 바로, 친구랑 최대 10명 멀티 대결.","genre":"리듬 게임","gamePlatform":"웹 브라우저","applicationCategory":"Game","operatingSystem":"Any","inLanguage":"ko","offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"}}</script>
   <script type="module" src="app.js"></script>
 </head>
 <body>
@@ -359,9 +361,11 @@
         <div class="field signup-only" hidden><span>프로필 친구 고르기</span>
           <div class="avatars" id="signupAvatars"></div>
         </div>
+        <label class="field signup-only" hidden><span>친구 코드 <small>(선택 · 넣으면 보석 300개 더 + 바로 친구!)</small></span>
+          <input name="code" inputmode="numeric" maxlength="10" placeholder="친구가 알려 준 숫자" autocomplete="off"></label>
         <p class="err" role="alert"></p>
         <button class="btn pink big" id="authSubmit">로그인</button>
-        <button type="button" class="link" id="guest">게스트로 둘러보기</button>
+        <button type="button" class="btn blue" id="guest">🎵 가입 없이 바로 해보기</button>
       </form>
       <small class="ver-label title-ver"></small>
     </section>
@@ -435,6 +439,12 @@
       <div class="row">
         <button class="btn blue" id="retry"><svg><use href="#i-retry"/></svg>다시하기</button>
         <button class="btn pink" data-go="songs">곡 목록</button>
+      </div>
+      <!-- 자랑 · 공유: 친구 우편함으로 자랑하기(회원) · 링크로 공유하기 · 게스트는 가입 권유 -->
+      <div class="row share-row">
+        <button type="button" class="btn butter" id="boastBtn" hidden>📣 친구에게 자랑</button>
+        <button type="button" class="btn plain" id="shareBtn">🔗 공유하기</button>
+        <button type="button" class="btn butter" id="joinBtn" hidden>✨ 가입하고 랭킹 올리기</button>
       </div>
       <div class="celebrate" id="celebrate" hidden>
         <p class="nr">NEW RECORD!</p>
@@ -566,6 +576,7 @@
     <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
     <h2>우편함</h2>
     <div class="mail-top"><small id="mailSum"></small><button type="button" class="btn small plain" id="mailClean">읽은 우편 지우기</button><button type="button" class="btn small pink" id="mailAll">모두 받기</button></div>
+    <form class="coupon" id="couponForm" novalidate><input id="couponCode" maxlength="24" placeholder="🎟 쿠폰 코드가 있나요?" autocomplete="off" aria-label="쿠폰 코드"><button class="btn small butter">쿠폰 받기</button></form>
     <ul class="mail-list" id="mailList"></ul>
   </dialog>
 
@@ -666,6 +677,7 @@
     <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
     <h2>👫 친구</h2>
     <p class="hint" id="frSum"></p>
+    <div class="fr-code" id="frCode"></div>
     <form class="fr-add" id="frAdd" novalidate>
       <input id="frName" maxlength="12" placeholder="친구 닉네임" autocomplete="off" aria-label="친구 닉네임">
       <button class="btn small pink">친구 신청</button>

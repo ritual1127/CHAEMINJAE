@@ -3,13 +3,14 @@
 // 문의: inquiry, inquiries / 공지: notices / 상태(점검 · 점검 예고 · 뽑기 확률 · 버전 + 지금 접속 중 신호 + 멀티 초대 · 친구 신청 수): status
 // 친구: friends, friend-request, friend-accept, friend-decline, friend-remove, friend-gift
 // 멀티플레이: mp-create, mp-join, mp-leave, mp-set, mp-ready, mp-start, mp-kick, mp-host, mp-invite, mp-sync
+// 초대 · 자랑 · 쿠폰: signup(친구 코드), boast, coupon / 관리자: admin-coupon, admin-growth(쿠폰 · 유입 · 보안 기록)
 // 관리자: admin-login, admin-logout, admin-stats, admin-online, admin-recent, admin-maintenance, admin-preview, admin-schedule, admin-rates,
 //         admin-mail, admin-inquiries, admin-inquiry-kind, admin-reply, admin-notice, admin-notice-delete, admin-grant, admin-room-close, admin-user
 import { neon } from '@neondatabase/serverless';
 import { randomBytes, randomInt, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 import {
   act, newSave, normalize, teamPower, unlocked, levelOf, GameError, BANNER, FREE_AVATARS, RANKS, RENAME_COINS, SERVER_ONLY, VERSION, INQUIRY, MP, ATTACKS,
-  itemize, perksOf, frameOfSave, GIFT, CHAR, RARITY, TOP, mpOrder, BOT_SKILL, makeBot, botPlay,
+  itemize, perksOf, frameOfSave, GIFT, CHAR, RARITY, TOP, mpOrder, BOT_SKILL, makeBot, botPlay, REF,
 } from '../public/rules.js';
 import { SONG, DIFFS, DIFF_NAME, compile, playSong, makeChart } from '../public/songs.js';
 
@@ -23,8 +24,17 @@ const WELCOME = { title: '🎉 먼작귀 리듬 파티에 온 걸 환영해요!'
 // 이 버전으로 처음 배포될 때 공지사항에 한 번 올라가는 업데이트 내역 (관리자 페이지에서 고칠 수 있다)
 const SCHEMA = 3; // 표 구조를 바꿀 때마다 +1 (같은 버전에서도 init이 다시 돈다)
 const RELEASE = {
-  title: '대규모 업데이트! 137곡 · 친구 · 레벨 1000 · 초월 등급',
+  title: '파티 업데이트! 신나는 새 곡 · 친구 코드 · 점수 자랑 · 더 화끈한 타격감',
   body: [
+    '🎺 새 곡 3개 (새 장르 파티 · 축제): 라 쿠카라차 피에스타 (마리아치) · 하바 나길라 (점점 빨라져요!) · 우라! 삼바 카니발 — 모두 무료!',
+    '💥 노트를 치면 충격파 · 빛기둥 · 깨지는 조각이 팡팡! 50콤보마다 꽃가루, 100콤보부터 판정선이 무지개로 · 치는 소리는 그 음 높이로',
+    '🎹 채보를 새로 다듬었어요: 같은 모양이 계속 나오지 않게, 구절마다 손 모양이 달라져요 (모든 곡 · 모든 난이도)',
+    '👫 친구 코드: 친구가 내 코드로 가입하면 친구는 보석 300개 + 바로 서로 친구, 친구가 3곡 연주하면 나도 보석 300개 (친구 창에서 코드 · 초대 링크)',
+    '📣 점수 자랑: 결과 화면에서 친구들 우편함으로 자랑하기 · 링크로 공유하기',
+    '🎟 쿠폰 코드: 우편함에서 쿠폰을 넣으면 선물이 우편으로 와요',
+    '🎼 19곡의 반주를 고쳤어요 (멜로디와 어긋나던 화음)',
+    '🛡 연주를 안 하고 기록만 올리는 부정 기록을 막고, 로그인을 여러 번 틀리면 잠깐 쉬어요',
+    '— 아래는 지난 업데이트 —',
     '🎵 새 곡 101개! 장르 12개 (클래식 · 동요 · 민요 · 캐럴 · EDM · K-POP 스타일 · 복고 · 트로트 · 퐁크 · 칩튠 · 로파이 · 록 · 재즈)',
     '🎹 노트가 덜 질리게: 같은 가락이 다시 나오면 다른 모양으로, 같은 칸 연타 대신 번갈아 치기, 후렴 첫 박 동시치기',
     '👫 친구: 닉네임으로 친구 신청 · 멀티 방으로 초대 · 매일 무료 선물과 코인 · 보석 선물',
@@ -225,6 +235,31 @@ const init = () => (ready ??= (async () => {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS banned_until TIMESTAMPTZ, ADD COLUMN IF NOT EXISTS ban_reason TEXT`;
   // 관리자가 정해 준 임시 비밀번호 (관리자 화면에 계속 보여 주려고 따로 둔다)
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS temp_pw TEXT, ADD COLUMN IF NOT EXISTS temp_pw_at TIMESTAMPTZ`;
+  // v4.1: 친구 코드로 가입 (누가 초대했는지 · 초대 보상을 줬는지) · 쿠폰 · 보안 기록 (로그인 실패 · 가입 · 이상한 기록 → 횟수 제한 + 관리자 화면)
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_by INT, ADD COLUMN IF NOT EXISTS ref_paid BOOLEAN NOT NULL DEFAULT false`;
+  await sql`CREATE INDEX IF NOT EXISTS users_ref ON users (ref_by) WHERE ref_by IS NOT NULL`;
+  await sql`CREATE TABLE IF NOT EXISTS coupons (
+    code TEXT PRIMARY KEY,
+    coins INT NOT NULL DEFAULT 0,
+    gems INT NOT NULL DEFAULT 0,
+    max_uses INT NOT NULL DEFAULT 0,
+    used INT NOT NULL DEFAULT 0,
+    note TEXT NOT NULL DEFAULT '',
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now())`;
+  await sql`CREATE TABLE IF NOT EXISTS coupon_uses (
+    code TEXT NOT NULL REFERENCES coupons(code) ON DELETE CASCADE,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (code, user_id))`;
+  await sql`CREATE TABLE IF NOT EXISTS sec_log (
+    id SERIAL PRIMARY KEY,
+    kind TEXT NOT NULL,
+    k TEXT NOT NULL DEFAULT '',
+    user_id INT,
+    detail TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now())`;
+  await sql`CREATE INDEX IF NOT EXISTS sec_log_at ON sec_log (kind, created_at)`;
   await sql`INSERT INTO app_settings (key, value) VALUES (${`ready:${VERSION}:${SCHEMA}`}, 'true'::jsonb) ON CONFLICT (key) DO NOTHING`;
 })().catch((e) => { ready = null; throw e; }));
 
@@ -251,6 +286,26 @@ const hash = (s) => createHash('sha256').update(String(s)).digest();
 const same = (a, b) => timingSafeEqual(hash(a), hash(b));
 const isInt = (n, min, max) => Number.isInteger(n) && n >= min && n <= max;
 const text = (v, max) => String(v ?? '').trim().slice(0, max);
+// 요청에서 온 이름이 표에 '직접' 있는지 ('constructor' 같은 물려받은 이름은 없는 걸로)
+const has = (o, k) => typeof k === 'string' && Object.hasOwn(o, k);
+
+/* ---------- 보안 기록: 로그인 실패 · 가입 · 이상한 기록 · 쿠폰 실패. 횟수 제한에 쓰고 관리자 화면에서 본다 (14일 보관) ---------- */
+// 요청한 사람의 IP (Vercel이 직접 채우는 값이라 요청 쪽에서 속일 수 없다)
+const ipOf = (req) => text(req.headers?.['x-real-ip'] ?? String(req.headers?.['x-forwarded-for'] ?? '').split(',')[0], 60) || 'local';
+const logSec = async (kind, k, uid = null, detail = '') => {
+  await sql`INSERT INTO sec_log (kind, k, user_id, detail) VALUES (${kind}, ${k}, ${uid}, ${text(detail, 200)})`;
+  if (Math.random() < 0.02) await sql`DELETE FROM sec_log WHERE created_at < now() - interval '14 days'`;
+};
+// 최근 mins분 동안 이 열쇠(IP · 회원)로 쌓인 기록 수
+const hits = async (kind, k, mins) => (await sql`SELECT count(*)::int AS n FROM sec_log
+  WHERE kind = ${kind} AND k = ${k} AND created_at > now() - make_interval(mins => ${mins}::int)`)[0].n;
+// 로그인: 10분 동안 같은 IP에서 30번 · 같은 닉네임으로 10번 틀리면 잠깐 막는다 (비밀번호 찍어 맞히기 방지)
+const loginBlocked = async (ip, name) => {
+  const [r] = await sql`SELECT count(*) FILTER (WHERE k = ${ip})::int AS ip, count(*) FILTER (WHERE detail = ${name})::int AS name
+    FROM sec_log WHERE kind = 'login-fail' AND created_at > now() - interval '10 minutes'`;
+  return r.ip >= 30 || (Boolean(name) && r.name >= 10);
+};
+const couponCode = (v) => text(v, 24).toUpperCase().replace(/[^A-Z0-9가-힣]/g, '');
 
 const hashPw = (pw, salt = randomBytes(16).toString('hex')) => `${salt}:${scryptSync(pw, salt, 64).toString('hex')}`;
 const checkPw = (pw, stored) => {
@@ -281,7 +336,7 @@ async function currentUser(req) {
 const unreadOf = async (userId) => (await sql`SELECT count(*)::int AS n FROM mail
   WHERE user_id = ${userId} AND (NOT read OR (NOT claimed AND (coins > 0 OR gems > 0)))`)[0].n;
 
-const profile = async (u) => ({ username: u.username, avatar: u.avatar, save: normalize(u.save), unread: await unreadOf(u.id) });
+const profile = async (u) => ({ username: u.username, avatar: u.avatar, save: normalize(u.save), unread: await unreadOf(u.id), code: REF.base + u.id });
 
 // 관리자 계정은 코드가 아니라 환경변수(ADMIN_USER, ADMIN_PASSWORD)에 둔다
 function isAdmin(username, password) {
@@ -396,6 +451,26 @@ const notesOf = (song, diff) => {
   if (!noteCount.has(k)) noteCount.set(k, SONG[song] ? makeChart(SONG[song], diff).tiles.length : 1);
   return noteCount.get(k);
 };
+// 올라온 기록이 채보로 가능한지 볼 때 쓰는 값 (rules.js finish): 곡 길이(ms) · 판정 수 · 시작 뒤 t초까지 나올 수 있는 판정 수 (롱노트는 누름 + 뗌 두 번)
+const charts = new Map();
+function chartOf(song, diff) {
+  const k = `${song}:${diff}`;
+  if (!charts.has(k)) {
+    if (charts.size > 300) charts.clear();
+    const times = makeChart(SONG[song], diff).tiles.flatMap((n) => (n.hold ? [n.t, n.t] : [n.t])).sort((x, y) => x - y);
+    charts.set(k, { ms: durMs(song, diff), total: times.length, at: (t) => { let n = 0; while (n < times.length && times[n] <= t) n++; return n; } });
+  }
+  return charts.get(k);
+}
+// 친구 코드로 가입한 회원이 REF.plays곡을 연주하면 초대한 친구에게 보석 (초대한 사람마다 REF.max명까지). 한 번만 (ref_paid)
+async function payReferrer(user) {
+  const [r] = await sql`UPDATE users SET ref_paid = true WHERE id = ${user.id} AND ref_by IS NOT NULL AND NOT ref_paid RETURNING ref_by`;
+  if (!r) return;
+  const [{ n }] = await sql`SELECT count(*)::int AS n FROM users WHERE ref_by = ${r.ref_by} AND ref_paid`;
+  if (n > REF.max) return;
+  await sql`INSERT INTO mail (user_id, kind, title, body, gems) SELECT id, 'gift', ${`🎉 ${user.username}님이 내 친구 코드로 놀러 왔어요!`},
+    ${`초대한 친구가 연주를 시작했어요. 고마운 마음으로 보석 ${REF.invite}개를 보내요 (${n}/${REF.max}명째)`}, ${REF.invite} FROM users WHERE id = ${r.ref_by}`;
+}
 /* ---------- 랭킹 판: 정렬된 (회원 · 점수) 목록을 잠깐 기억해 두고, 내 순위는 이진 탐색 · 점수 분포는 목록에서 바로 ---------- */
 // ponytail: 인스턴스마다 메모리 캐시 (곡 30초 · 종합 20초 · 기간 종합 2분). 회원이 수백만이 되면 Redis 같은 공용 캐시로
 const PERIODS = { all: null, month: '30 days', week: '7 days', day: '1 day' };
@@ -588,24 +663,46 @@ const routes = {
     if (name === process.env.ADMIN_USER) return res.status(409).json({ error: '쓸 수 없는 닉네임이에요' });
     if (typeof password !== 'string' || password.length < 4 || password.length > 64) return res.status(400).json({ error: '비밀번호는 4자 이상이에요' });
     if (!isInt(avatar, 1, FREE_AVATARS)) return res.status(400).json({ error: '프로필 친구를 골라 주세요' });
+    // 한 네트워크(IP)에서 하루 40명까지 (학교 · 학원처럼 같이 쓰는 곳도 넉넉하게, 계정 찍어 내기만 막는다)
+    const ip = ipOf(req);
+    if ((await hits('signup', ip, 1440)) >= 40) return res.status(429).json({ error: '오늘은 이 네트워크에서 더 가입할 수 없어요. 내일 다시 시도해 주세요' });
+    // 친구 코드 (선택): 코드 = REF.base + 초대한 회원 번호
+    const code = req.body?.code, refId = Number(code) - REF.base;
+    let ref = null;
+    if (code !== undefined && code !== null && code !== '') {
+      [ref] = isInt(refId, 1, 2 ** 31 - 1) ? await sql`SELECT id, username, lv FROM users WHERE id = ${refId}` : [];
+      if (!ref) return res.status(400).json({ error: '없는 친구 코드예요. 코드를 다시 확인하거나 비워 두고 가입해 주세요' });
+    }
     const save = { ...newSave(), avatar };
-    const [user] = await sql`INSERT INTO users (username, pw, avatar, save) VALUES (${name}, ${hashPw(password)}, ${avatar}, ${JSON.stringify(save)}::jsonb)
+    const [user] = await sql`INSERT INTO users (username, pw, avatar, save, ref_by) VALUES (${name}, ${hashPw(password)}, ${avatar}, ${JSON.stringify(save)}::jsonb, ${ref?.id ?? null})
                              ON CONFLICT (username) DO NOTHING RETURNING id, username, avatar, save`;
     if (!user) return res.status(409).json({ error: '이미 누가 쓰고 있는 닉네임이에요' });
+    await logSec('signup', ip, user.id);
     await sql`INSERT INTO mail (user_id, kind, title, body, gems) VALUES (${user.id}, 'gift', ${WELCOME.title}, ${WELCOME.body}, ${WELCOME.gems})`;
+    if (ref) { // 초대 선물 + 초대한 친구와 바로 친구 (친구 자리가 남아 있을 때)
+      await sql`INSERT INTO mail (user_id, kind, title, body, gems) VALUES (${user.id}, 'gift', ${`🎁 ${ref.username}님의 초대 선물`},
+        ${`친구 코드로 가입해서 보석 ${REF.join}개를 더 받았어요. ${ref.username}님과는 벌써 친구예요!`}, ${REF.join})`;
+      const [{ n }] = await sql`SELECT count(*)::int AS n FROM friends WHERE user_id = ${ref.id} AND status = 'accepted'`;
+      if (n < perksOf(ref.lv).friends) {
+        await sql`INSERT INTO friends (user_id, friend_id) VALUES (${ref.id}, ${user.id}) ON CONFLICT DO NOTHING`;
+        await acceptFriend(user.id, ref.id);
+      }
+    }
     await startSession(res, user.id);
     res.json(await profile(user));
   },
 
-  // ponytail: 로그인 시도 횟수 제한 없음. 공개 서비스로 키우면 IP별 rate limit 추가
+  // 틀린 로그인은 보안 기록에 남고, 10분 동안 같은 IP 30번 · 같은 닉네임 10번 틀리면 잠깐 막힌다
   async 'POST login'(req, res) {
-    const { username = '', password = '' } = req.body ?? {};
+    const { username = '', password = '' } = req.body ?? {}, name = text(username, 20), ip = ipOf(req);
+    if (await loginBlocked(ip, name)) return res.status(429).json({ error: '로그인을 너무 많이 틀렸어요. 10분 뒤에 다시 시도해 주세요' });
     if (isAdmin(username, password)) {
       await startAdmin(res);
       return res.json({ admin: true });
     }
-    const [user] = await sql`SELECT id, username, avatar, save, pw, banned_until, ban_reason FROM users WHERE username = ${String(username).trim()}`;
+    const [user] = await sql`SELECT id, username, avatar, save, pw, banned_until, ban_reason FROM users WHERE username = ${name}`;
     if (!user || typeof password !== 'string' || !checkPw(password, user.pw)) {
+      await logSec('login-fail', ip, user?.id ?? null, name);
       return res.status(401).json({ error: '닉네임 또는 비밀번호가 달라요' });
     }
     if (user.banned_until && new Date(user.banned_until) > new Date()) {
@@ -674,8 +771,21 @@ const routes = {
     if (!user) return login(res);
     const a = req.body ?? {};
     if (SERVER_ONLY.has(a.type)) return res.status(400).json({ error: '알 수 없는 요청이에요' });
-    const cfg = await gameCfg();
-    const out = await mutate(user.id, (s) => act(s, a, rand, cfg));
+    const cfg = { ...(await gameCfg()), chart: chartOf };
+    // 멀티 판의 보상: 내가 들어 있는 방의 이번 판 (곡 · 시작한 지 얼마나 됐는지 · 판마다 한 번)
+    if (a.type === 'finish' && a.multi === true) {
+      const [r] = await sql`SELECT r.code, r.round, r.song, r.diff, (extract(epoch FROM now() - r.start_at) * 1000)::float8 AS e, extract(epoch FROM r.start_at)::bigint AS at
+        FROM room_players p JOIN rooms r ON r.code = p.code WHERE p.user_id = ${user.id} AND r.round > 0`;
+      if (r) cfg.mrun = { k: `${r.song}:${r.diff}`, e: r.e, m: `${r.code}:${r.round}:${r.at}` };
+    }
+    let out;
+    try {
+      out = await mutate(user.id, (s) => act(s, a, rand, cfg));
+    } catch (e) {
+      if (e.cheat) await logSec('cheat', ipOf(req), user.id, `${a.song} ${a.diff} · 연주 ${a.raw} · 점수 ${a.score} · ${e.message}`).catch(console.error);
+      throw e;
+    }
+    if (a.type === 'finish' && out.save.stats.plays >= REF.plays && out.save.stats.plays < REF.plays + 3) await payReferrer(user).catch(console.error);
     if (a.type === 'finish') {
       await sql`INSERT INTO play_log (user_id, song, diff, raw, score, rank, cleared, multi)
                 VALUES (${user.id}, ${a.song}, ${a.diff}, ${a.raw}, ${a.score}, ${a.rank}, ${out.result.cleared}, ${a.multi === true})`;
@@ -688,18 +798,19 @@ const routes = {
     res.json(out);
   },
 
-  // ponytail: 게스트 플레이 기록(통계용)은 누구나 보낼 수 있다. 통계가 오염되면 rate limit 추가
+  // ponytail: 게스트 플레이 기록(통계용)은 누구나 보낼 수 있다 (하루 2만 개까지만 쌓는다). 통계가 오염되면 IP별 제한 추가
   async 'POST guest-play'(req, res) {
     const b = req.body ?? {};
     if (!validPlay(b)) return res.status(400).json({ error: '기록 형식이 이상해요' });
-    await sql`INSERT INTO play_log (song, diff, raw, score, rank, cleared) VALUES (${b.song}, ${b.diff}, ${b.raw}, ${b.score}, ${b.rank}, ${b.cleared === true})`;
+    await sql`INSERT INTO play_log (song, diff, raw, score, rank, cleared) SELECT ${b.song}, ${b.diff}, ${b.raw}, ${b.score}, ${b.rank}, ${b.cleared === true}
+      WHERE (SELECT count(*) FROM play_log WHERE user_id IS NULL AND played_at > now() - interval '1 day') < 20000`;
     res.json({ ok: true });
   },
 
   // 곡 · 난이도별 TOP 30 + 내 순위
   // 곡 랭킹 · 기간: all(최고 기록) · month · week · day(그 기간에 친 판 중 최고). 점수 분포 그래프용 dist도 같이
   async 'GET rank'(req, res) {
-    const { song, diff } = req.query, period = PERIODS[req.query.period] ? req.query.period : 'all';
+    const { song, diff } = req.query, period = has(PERIODS, req.query.period) ? req.query.period : 'all';
     if (!SONG[song] || !DIFFS.includes(diff)) return res.status(400).json({ error: '곡을 골라 주세요' });
     const [uid, board] = await Promise.all([uidOf(req), boardOf(`${song}:${diff}:${period}`, () => (period === 'all'
       ? sql`SELECT s.user_id AS id, s.score FROM scores s WHERE s.song = ${song} AND s.diff = ${diff} ORDER BY s.score DESC, s.played_at ASC`
@@ -712,7 +823,7 @@ const routes = {
   // ponytail: 목록은 인스턴스마다 20초 캐시. 사람이 아주 많아지면 이 정도 늦게 바뀌어도 괜찮다
   // 종합 랭킹 · 기간: all은 모든 곡 최고 점수의 합(users.total_score) · 기간이면 그 기간 곡마다 최고 점수의 합
   async 'GET rank-total'(req, res) {
-    const period = PERIODS[req.query.period] ? req.query.period : 'all';
+    const period = has(PERIODS, req.query.period) ? req.query.period : 'all';
     const [uid, board] = await Promise.all([uidOf(req), boardOf(`total:${period}`, () => (period === 'all'
       ? sql`SELECT id, total_score::float8 AS score FROM users WHERE total_score > 0 ORDER BY total_score DESC, id ASC`
       : sql`SELECT user_id AS id, sum(best)::float8 AS score FROM (SELECT user_id, song, diff, max(score) AS best FROM play_log
@@ -783,7 +894,7 @@ const routes = {
     const user = await currentUser(req);
     if (!user) return login(res);
     const b = req.body ?? {};
-    const kind = INQUIRY[b.kind] ? b.kind : 'etc', title = text(b.title, 60), body = text(b.body, 1000);
+    const kind = has(INQUIRY, b.kind) ? b.kind : 'etc', title = text(b.title, 60), body = text(b.body, 1000);
     if (!title) return res.status(400).json({ error: kind === 'song' ? '듣고 싶은 노래 제목을 적어 주세요' : '제목을 적어 주세요' });
     const [{ n }] = await sql`SELECT count(*)::int AS n FROM inquiries WHERE user_id = ${user.id} AND created_at > now() - interval '1 day'`;
     if (n >= 10) return res.status(429).json({ error: '문의는 하루 10번까지 보낼 수 있어요' });
@@ -912,7 +1023,7 @@ const routes = {
   async 'POST mp-bot'(req, res) {
     const uid = await uidOf(req);
     if (!uid) return login(res);
-    const code = roomCodeOf(req.body), skill = BOT_SKILL[req.body?.skill] ? req.body.skill : 'normal';
+    const code = roomCodeOf(req.body), skill = has(BOT_SKILL, req.body?.skill) ? req.body.skill : 'normal';
     const [r] = await sql`SELECT host, status, bots, ARRAY(SELECT seat FROM room_players WHERE code = ${code}) AS seats FROM rooms WHERE code = ${code}`;
     if (!r || r.host !== uid) return res.status(403).json({ error: '방장만 AI를 넣을 수 있어요' });
     if (r.status === 'playing') return res.status(409).json({ error: '연주가 끝나면 넣을 수 있어요' });
@@ -962,7 +1073,7 @@ const routes = {
       return s && s.length <= max ? s : null;
     };
     // 공격: 같은 판에서 1초에 한 번까지 · 이 판 채보의 아이템 노트 수까지 (아이템을 쳤는지는 화면이 센다)
-    if (a && ATTACKS[a.kind] && (isInt(a.to, 1, 2 ** 31 - 1) || isInt(a.to, -MP.max, -1)) && a.to !== uid) {
+    if (a && has(ATTACKS, a.kind) && (isInt(a.to, 1, 2 ** 31 - 1) || isInt(a.to, -MP.max, -1)) && a.to !== uid) {
       const [rm] = await sql`SELECT song, diff FROM rooms WHERE code = ${code} AND status = 'playing' AND round = ${round}`;
       if (rm) {
         await sql`INSERT INTO room_events (code, round, from_id, to_id, kind)
@@ -984,7 +1095,7 @@ const routes = {
     const u = await currentUser(req);
     if (!u) return login(res);
     const s = normalize(u.save), per = perksOf(levelOf(s.exp));
-    const [list, incoming, outgoing] = await Promise.all([
+    const [list, incoming, outgoing, [inv]] = await Promise.all([
       sql`SELECT u.id, u.username, u.avatar, u.lv, u.frame, u.last_seen,
             EXISTS (SELECT 1 FROM presence p WHERE p.user_id = u.id AND p.seen_at > now() - interval '75 seconds') AS online,
             (SELECT code FROM room_players rp WHERE rp.user_id = u.id LIMIT 1) AS room
@@ -994,9 +1105,10 @@ const routes = {
           WHERE f.friend_id = ${u.id} AND f.status = 'pending' ORDER BY f.created_at DESC LIMIT 100`,
       sql`SELECT u.id, u.username, u.avatar, u.lv, u.frame, f.created_at FROM friends f JOIN users u ON u.id = f.friend_id
           WHERE f.user_id = ${u.id} AND f.status = 'pending' ORDER BY f.created_at DESC LIMIT 100`,
+      sql`SELECT count(*)::int AS n, count(*) FILTER (WHERE ref_paid)::int AS paid FROM users WHERE ref_by = ${u.id}`,
     ]);
     const day = s.day.date === new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) ? s.day.gifts : [];
-    res.json({ friends: list, incoming, outgoing, gifts: day, max: per.friends, giftMax: per.gifts });
+    res.json({ friends: list, incoming, outgoing, gifts: day, max: per.friends, giftMax: per.gifts, code: REF.base + u.id, invited: inv.n, invitedPaid: inv.paid });
   },
 
   // 친구 신청 (닉네임으로). 상대가 이미 나에게 신청했으면 바로 친구
@@ -1065,6 +1177,49 @@ const routes = {
     throw new Error('저장이 몰려서 실패했어요');
   },
 
+  // 친구들에게 점수 자랑: 서버에 있는 내 최고 기록을 친구 모두의 우편함으로 (글은 서버가 쓴다 → 스팸 문구를 넣을 수 없다). 하루 횟수 제한은 act('boast')
+  async 'POST boast'(req, res) {
+    const u = await currentUser(req);
+    if (!u) return login(res);
+    const { song, diff } = req.body ?? {};
+    if (!SONG[song] || !DIFFS.includes(diff)) return res.status(400).json({ error: '곡을 골라 주세요' });
+    const [[best], [{ n }]] = await Promise.all([
+      sql`SELECT score, rank, combo FROM scores WHERE user_id = ${u.id} AND song = ${song} AND diff = ${diff}`,
+      sql`SELECT count(*)::int AS n FROM friends WHERE user_id = ${u.id} AND status = 'accepted'`,
+    ]);
+    if (!best) return res.status(400).json({ error: '이 곡을 클리어한 기록이 있어야 자랑할 수 있어요' });
+    if (!n) return res.status(400).json({ error: '아직 친구가 없어요. 친구 창에서 내 친구 코드로 초대해 보세요!' });
+    const out = await mutate(u.id, (s) => act(s, { type: 'boast' }));
+    const sent = await sql`INSERT INTO mail (user_id, kind, title, body)
+      SELECT friend_id, 'boast', ${`📣 ${u.username}님의 점수 자랑!`},
+        ${`'${SONG[song].title}' ${DIFF_NAME[diff]}에서 ${fmt(best.score)}점 · ${best.rank} 랭크 · ${fmt(best.combo)}콤보! 이 기록, 넘을 수 있을까요?`}
+      FROM friends WHERE user_id = ${u.id} AND status = 'accepted' RETURNING id`;
+    res.json({ sent: sent.length, left: out.result.left, save: out.save });
+  },
+
+  // 쿠폰 코드: 한 사람이 한 번 · 정해진 수만큼 · 기한까지. 선물은 우편으로. 틀린 코드는 10분에 10번까지 (코드 찍어 맞히기 방지)
+  async 'POST coupon'(req, res) {
+    const u = await currentUser(req);
+    if (!u) return login(res);
+    const code = couponCode(req.body?.code);
+    if (!code) return res.status(400).json({ error: '쿠폰 코드를 적어 주세요' });
+    if ((await hits('coupon-fail', `u${u.id}`, 10)) >= 10) return res.status(429).json({ error: '너무 많이 틀렸어요. 10분 뒤에 다시 시도해 주세요' });
+    let got;
+    try {
+      // 한 문장: 남은 수가 있고 아직 안 쓴 사람만 사용 수 +1 → 쓴 기록 → 우편. 동시에 두 번 눌러도 쓴 기록(코드 + 회원)이 겹쳐서 한 번만 된다
+      [got] = await sql`WITH c AS (UPDATE coupons SET used = used + 1 WHERE code = ${code} AND (max_uses = 0 OR used < max_uses) AND (expires_at IS NULL OR expires_at > now())
+            AND NOT EXISTS (SELECT 1 FROM coupon_uses WHERE code = ${code} AND user_id = ${u.id}) RETURNING code, coins, gems, note),
+          x AS (INSERT INTO coupon_uses (code, user_id) SELECT code, ${u.id} FROM c)
+        INSERT INTO mail (user_id, kind, title, body, coins, gems) SELECT ${u.id}, 'gift', '🎟 쿠폰 선물이 도착했어요!', note, coins, gems FROM c RETURNING coins, gems`;
+    } catch (e) {
+      if (e.code !== '23505') throw e;
+    }
+    if (got) return res.json({ ...got, unread: await unreadOf(u.id) });
+    const [c] = await sql`SELECT EXISTS (SELECT 1 FROM coupon_uses WHERE code = ${code} AND user_id = ${u.id}) AS mine FROM coupons WHERE code = ${code}`;
+    if (!c) await logSec('coupon-fail', `u${u.id}`, u.id, code);
+    res.status(400).json({ error: !c ? '없는 쿠폰 코드예요' : c.mine ? '이미 받은 쿠폰이에요' : '끝난 쿠폰이에요 (기한이 지났거나 모두 나갔어요)' });
+  },
+
   // 공개 프로필 (닉네임): 레벨 · 테두리 · 팀 · 기록 · 나와 친구인지
   async 'GET user'(req, res) {
     const name = text(req.query.name, 20), uid = await uidOf(req);
@@ -1087,6 +1242,7 @@ const routes = {
   // 모든 화면이 30초마다 부른다: 점검 여부 · 점검 예고 · 뽑기 확률 · 버전 (+ 지금 접속 중 신호)
   async 'GET status'(req, res) {
     const [m, sched, cfg, admin, me] = await Promise.all([maintenance(), schedule(), gameCfg(), adminOk(req), seen(req).catch((e) => console.error(e))]);
+    if (Math.random() < 0.005) await sql`DELETE FROM presence WHERE seen_at < now() - interval '2 days'`.catch(console.error);
     res.setHeader('Cache-Control', 'no-store');
     res.json({
       maintenance: m, admin, preview: admin && req.cookies?.apv === '1', schedule: sched, rates: cfg.rates, version: VERSION,
@@ -1156,9 +1312,13 @@ const routes = {
   },
 
   async 'POST admin-login'(req, res) {
-    const { username = '', password = '' } = req.body ?? {};
+    const { username = '', password = '' } = req.body ?? {}, ip = ipOf(req);
     if (!process.env.ADMIN_USER) return res.status(403).json({ error: '관리자 계정이 설정되지 않았어요' });
-    if (!isAdmin(username, password)) return res.status(401).json({ error: '관리자 아이디 또는 비밀번호가 달라요' });
+    if ((await hits('admin-fail', ip, 15)) >= 5) return res.status(429).json({ error: '너무 많이 틀렸어요. 15분 뒤에 다시 시도해 주세요' });
+    if (!isAdmin(username, password)) {
+      await logSec('admin-fail', ip, null, text(username, 20));
+      return res.status(401).json({ error: '관리자 아이디 또는 비밀번호가 달라요' });
+    }
     await startAdmin(res);
     res.json({ ok: true });
   },
@@ -1232,7 +1392,7 @@ const routes = {
   async 'POST admin-inquiry-kind'(req, res) {
     if (!(await adminOk(req))) return adminOnly(res);
     const { id, kind } = req.body ?? {};
-    if (!isInt(id, 1, 2 ** 31 - 1) || !INQUIRY[kind]) return res.status(400).json({ error: '문의와 주제를 골라 주세요' });
+    if (!isInt(id, 1, 2 ** 31 - 1) || !has(INQUIRY, kind)) return res.status(400).json({ error: '문의와 주제를 골라 주세요' });
     await sql`UPDATE inquiries SET kind = ${kind} WHERE id = ${id}`;
     res.json({ ok: true });
   },
@@ -1411,7 +1571,7 @@ const routes = {
       }
       case 'rename': {
         const to = text(b.to, 12);
-        if (to.length < 2) return res.status(400).json({ error: '새 닉네임은 2~12자' });
+        if (!NAME.test(to) || to === process.env.ADMIN_USER) return res.status(400).json({ error: '새 닉네임은 한글·영문·숫자 2~12자' });
         try {
           await sql`UPDATE users SET username = ${to} WHERE id = ${u.id}`;
         } catch (e) {
@@ -1473,6 +1633,58 @@ const routes = {
         .sort((a, b) => b.rarity - a.rarity || b.lv - a.lv),
       ...f, plays,
     });
+  },
+
+  // 쿠폰 만들기 · 지우기: { code, coins, gems, max(0 = 제한 없음), days(0 = 기한 없음), note(우편 내용) } / { del: 코드 }
+  async 'POST admin-coupon'(req, res) {
+    if (!(await adminOk(req))) return adminOnly(res);
+    const b = req.body ?? {};
+    if (b.del !== undefined) {
+      await sql`DELETE FROM coupons WHERE code = ${couponCode(b.del)}`;
+      return res.json({ ok: true });
+    }
+    const code = couponCode(b.code), coins = Number(b.coins) || 0, gems = Number(b.gems) || 0, max = Number(b.max) || 0, days = Number(b.days) || 0;
+    if (code.length < 4) return res.status(400).json({ error: '쿠폰 코드는 4~24자로 지어 주세요 (영문 · 숫자 · 한글)' });
+    if (!isInt(coins, 0, 1e6) || !isInt(gems, 0, 1e5) || (!coins && !gems)) return res.status(400).json({ error: '선물은 코인 100만 · 보석 10만 개까지예요 (하나는 넣어 주세요)' });
+    if (!isInt(max, 0, 1e6) || !isInt(days, 0, 3650)) return res.status(400).json({ error: '사용 수와 기한을 바르게 적어 주세요' });
+    const [row] = await sql`INSERT INTO coupons (code, coins, gems, max_uses, note, expires_at)
+      VALUES (${code}, ${coins}, ${gems}, ${max}, ${text(b.note, 200) || '쿠폰 선물이에요. 오늘도 신나게 연주해요!'}, ${days ? new Date(Date.now() + days * DAY * 1000).toISOString() : null})
+      ON CONFLICT (code) DO NOTHING RETURNING code`;
+    if (!row) return res.status(409).json({ error: '이미 있는 쿠폰 코드예요' });
+    res.json({ code });
+  },
+
+  // 성장 · 보안 탭: 쿠폰 목록 · 최근 14일 가입자가 어디까지 갔는지 · 친구 초대 순위 · 보안 기록(로그인 실패 · 이상한 기록)
+  async 'GET admin-growth'(req, res) {
+    if (!(await adminOk(req))) return adminOnly(res);
+    const [coupons, [funnel], inviters, [sec], recent, top] = await Promise.all([
+      sql`SELECT code, coins, gems, max_uses, used, note, expires_at, created_at, (expires_at IS NOT NULL AND expires_at < now()) AS expired
+          FROM coupons ORDER BY created_at DESC LIMIT 200`,
+      sql`SELECT count(*)::int AS signups,
+          count(*) FILTER (WHERE coalesce((save->'stats'->>'plays')::int, 0) >= 1)::int AS played,
+          count(*) FILTER (WHERE coalesce((save->'stats'->>'plays')::int, 0) >= 3)::int AS played3,
+          count(*) FILTER (WHERE last_seen > created_at + interval '1 day')::int AS back,
+          count(*) FILTER (WHERE ref_by IS NOT NULL)::int AS invited,
+          count(*) FILTER (WHERE EXISTS (SELECT 1 FROM friends f WHERE f.user_id = users.id AND f.status = 'accepted'))::int AS friended,
+          (SELECT count(*)::int FROM play_log WHERE user_id IS NULL AND played_at > now() - interval '14 days') AS guest_plays,
+          (SELECT count(*)::int FROM users WHERE ref_by IS NOT NULL) AS invited_all,
+          (SELECT count(*)::int FROM users WHERE ref_by IS NOT NULL AND ref_paid) AS invited_paid,
+          (SELECT count(*)::int FROM mail WHERE kind = 'boast' AND created_at > now() - interval '14 days') AS boasts,
+          (SELECT coalesce(sum(used), 0)::int FROM coupons) AS coupon_uses
+        FROM users WHERE created_at > now() - interval '14 days'`,
+      sql`SELECT u.username, u.avatar, count(*)::int AS n, count(*) FILTER (WHERE r.ref_paid)::int AS active
+          FROM users r JOIN users u ON u.id = r.ref_by GROUP BY u.id ORDER BY n DESC, u.id LIMIT 20`,
+      sql`SELECT count(*) FILTER (WHERE kind = 'login-fail')::int AS login_fail, count(*) FILTER (WHERE kind = 'admin-fail')::int AS admin_fail,
+          count(*) FILTER (WHERE kind = 'cheat')::int AS cheat, count(*) FILTER (WHERE kind = 'signup')::int AS signup,
+          count(*) FILTER (WHERE kind = 'coupon-fail')::int AS coupon_fail FROM sec_log WHERE created_at > now() - interval '1 day'`,
+      sql`SELECT s.kind, s.k, s.detail, s.created_at, u.username FROM sec_log s LEFT JOIN users u ON u.id = s.user_id
+          WHERE s.kind <> 'signup' ORDER BY s.id DESC LIMIT 60`,
+      // 많이 걸린 곳 (최근 7일): 이상한 기록은 회원별, 로그인 실패는 IP별
+      sql`SELECT s.kind, coalesce(u.username, s.k) AS who, count(*)::int AS n, max(s.created_at) AS last
+          FROM sec_log s LEFT JOIN users u ON u.id = s.user_id AND s.kind = 'cheat'
+          WHERE s.kind IN ('login-fail', 'admin-fail', 'cheat') AND s.created_at > now() - interval '7 days' GROUP BY 1, 2 ORDER BY n DESC LIMIT 20`,
+    ]);
+    res.json({ coupons, funnel, inviters, sec, recent, top });
   },
 };
 

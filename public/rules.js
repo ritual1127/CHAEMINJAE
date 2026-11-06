@@ -5,7 +5,7 @@
 // act()가 모든 재화 변동을 처리한다. 로그인 유저는 서버가 act()를 돌려 저장하고, 게스트는 브라우저가 같은 act()를 돌려 기기에 저장한다.
 import { SONGS, SONG, DIFFS, DIFF_NAME, seeded, hashStr } from './songs.js';
 
-export const VERSION = '4.0.0'; // 사이트 맨 아래에 보이는 버전 (공지사항과 맞춰서 올린다)
+export const VERSION = '4.1.0'; // 사이트 맨 아래에 보이는 버전 (공지사항과 맞춰서 올린다)
 export const MAX_LEVEL = 20; // 친구(캐릭터) 최고 레벨
 export const MAX_LV = 1000; // 플레이어 최고 레벨
 export const FREE_AVATARS = 12;
@@ -177,7 +177,9 @@ export const CHARS = [
   C('god_chiikawa', '창조신 치이카와', 6, '#fff1a8', 'god', [80, 140], [81, 'sine'], ['세상을… 새로 만들었어…!', '모두… 빛나라…!', '와…! 우주가 박수를 쳐…!'], { img: 'chiikawa', badge: '🪐', fx: 'creator' }),
   C('god_usagi', '파괴신 우사기', 6, '#ff2d55', 'god', [100, 170], [86, 'sawtooth'], ['우라라라라라라!!', '야하! 전부 다 부숴 버려!', '하아? 이게 끝이야?'], { img: 'usagi', badge: '☄️', fx: 'destroyer' }),
 ];
-export const CHAR = Object.fromEntries(CHARS.map((c) => [c.id, c]));
+// 요청에서 온 이름으로 바로 찾는 표는 원형 없는 객체로 ('constructor' 같은 물려받은 이름이 친구 · 배너 · 업적으로 보이지 않게)
+const table = (pairs) => Object.assign(Object.create(null), Object.fromEntries(pairs));
+export const CHAR = table(CHARS.map((c) => [c.id, c]));
 export const ofRarity = (r) => CHARS.filter((c) => c.rarity === r).map((c) => c.id);
 
 // 레벨별 버프 수치 (1레벨 values[0], 5레벨 values[1], 그 뒤로도 같은 기울기)
@@ -253,7 +255,7 @@ export const BANNERS = [
   { id: 'coin', name: '코인 뽑기', icon: '🪙', desc: '보석 대신 코인으로! (전설 · 신화 · 초월은 안 나와요)', cost: { coins: 1500 }, rates: [0.82, 0.16, 0.02, 0, 0, 0], ten: 2 },
   { id: 'rookie', name: '초보자 응원', icon: '🔰', desc: '딱 한 번! 10회 뽑기 반값 + 영웅 이상 확정', cost: { gems: 50 }, rates: R(0.6, 0.25, 0.12, 0.028, 0.002), ten: 3, once: true },
 ];
-export const BANNER = Object.fromEntries(BANNERS.map((b) => [b.id, b]));
+export const BANNER = table(BANNERS.map((b) => [b.id, b]));
 
 // 관리자가 바꾼 확률 · 천장 (cfg.rates = { 배너 id: { rates: [6개], pity } }). 예전 5개짜리는 가장 큰 확률에서 초월 확률만큼 떼어 붙인다. 형식이 이상하면 기본값
 export function bannerOf(id, cfg = {}) {
@@ -353,6 +355,11 @@ export const GIFT = {
   gems: [30, 100],
   getMax: 30, // 하루에 받을 수 있는 무료 선물 수
 };
+
+// 친구 코드: 코드 = base + 회원 번호. 코드로 가입하면 가입한 친구는 바로 보석 join개 + 서로 친구,
+// 그 친구가 plays곡을 연주하면 초대한 사람도 보석 invite개 (초대한 사람마다 max명까지 · 가짜 계정으로 불리기 방지)
+export const REF = { base: 100000, join: 300, invite: 300, plays: 3, max: 30 };
+export const BOAST_MAX = 5; // 친구들에게 점수 자랑: 하루 횟수
 
 // 난이도별 보상 배율 · 첫 클리어 보석
 export const DIFF_MULT = { easy: 0.8, normal: 1, hard: 1.3, expert: 1.6, master: 2, extreme: 2.5, inferno: 3, chaos: 4 };
@@ -707,7 +714,7 @@ for (const song of SONGS) {
 }
 
 export const ACH_TRACKS = TRACKS;
-export const ACH_TRACK = Object.fromEntries(TRACKS.map((t) => [t.id, t]));
+export const ACH_TRACK = table(TRACKS.map((t) => [t.id, t]));
 export const ACH_TOTAL = TRACKS.reduce((a, t) => a + t.goals.length, 0); // 업적 개수 (단계 하나 = 업적 하나)
 
 // 받은 단계 수 읽기 · 쓰기
@@ -757,6 +764,7 @@ export const ONLINE = [
 
 export class GameError extends Error {}
 const fail = (msg) => { throw new GameError(msg); };
+const cheat = (msg) => { throw Object.assign(new GameError(msg), { cheat: true }); }; // 화면에서는 나올 수 없는 기록 (서버가 보안 기록에 남긴다)
 const isInt = (n, min, max) => Number.isInteger(n) && n >= min && n <= max;
 
 // 한국 시간 기준 날짜 (출석 · 미션 · 접속 보상 · 환전 · 선물 횟수용)
@@ -1127,7 +1135,8 @@ export function act(input, a, rand = Math.random, cfg = {}) {
       const boosters = [...new Set(Array.isArray(a.boosters) ? a.boosters : [])].filter((k) => BOOSTERS[k]);
       for (const k of boosters) if (!(s.items[k] > 0)) fail(`${BOOSTERS[k].name}이(가) 없어요`);
       for (const k of boosters) s.items[k]--;
-      s.pend = boosters.filter((k) => ['coin', 'exp'].includes(BOOSTERS[k].buff)); // 코인 · 경험치 부스터는 끝낼 때 서버가 적용
+      s.pend = boosters; // 끝낼 때 서버가 다시 본다 (코인 · 경험치 적용 + 가능한 점수 계산)
+      s.run = { k: `${song.id}:${a.diff}`, at: Date.now() }; // 언제 무슨 곡을 시작했는지 (끝낼 때 걸린 시간을 확인)
       return done({ boosters });
     }
 
@@ -1136,8 +1145,22 @@ export function act(input, a, rand = Math.random, cfg = {}) {
       const song = SONG[a.song], { diff, raw, score, combo, rank, perfect = 0 } = a;
       if (!song || !DIFFS.includes(diff) || !RANKS.includes(rank) || !isInt(raw, 0, 1e6) ||
           !isInt(score, 0, 1e7) || !isInt(combo, 0, 5000) || !isInt(perfect, 0, 5000)) fail('기록 형식이 이상해요');
-      const cleared = a.cleared === true, key = `${song.id}:${diff}`, m = DIFF_MULT[diff], di = DIFFS.indexOf(diff);
-      const b = teamBuffs(s, a.multi === true ? [] : (s.pend ?? []).filter((k) => BOOSTERS[k]));
+      const cleared = a.cleared === true, multi = a.multi === true, key = `${song.id}:${diff}`, m = DIFF_MULT[diff], di = DIFFS.indexOf(diff);
+      const b = teamBuffs(s, multi ? [] : (s.pend ?? []).filter((k) => BOOSTERS[k]));
+      // 서버에서만 (cfg.chart가 있을 때): 화면을 거치지 않고 기록만 보내는 걸 막는다
+      // 시작한 기록(싱글은 start · 멀티는 방의 판)이 있어야 하고, 그 뒤 지난 시간 안에 나올 수 있는 노트 수 · 팀 버프로 가능한 점수여야 한다
+      // ponytail: 실제 곡 길이만큼 기다렸다가 그럴듯한 기록을 보내는 자동 프로그램까지는 못 막는다. 상금이 걸리면 입력 기록을 받아 서버에서 다시 채점
+      if (cfg.chart) {
+        const run = multi ? cfg.mrun : s.run, c = cfg.chart(song.id, diff), E = run?.k === key ? run.e ?? Date.now() - run.at : -1; // E: 시작한 뒤 지난 ms
+        if (E < 0) cheat('연주를 시작한 기록이 없어요. 곡을 다시 시작해 주세요');
+        if (multi && s.mrun === run.m) cheat('이 판의 보상은 이미 받았어요');
+        const n = c.at(E / 1000); // 지금까지 나올 수 있었던 판정 수
+        if (E < 2500 || ((cleared || multi) && E < c.ms) || raw > (1e6 * n) / c.total + 1 || combo > n || perfect > n
+          || raw > (1e6 * (perfect + 0.7 * (c.total - perfect))) / c.total + 1 || score > Math.round(raw * (1 + (multi ? 0 : b.score) / 100)) + 1
+          || rank !== botRank(raw) || (a.fullCombo === true && combo !== c.total) || (a.allPerfect === true && perfect !== c.total)) cheat('기록이 이상해서 저장하지 못했어요');
+        if (multi) s.mrun = run.m;
+      }
+      delete s.run;
       s.pend = [];
       const before = levelOf(s.exp), perk = perksOf(before);
       const coins = Math.round((Math.round((raw / 1e6) * 600) + (cleared ? 150 : 0)) * m * (1 + (b.coin + perk.coin) / 100) * (cleared ? 1 : 0.4));
@@ -1152,7 +1175,7 @@ export function act(input, a, rand = Math.random, cfg = {}) {
       sd[di]++;
       sd[16 + di] = Math.max(sd[16 + di], combo);
       for (const id of s.team) if (id && CHAR[id] && s.chars[id]) st.tp[id] = (st.tp[id] ?? 0) + 1;
-      if (a.multi === true) st.mplays++;
+      if (multi) st.mplays++;
       st.coinsEarned += coins;
       st.maxCombo = Math.max(st.maxCombo, combo);
       st.perfects += perfect;
@@ -1221,6 +1244,13 @@ export function act(input, a, rand = Math.random, cfg = {}) {
       s.stats.gifts++;
       return done({ give: give2, back: a.kind === 'free' ? GIFT.free.back : 0, left: per.gifts - s.day.gifts.length });
     }
+    // 친구들에게 점수 자랑 (하루 BOAST_MAX번 · 우편은 서버가 보낸다)
+    case 'boast': {
+      const n = s.day.boasts ?? 0;
+      if (n >= BOAST_MAX) fail(`자랑은 하루 ${BOAST_MAX}번까지 할 수 있어요. 내일 또 자랑해요!`);
+      s.day.boasts = n + 1;
+      return done({ left: BOAST_MAX - n - 1 });
+    }
     // 관리자가 친구(캐릭터) 선물하기: 없으면 1레벨로, 있으면 카드 +1
     case 'grant': {
       const c = CHAR[a.id];
@@ -1236,4 +1266,4 @@ export function act(input, a, rand = Math.random, cfg = {}) {
 }
 
 // 클라이언트가 /api/act로 직접 보내면 안 되는 행동
-export const SERVER_ONLY = new Set(['first', 'mpWin', 'friends', 'gift', 'grant']);
+export const SERVER_ONLY = new Set(['first', 'mpWin', 'friends', 'gift', 'grant', 'boast']);
