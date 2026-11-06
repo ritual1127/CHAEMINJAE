@@ -24,30 +24,11 @@ const WELCOME = { title: '🎉 먼작귀 리듬 파티에 온 걸 환영해요!'
 // 이 버전으로 처음 배포될 때 공지사항에 한 번 올라가는 업데이트 내역 (관리자 페이지에서 고칠 수 있다)
 const SCHEMA = 3; // 표 구조를 바꿀 때마다 +1 (같은 버전에서도 init이 다시 돈다)
 const RELEASE = {
-  title: '파티 업데이트! 신나는 새 곡 · 친구 코드 · 점수 자랑 · 더 화끈한 타격감',
+  title: '연주 테마 10종 등장! · 노트 칠 때 효과를 차분하게',
   body: [
-    '🎺 새 곡 3개 (새 장르 파티 · 축제): 라 쿠카라차 피에스타 (마리아치) · 하바 나길라 (점점 빨라져요!) · 우라! 삼바 카니발 — 모두 무료!',
-    '💥 노트를 치면 충격파 · 빛기둥 · 깨지는 조각이 팡팡! 50콤보마다 꽃가루, 100콤보부터 판정선이 무지개로 · 치는 소리는 그 음 높이로',
-    '🎹 채보를 새로 다듬었어요: 같은 모양이 계속 나오지 않게, 구절마다 손 모양이 달라져요 (모든 곡 · 모든 난이도)',
-    '👫 친구 코드: 친구가 내 코드로 가입하면 친구는 보석 300개 + 바로 서로 친구, 친구가 3곡 연주하면 나도 보석 300개 (친구 창에서 코드 · 초대 링크)',
-    '📣 점수 자랑: 결과 화면에서 친구들 우편함으로 자랑하기 · 링크로 공유하기',
-    '🎟 쿠폰 코드: 우편함에서 쿠폰을 넣으면 선물이 우편으로 와요',
-    '🎼 19곡의 반주를 고쳤어요 (멜로디와 어긋나던 화음)',
-    '🛡 연주를 안 하고 기록만 올리는 부정 기록을 막고, 로그인을 여러 번 틀리면 잠깐 쉬어요',
-    '— 아래는 지난 업데이트 —',
-    '🎵 새 곡 101개! 장르 12개 (클래식 · 동요 · 민요 · 캐럴 · EDM · K-POP 스타일 · 복고 · 트로트 · 퐁크 · 칩튠 · 로파이 · 록 · 재즈)',
-    '🎹 노트가 덜 질리게: 같은 가락이 다시 나오면 다른 모양으로, 같은 칸 연타 대신 번갈아 치기, 후렴 첫 박 동시치기',
-    '👫 친구: 닉네임으로 친구 신청 · 멀티 방으로 초대 · 매일 무료 선물과 코인 · 보석 선물',
-    '👥 멀티: 최대 10명 · 방 코드 4자리 숫자 · 공격은 연주 중 나오는 아이템 노트로 💣 · 1등이 다음 방장 · 방장 넘기기 · 내보내기 · 종합 점수와 이전 판 기록 · 공격 키 바꾸기',
-    '⭐ 플레이어 레벨 최대 1000! 10레벨마다 새 프로필 테두리 (101가지) · 레벨 혜택 (코인 · 경험치 보너스, 친구 수, 선물 횟수, 출석 보상)',
-    '🃏 진화 대신 레벨 업: 같은 친구 카드를 모아 최대 20레벨 (예전 진화는 1번마다 +3레벨로 바뀌었어요)',
-    '🪐 새 등급 초월: 0.00000001% 확률의 말도 안 되게 센 친구 2명',
-    '🤖 멀티에 AI 넣기 (쉬움 · 보통 · 어려움 · 고수) · 휴대폰에서도 멀티 플레이!',
-    '🛍 상점: 오늘의 카드 (매일 바뀌는 캐릭터 카드) · 행운 상자 · 경험치 물약 · 새 부스터 4종 (방패 젤리 · 정확 안경 · 코인 주머니 · 경험치 책)',
-    '🏆 랭킹: 전체 · 최근 30일 · 7일 · 오늘 기간별로, 100위까지',
-    '🛠 연주 안정화: 터치 · 키 입력이 늦게 처리돼도 누른 순간으로 판정 · 시작 연타로 게임이 두 번 켜지던 문제 · 몇 곡 하면 휴대폰에서 튕기던 문제 · 일시정지 후 3 · 2 · 1',
-    '🎧 로비 음악이 잔잔한 곡들로 돌아가며 나와요 · 마구 연타하면 MISS (너무 일찍 누르면 그 노트는 놓쳐요)',
-    '🏅 업적 5만 개 이상 · 화면을 휴대폰 · PC에 맞게 새로 다듬었어요',
+    '🎨 연주 테마: 상점 → 테마 탭에서 코인으로 사서 연주 화면을 통째로 바꿔요 (벚꽃 밤 · 깊은 바다 · 반딧불 숲 · 눈 오는 밤 · 노을 해변 · 사탕 나라 · 네온 시티 · 8비트 오락실 · 피에스타 · 은하수)',
+    '👀 사기 전에 미리 보기로 노트가 내려오는 모습을 볼 수 있어요 · 곡 고르는 창에서 바로 바꿀 수 있어요 · 점수에는 영향 없어요',
+    '✨ 노트를 칠 때 효과가 너무 요란해서 차분하게 줄였어요 (노트가 더 잘 보여요)',
   ].join('\n'),
 };
 
@@ -273,6 +254,18 @@ async function migrate() {
     detail TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now())`;
   await sql`CREATE INDEX IF NOT EXISTS sec_log_at ON sec_log (kind, created_at)`;
+  // v4.2: 닉네임을 바꿀 때마다 남기는 기록 (관리자가 이전 닉네임을 본다 · 예전 닉네임으로도 찾는다)
+  await sql`CREATE TABLE IF NOT EXISTS name_history (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    old_name TEXT NOT NULL,
+    new_name TEXT NOT NULL,
+    by_admin BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now())`;
+  await sql`CREATE INDEX IF NOT EXISTS name_history_user ON name_history (user_id, id DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS name_history_old ON name_history (old_name, id DESC)`;
+  // v4.2: 총 접속 시간(초) · 그 시간을 마지막으로 더한 시각
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS online_secs BIGINT NOT NULL DEFAULT 0, ADD COLUMN IF NOT EXISTS online_at TIMESTAMPTZ`;
   await sql`INSERT INTO app_settings (key, value) VALUES (${`ready:${VERSION}:${SCHEMA}`}, 'true'::jsonb) ON CONFLICT (key) DO NOTHING`;
 }
 
@@ -426,7 +419,9 @@ async function seen(req) {
   const { v = '', s = '', d = '' } = req.query, token = req.cookies?.sid ? hash(req.cookies.sid).toString('hex') : '';
   if (!/^[\w-]{8,40}$/.test(v)) return null;
   const [r] = await sql`WITH u AS (SELECT user_id FROM sessions WHERE token = ${token} AND expires_at > now()),
-    l AS (UPDATE users SET last_seen = now() WHERE id = (SELECT user_id FROM u)),
+    l AS (UPDATE users SET last_seen = now(), online_at = now(), -- 총 접속 시간: 마지막 신호 뒤 지난 시간을 더한다. 75초 넘게 끊겼으면 새 접속이라 안 더한다 (화면을 숨기면 신호가 없어서 안 세고, 기기가 여러 대여도 회원마다 한 번만 센다)
+        online_secs = online_secs + CASE WHEN online_at > now() - interval '75 seconds' THEN round(extract(epoch FROM now() - online_at))::bigint ELSE 0 END
+      WHERE id = (SELECT user_id FROM u)),
     p AS (INSERT INTO presence (vid, user_id, screen, device) VALUES (${v}, (SELECT user_id FROM u), ${/^[\w:-]{1,40}$/.test(s) ? s : ''}, ${d === 'pc' ? 'pc' : 'mo'})
       ON CONFLICT (vid) DO UPDATE SET user_id = EXCLUDED.user_id, screen = EXCLUDED.screen, device = EXCLUDED.device, seen_at = now(),
         since = CASE WHEN presence.seen_at < now() - interval '5 minutes' THEN now() ELSE presence.since END RETURNING 1)
@@ -762,14 +757,16 @@ const routes = {
     if (name === process.env.ADMIN_USER) return res.status(409).json({ error: '쓸 수 없는 닉네임이에요' });
     if (name === user.username) return res.status(400).json({ error: '지금 닉네임과 같아요' });
     for (let i = 0; i < 4; i++) {
-      const [row] = await sql`SELECT save, ver FROM users WHERE id = ${user.id}`;
+      const [row] = await sql`SELECT save, ver, username FROM users WHERE id = ${user.id}`;
       const s = normalize(row.save);
       if (s.coins < RENAME_COINS) return res.status(400).json({ error: `닉네임을 바꾸려면 코인 ${fmt(RENAME_COINS)}개가 필요해요` });
       s.coins -= RENAME_COINS;
       s.renames++;
       try {
-        const ok = await sql`UPDATE users SET username = ${name}, save = ${JSON.stringify(s)}::jsonb, ver = ver + 1
-                             WHERE id = ${user.id} AND ver = ${row.ver} RETURNING id`;
+        // 닉네임 변경과 이전 닉네임 기록을 한 문장에서 같이
+        const ok = await sql`WITH u AS (UPDATE users SET username = ${name}, save = ${JSON.stringify(s)}::jsonb, ver = ver + 1
+                               WHERE id = ${user.id} AND ver = ${row.ver} RETURNING id)
+                             INSERT INTO name_history (user_id, old_name, new_name) SELECT id, ${row.username}, ${name} FROM u RETURNING id`;
         if (ok.length) return res.json({ username: name, save: s });
       } catch (e) {
         if (e.code === '23505') return res.status(409).json({ error: '이미 누가 쓰고 있는 닉네임이에요' });
@@ -1492,7 +1489,8 @@ const routes = {
         coalesce((save->'stats'->>'maxCombo')::int, 0) AS max_combo,
         (SELECT count(*)::int FROM jsonb_object_keys(coalesce(save->'chars', '{}'::jsonb))) AS chars,
         (SELECT count(*)::int FROM jsonb_object_keys(coalesce(save->'stats'->'clears', '{}'::jsonb))) AS clears,
-        lv, frame, total_score::float8 AS total,
+        lv, frame, total_score::float8 AS total, online_secs::float8 AS online_secs,
+        (SELECT array_agg(old_name ORDER BY id DESC) FROM name_history WHERE user_id = users.id) AS olds,
         save->'chars' AS c, save->'team' AS t
         FROM users ORDER BY created_at DESC LIMIT 500`,
       recentPlays(),
@@ -1585,8 +1583,10 @@ const routes = {
       case 'rename': {
         const to = text(b.to, 12);
         if (!NAME.test(to) || to === process.env.ADMIN_USER) return res.status(400).json({ error: '새 닉네임은 한글·영문·숫자 2~12자' });
+        if (to === u.username) return res.status(400).json({ error: '지금 닉네임과 같아요' });
         try {
-          await sql`UPDATE users SET username = ${to} WHERE id = ${u.id}`;
+          await sql`WITH x AS (UPDATE users SET username = ${to} WHERE id = ${u.id} RETURNING id)
+                    INSERT INTO name_history (user_id, old_name, new_name, by_admin) SELECT id, ${u.username}, ${to}, true FROM x`;
         } catch (e) {
           if (e.code === '23505') return res.status(409).json({ error: '이미 있는 닉네임이에요' });
           throw e;
@@ -1624,20 +1624,23 @@ const routes = {
     }
   },
 
-  // 회원 한 명 자세히 (닉네임): 레벨 · 재화 · 친구 · 가진 캐릭터 · 최근 플레이
+  // 회원 한 명 자세히 (지금 닉네임 · 없으면 예전 닉네임으로 찾기): 레벨 · 재화 · 친구 · 가진 캐릭터 · 최근 플레이 · 이전 닉네임
   async 'GET admin-user'(req, res) {
     if (!(await adminOk(req))) return adminOnly(res);
     const name = text(req.query.name, 20);
-    const [u] = await sql`SELECT id, username, avatar, lv, frame, total_score::float8 AS total, created_at, last_seen, save, banned_until, ban_reason, temp_pw, temp_pw_at
-                          FROM users WHERE username = ${name}`;
+    const [u] = await sql`SELECT id, username, avatar, lv, frame, total_score::float8 AS total, online_secs::float8 AS online_secs, created_at, last_seen, save, banned_until, ban_reason, temp_pw, temp_pw_at
+                          FROM users WHERE id = coalesce((SELECT id FROM users WHERE username = ${name}),
+                            (SELECT user_id FROM name_history WHERE old_name = ${name} ORDER BY id DESC LIMIT 1))`;
     if (!u) return res.status(404).json({ error: '그런 닉네임은 없어요' });
     const s = normalize(u.save);
-    const [[f], plays] = await Promise.all([
+    const [[f], plays, names] = await Promise.all([
       sql`SELECT (SELECT count(*)::int FROM friends WHERE user_id = ${u.id} AND status = 'accepted') AS friends,
           (SELECT count(*)::int FROM mail WHERE user_id = ${u.id} AND kind = 'friend') AS gifts_got`,
       sql`SELECT song, diff, score, rank, cleared, multi, played_at FROM play_log WHERE user_id = ${u.id} ORDER BY played_at DESC LIMIT 20`,
+      sql`SELECT old_name, new_name, by_admin, created_at FROM name_history WHERE user_id = ${u.id} ORDER BY id DESC LIMIT 100`,
     ]);
     res.json({
+      names, renames: s.renames, online_secs: u.online_secs,
       username: u.username, avatar: u.avatar, lv: u.lv, frame: u.frame, total: u.total, created_at: u.created_at, last_seen: u.last_seen,
       banned_until: u.banned_until && new Date(u.banned_until) > new Date() ? u.banned_until : null, ban_reason: u.ban_reason,
       temp_pw: u.temp_pw, temp_pw_at: u.temp_pw_at,

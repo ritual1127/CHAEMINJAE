@@ -661,6 +661,135 @@ function sway(g, cx, cy, w, k, now) {
   g.translate(-cx + Math.sin(now / 95) * w * 0.07 * k, -cy);
 }
 
+/* ---------- 연주 테마: 판 뒤에서 천천히 움직이는 무늬 · 배경 그림 (늘 판 뒤에 그려서 노트를 가리지 않는다) ---------- */
+const TAU = Math.PI * 2;
+const dot = (g, x, y, r) => {
+  g.beginPath();
+  g.arc(x, y, r, 0, TAU);
+  g.fill();
+};
+// 무늬 하나 그리기: 위치 x, y · 크기 s · i번째
+const SHAPE = {
+  snow: (g, x, y, s) => dot(g, x, y, s),
+  petal(g, x, y, s, now, i) {
+    g.beginPath();
+    g.ellipse(x, y, s, s * 0.55, now / 1100 + i, 0, TAU);
+    g.fill();
+  },
+  bubble(g, x, y, s) {
+    g.strokeStyle = g.fillStyle;
+    g.lineWidth = 1.5;
+    g.beginPath();
+    g.arc(x, y, s, 0, TAU);
+    g.stroke();
+    dot(g, x - s * 0.35, y - s * 0.35, s * 0.2);
+  },
+  firefly(g, x, y, s, now, i) { // 켜졌다 꺼졌다
+    const k = 0.5 + 0.5 * Math.sin(now / 800 + i * 2.1);
+    g.globalAlpha = k * 0.22;
+    dot(g, x, y, s * 3.2);
+    g.globalAlpha = 0.2 + k * 0.8;
+    dot(g, x, y, s);
+  },
+  star(g, x, y, s, now, i) { // 제자리에서 반짝
+    g.globalAlpha = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(now / 1300 + i * 1.7));
+    dot(g, x, y, s);
+  },
+  sprinkle(g, x, y, s, now, i) {
+    g.save();
+    g.translate(x, y);
+    g.rotate(now / 1600 + i);
+    g.beginPath();
+    g.roundRect(-s, -s * 0.35, s * 2, s * 0.7, s * 0.35);
+    g.fill();
+    g.restore();
+  },
+  pixel: (g, x, y, s) => g.fillRect(Math.round(x / 8) * 8, Math.round(y / 8) * 8, s, s), // 8칸씩 뚝뚝
+};
+// 배경 그림
+const DECO = {
+  pines(g, W, H) { // 숲 실루엣
+    const w = Math.max(56, W / 10);
+    g.fillStyle = 'rgba(2, 16, 12, .92)';
+    for (let i = 0; i * w < W + w; i++) {
+      const x = i * w, h = w * (1.4 + ((i * 0.618) % 1));
+      for (const [k, b] of [[0.62, 0], [0.48, h * 0.32], [0.34, h * 0.6]]) {
+        g.beginPath();
+        g.moveTo(x - w * k, H - b);
+        g.lineTo(x, H - h);
+        g.lineTo(x + w * k, H - b);
+        g.fill();
+      }
+    }
+  },
+  sun(g, W, H, now) { // 지는 해 · 바다 · 물에 비친 햇빛
+    const sea = H * 0.66, r = Math.min(W, H) * 0.17, x = W / 2;
+    g.fillStyle = 'rgba(255, 226, 170, .25)';
+    dot(g, x, sea - r * 0.2, r * 1.5);
+    g.fillStyle = '#ffe2a8';
+    dot(g, x, sea - r * 0.2, r);
+    g.fillStyle = 'rgba(70, 24, 84, .78)';
+    g.fillRect(0, sea, W, H - sea);
+    g.fillStyle = 'rgba(255, 214, 160, .55)';
+    for (let i = 0; i < 7; i++) {
+      const w = r * (1.3 - i * 0.1) * (0.75 + 0.25 * Math.sin(now / 900 + i * 1.3));
+      g.fillRect(x - w, sea + 8 + (i * (H - sea)) / 8, w * 2, 3);
+    }
+  },
+  bunting(g, W, H, now) { // 축제 깃발 줄 (살랑살랑)
+    const COL = ['#ff5d8f', '#ffd25e', '#3fd4a6', '#4ec3ff', '#fff'], w = Math.max(34, Math.min(70, W / 11));
+    [H * 0.12, H * 0.25].forEach((y, row) => {
+      g.fillStyle = 'rgba(255, 255, 255, .5)';
+      g.fillRect(0, y - 1, W, 2);
+      for (let i = -1; i * w < W + w; i++) {
+        const x = i * w + (row * w) / 2, sway = Math.sin(now / 1000 + i + row) * 3;
+        g.fillStyle = COL[(i + 5 + row * 2) % COL.length];
+        g.beginPath();
+        g.moveTo(x + 2, y);
+        g.lineTo(x + w - 2, y);
+        g.lineTo(x + w / 2 + sway, y + w * 0.8);
+        g.fill();
+      }
+    });
+  },
+  grid(g, W, H, now) { // 네온 도시 · 다가오는 바닥 격자
+    const hy = H * 0.52, x = W / 2, p = (now / 1500) % 1, bw = W / 14;
+    g.fillStyle = 'rgba(40, 12, 86, .95)';
+    for (let i = 0; i < 14; i++) {
+      const h = H * (0.05 + 0.14 * ((i * 0.618) % 1));
+      g.fillRect(i * bw, hy - h, bw - 2, h);
+    }
+    g.strokeStyle = 'rgba(0, 240, 255, .42)';
+    g.lineWidth = 1.5;
+    g.beginPath();
+    for (let i = -8; i <= 8; i++) {
+      g.moveTo(x + i * W * 0.02, hy);
+      g.lineTo(x + i * W * 0.2, H);
+    }
+    for (let i = 0; i < 8; i++) {
+      const y = hy + (H - hy) * ((i + p) / 8) ** 2.2;
+      g.moveTo(0, y);
+      g.lineTo(W, y);
+    }
+    g.stroke();
+  },
+};
+function drawTheme(g, th, W, H, now) {
+  const f = th.fx;
+  if (!f && !th.deco) return;
+  g.save();
+  DECO[th.deco]?.(g, W, H, now);
+  // 무늬마다 자리 · 속도 · 크기를 고르게 흩어 둔다 (황금비 수열). 큰 화면은 그만큼 더 많이
+  for (let i = 0, n = f ? Math.round(f.n * Math.min(2.5, Math.max(1, W / 500))) : 0; i < n; i++) {
+    const a = (i * 0.618034) % 1, b = (i * 0.754878) % 1, c = (i * 0.56984) % 1;
+    const p = f.dir ? (a + (now / (f.speed * 1000)) * (0.75 + b * 0.5)) % 1 : a;
+    g.globalAlpha = 0.85;
+    g.fillStyle = f.c[i % f.c.length];
+    SHAPE[f.kind](g, b * W + (f.dir ? Math.sin(now / 1900 + i) * 16 : 0), (f.dir < 0 ? 1 - p : p) * (H + 40) - 20, f.size * (0.6 + c * 0.8), now, i);
+  }
+  g.restore();
+}
+
 function faceSprite(img, px, badge) {
   const c = document.createElement('canvas');
   c.width = c.height = Math.ceil(px);
@@ -701,8 +830,8 @@ export class Game {
     this.ptr = [0, 0, 0, 0];
     this.holding = [null, null, null, null];
     this.flash = [0, 0, 0, 0];
-    this.beam = [0, 0, 0, 0]; // 노트를 친 칸을 타고 올라가는 빛기둥
-    this.punch = 0; // 칠 때마다 판 전체가 '쿵' 하고 튀는 정도
+    this.th = opts.theme; // 연주 테마 (rules.js THEMES)
+    this.still = matchMedia('(prefers-reduced-motion: reduce)').matches; // '동작 줄이기'를 켠 사람은 배경 무늬를 멈춘다
     this.fx = [];
     this.bi = 0;
     this.total = this.tiles.length + this.tiles.filter((n) => n.hold).length; // 롱노트는 누름 + 뗌 두 번 판정
@@ -732,7 +861,7 @@ export class Game {
     this.g.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.W = r.width;
     this.H = r.height;
-    this.wide = matchMedia('(orientation: landscape) and (min-width: 640px)').matches;
+    this.wide = !this.demo && matchMedia('(orientation: landscape) and (min-width: 640px)').matches; // demo: 테마 미리 보기 (작은 창을 판이 꽉 채운다)
     this.fw = this.wide ? Math.min(440, this.W * 0.36) : this.W; // style.css의 .gside 위치와 같은 식
     this.left = (this.W - this.fw) / 2;
     this.cw = this.fw / 4;
@@ -856,7 +985,6 @@ export class Game {
     if (name === 'miss') {
       this.combo = 0;
       this.damage(tail ? 4 : 8);
-      if (!tail) this.burst(lane, 'miss');
     } else {
       this.combo++;
       this.acc += this.dead ? v * 0.1 : v; // 멀티에서 체력이 0이 된 뒤에는 점수가 10%만 오른다 (연타로 점수 올리기 막기)
@@ -866,10 +994,7 @@ export class Game {
         this.onHp(this.hp, this.maxHp, 'heal');
       }
       if (!tail) this.burst(lane, name);
-      if (this.combo % 50 === 0) {
-        this.milestone();
-        this.onCombo?.(this.combo);
-      }
+      if (this.combo % 50 === 0) this.onCombo?.(this.combo);
     }
     if (this.running) this.onJudge(name, this.combo, this.score, dt, lane);
   }
@@ -899,38 +1024,14 @@ export class Game {
     });
   }
 
-  // 노트를 친 순간: 판정 색 충격파 + 빛기둥 + 불꽃 + 노트가 깨져 튀는 조각 + 판 전체가 '쿵'. 판정이 좋을수록 크게
+  // 노트를 친 순간: 그 칸 안에서 퍼지는 판정 색 고리 하나 (칸 불빛은 press의 flash). PERFECT만 작은 반짝이 3개. 눈이 노트에서 떨어지지 않게 차분하게
   burst(lane, name) {
     const x = this.left + (lane + 0.5) * this.cw, y = this.jy, now = performance.now();
-    if (this.fx.length > 240) this.fx.splice(0, this.fx.length - 240); // 노트가 몰려도 느려지지 않게 오래된 것부터 버린다
-    if (name === 'wrong' || name === 'miss') return void this.fx.push({ ring: true, x, y, color: name === 'miss' ? '#ff6b8a' : '#b9adc4', born: now, k: 0.8 });
-    const color = this.lanes[lane].color, power = { perfect: 1, great: 0.6 }[name] ?? 0.35;
-    this.punch = Math.min(1.8, this.punch + power);
-    this.beam[lane] = Math.max(this.beam[lane], power);
-    this.fx.push({ ring: true, x, y, color: JCOLOR[name] ?? color, born: now, k: 1 + power * 0.7, fill: true });
-    if (name === 'perfect') this.fx.push({ ring: true, x, y, color: '#fff', born: now + 60, k: 2 });
-    for (let i = 0, n = Math.round(4 + power * 12); i < n; i++) {
-      const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.6, sp = 180 + Math.random() * 340 * (0.6 + power * 0.6);
-      this.fx.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, color: i % 3 ? color : i % 2 ? '#fff' : JCOLOR[name] ?? '#fff', size: 5 + Math.random() * (5 + power * 5), born: now });
-    }
-    for (let i = 0; i < 4; i++) { // 노트가 네 조각으로 깨져 튄다
-      this.fx.push({ shard: true, x: x + (i - 1.5) * this.nw * 0.22, y, vx: (i - 1.5) * 170 + (Math.random() - 0.5) * 80, vy: -(140 + Math.random() * 220),
-        rot: Math.random() * 3, vr: (Math.random() - 0.5) * 14, color: i % 2 ? color : this.light[lane], size: this.nh * 0.42, born: now });
-    }
-  }
-
-  // 50콤보마다: 네 칸 모두 충격파 + 판정선에서 꽃가루가 솟는다
-  milestone() {
-    const now = performance.now();
-    this.punch = 1.8;
-    for (let l = 0; l < 4; l++) {
-      const x = this.left + (l + 0.5) * this.cw;
-      this.beam[l] = 1;
-      this.fx.push({ ring: true, x, y: this.jy, color: '#ffe08d', born: now + l * 35, k: 2.4, fill: true });
-      for (let i = 0; i < 9; i++) {
-        this.fx.push({ x: x + (Math.random() - 0.5) * this.cw, y: this.jy, vx: (Math.random() - 0.5) * 260, vy: -(320 + Math.random() * 420),
-          color: ['#ffe08d', '#ff8db6', '#8fd3ff', '#fff'][i % 4], size: 7 + Math.random() * 7, born: now + l * 35, life: 0.9 });
-      }
+    this.fx.push({ ring: true, x, y, color: JCOLOR[name] ?? '#b9adc4', born: now });
+    if (name !== 'perfect') return;
+    for (let i = 0; i < 3; i++) {
+      const a = -Math.PI / 2 + (i - 1) * 0.7 + (Math.random() - 0.5) * 0.4, sp = 110 + Math.random() * 90;
+      this.fx.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, color: i % 2 ? '#fff' : this.lanes[lane].color, size: 4 + Math.random() * 3, born: now });
     }
   }
 
@@ -985,31 +1086,24 @@ export class Game {
   }
 
   draw(t) {
-    const { g, W, H, left, fw, cw, jy, nw, nh } = this, now = performance.now();
+    const { g, W, H, left, fw, cw, jy, nw, nh, th } = this, now = performance.now();
     const pulse = (1 - this.beat(t)) ** 3, fever = this.combo >= 100;
     const shake = jamLevel(this.jam.shake, now), fog = jamLevel(this.jam.fog, now), pps = this.pps * (1 + 0.8 * jamLevel(this.jam.speed, now));
     const bomb = jamLevel(this.jam.bomb, now);
     g.clearRect(0, 0, W, H);
+    drawTheme(g, th, W, H, this.still ? 0 : now);
     g.save();
     if (now - (this.shakeAt ?? 0) < 160) g.translate((Math.random() - 0.5) * 8, 0);
     if (shake) sway(g, left + fw / 2, jy, fw, shake, now);
-    // 칠 때마다 판정선을 중심으로 판 전체가 살짝 커졌다 돌아온다 ('쿵' 하는 손맛)
-    this.punch *= 0.84;
-    if (this.punch > 0.02) {
-      const z = 1 + this.punch * 0.011;
-      g.translate(left + fw / 2, jy);
-      g.scale(z, z);
-      g.translate(-(left + fw / 2), -jy);
-    }
 
     // 무대 판
-    g.fillStyle = fever ? `rgba(60, 24, 70, ${0.66 + pulse * 0.08})` : 'rgba(28, 18, 52, .64)';
+    g.fillStyle = `rgba(${(fever && th.fever) || th.board}, ${th.a + (fever ? 0.02 + pulse * 0.08 : 0)})`;
     g.beginPath();
     g.roundRect(left, -20, fw, H + 40, this.wide ? 22 : 0);
     g.fill();
     if (this.wide) {
       g.lineWidth = 4;
-      g.strokeStyle = INK;
+      g.strokeStyle = th.ink;
       g.stroke();
     }
     for (let l = 0; l < 4; l++) {
@@ -1028,17 +1122,6 @@ export class Game {
         g.globalAlpha = 1;
         this.flash[l] *= this.holding[l] ? 0.95 : 0.86;
       }
-      if (this.beam[l] > 0.02) { // 친 칸을 타고 위로 솟는 빛기둥 (가운데가 밝다)
-        const b = this.beam[l], top = jy - H * (0.45 + b * 0.4), bg = g.createLinearGradient(0, jy, 0, top);
-        bg.addColorStop(0, '#fff');
-        bg.addColorStop(0.35, this.light[l]);
-        bg.addColorStop(1, 'rgba(255,255,255,0)');
-        g.globalAlpha = Math.min(0.8, b * 0.7);
-        g.fillStyle = bg;
-        g.fillRect(x + cw * 0.22, top, cw * 0.56, jy - top);
-        g.globalAlpha = 1;
-        this.beam[l] *= this.holding[l] ? 0.93 : 0.8;
-      }
     }
     g.fillStyle = 'rgba(255,255,255,.12)';
     for (let i = 1; i < 4; i++) g.fillRect(left + i * cw - 1, 0, 2, H);
@@ -1050,19 +1133,13 @@ export class Game {
       if (y > 0 && y < jy - nh / 2) g.fillRect(left, y - 1, fw, 2);
     }
 
-    // 판정선 + 노트 받침. 콤보가 쌓일수록 달아오르고, 100콤보부터는 무지개로 일렁인다 (+ 불씨가 솟는다)
-    const heat = Math.min(1, this.combo / 100);
-    g.fillStyle = fever ? `hsla(${(now / 6) % 360}, 95%, 72%, ${0.34 + pulse * 0.26})` : `rgba(255,141,182,${0.16 + heat * 0.16 + pulse * 0.22})`;
+    // 판정선 + 노트 받침. 콤보가 쌓일수록 조금씩 밝아진다
+    g.fillStyle = `rgba(${th.jl},${0.16 + Math.min(1, this.combo / 100) * 0.12 + pulse * 0.22})`;
     g.fillRect(left, jy - nh / 2 - 7, fw, nh + 14);
-    if (fever && now - (this.ember ?? 0) > 70 && this.fx.length < 200) {
-      this.ember = now;
-      this.fx.push({ x: left + Math.random() * fw, y: jy, vx: (Math.random() - 0.5) * 40, vy: -(90 + Math.random() * 130), up: true,
-        color: `hsl(${(now / 6 + Math.random() * 90) % 360}, 95%, 75%)`, size: 3 + Math.random() * 4, born: now, life: 0.9 });
-    }
     for (let l = 0; l < 4; l++) {
       const x = left + (l + 0.5) * cw, p = this.flash[l], s = 1 + p * 0.1;
       g.beginPath();
-      g.roundRect(x - (nw * s) / 2, jy - (nh * s) / 2, nw * s, nh * s, nh * 0.35);
+      g.roundRect(x - (nw * s) / 2, jy - (nh * s) / 2, nw * s, nh * s, nh * th.r);
       g.globalAlpha = p > 0.05 ? 0.3 + p * 0.55 : 1;
       g.fillStyle = p > 0.05 ? this.lanes[l].color : 'rgba(255,255,255,.08)';
       g.fill();
@@ -1084,7 +1161,7 @@ export class Game {
         g.globalAlpha = 1 - k;
         g.fillStyle = '#fff';
         g.beginPath();
-        g.roundRect(x - (nw * (1 + k * 0.3)) / 2, jy - (nh * (1 + k * 0.6)) / 2, nw * (1 + k * 0.3), nh * (1 + k * 0.6), nh * 0.35);
+        g.roundRect(x - (nw * (1 + k * 0.3)) / 2, jy - (nh * (1 + k * 0.6)) / 2, nw * (1 + k * 0.3), nh * (1 + k * 0.6), nh * th.r);
         g.fill();
         g.globalAlpha = 1;
         continue;
@@ -1102,7 +1179,7 @@ export class Game {
           g.roundRect(x - bw / 2, tail - nh * 0.25, bw, head - tail + nh * 0.25, bw / 2);
           g.fill();
           g.lineWidth = 2.5;
-          g.strokeStyle = INK;
+          g.strokeStyle = th.ink;
           g.stroke();
           g.globalAlpha = 1;
         }
@@ -1144,40 +1221,18 @@ export class Game {
     // 타격 이펙트
     this.fx = this.fx.filter((f) => {
       const age = (now - f.born) / 1000;
-      if (age < 0) return true; // 조금 뒤에 터지는 이펙트 (겹 충격파)
       if (f.ring) {
-        if (age > 0.35) return false;
-        const k = f.k ?? 1, r = cw * 0.32 * k * (1 + age * 3);
+        if (age > 0.28) return false;
         g.beginPath();
-        g.arc(f.x, f.y, r, 0, Math.PI * 2);
-        if (f.fill && age < 0.1) { // 터지는 순간 번쩍
-          g.globalAlpha = (1 - age / 0.1) * 0.55;
-          g.fillStyle = f.color;
-          g.fill();
-        }
+        g.arc(f.x, f.y, cw * 0.3 * (1 + age * 2.4), 0, Math.PI * 2); // 끝까지 퍼져도 그 칸 안에
         g.strokeStyle = f.color;
-        g.globalAlpha = 1 - age / 0.35;
-        g.lineWidth = (5 * (1 - age / 0.35) + 1) * Math.min(1.8, k);
+        g.globalAlpha = 1 - age / 0.28;
+        g.lineWidth = 4 * (1 - age / 0.28) + 1;
         g.stroke();
-      } else if (f.shard) { // 깨진 노트 조각: 돌면서 떨어진다
-        if (age > 0.5) return false;
-        g.save();
-        g.translate(f.x + f.vx * age, f.y + f.vy * age + 900 * age * age);
-        g.rotate(f.rot + f.vr * age);
-        g.globalAlpha = 1 - age / 0.5;
-        g.fillStyle = f.color;
-        g.beginPath();
-        g.roundRect(-f.size, -f.size / 2, f.size * 2, f.size, f.size * 0.3);
-        g.fill();
-        g.lineWidth = 2;
-        g.strokeStyle = INK;
-        g.stroke();
-        g.restore();
       } else {
-        const life = f.life ?? 0.55;
-        if (age > life) return false;
-        const x = f.x + f.vx * age, y = f.y + f.vy * age + (f.up ? 0 : 700 * age * age), r = f.size * (1 - age / life);
-        g.globalAlpha = 1 - age / life;
+        if (age > 0.32) return false;
+        const x = f.x + f.vx * age, y = f.y + f.vy * age + 500 * age * age, r = f.size * (1 - age / 0.32);
+        g.globalAlpha = 1 - age / 0.32;
         g.fillStyle = f.color;
         g.beginPath();
         g.moveTo(x, y - r);
@@ -1194,24 +1249,30 @@ export class Game {
   }
 
   // 납작한 노트 하나 (가로 2 : 세로 1). 가운데에 레인 주인 얼굴
+  // 테마: th.r 모서리 둥글기 · th.ink 테두리 · th.dark면 속이 어둡고 테두리만 빛나는 네온 노트
   note(n, x, y) {
-    const { g, nw, nh } = this, missed = n.state === 3, color = missed ? '#8f839c' : this.lanes[n.lane].color;
+    const { g, nw, nh, th } = this, missed = n.state === 3, color = missed ? '#8f839c' : this.lanes[n.lane].color, neon = th.dark && !missed;
     const x0 = x - nw / 2, y0 = y - nh / 2;
     if (missed) g.globalAlpha = 0.55;
     g.beginPath();
-    g.roundRect(x0, y0, nw, nh, nh * 0.35);
-    const grad = g.createLinearGradient(0, y0, 0, y0 + nh);
-    grad.addColorStop(0, missed ? '#b9adc4' : this.light[n.lane]);
-    grad.addColorStop(1, color);
-    g.fillStyle = grad;
+    g.roundRect(x0, y0, nw, nh, nh * th.r);
+    if (neon) g.fillStyle = 'rgba(8, 6, 28, .9)';
+    else {
+      const grad = g.createLinearGradient(0, y0, 0, y0 + nh);
+      grad.addColorStop(0, missed ? '#b9adc4' : this.light[n.lane]);
+      grad.addColorStop(1, color);
+      g.fillStyle = grad;
+    }
     g.fill();
     g.lineWidth = 3;
-    g.strokeStyle = INK;
+    g.strokeStyle = neon ? color : th.ink;
     g.stroke();
-    g.fillStyle = 'rgba(255,255,255,.55)';
-    g.beginPath();
-    g.roundRect(x0 + nw * 0.1, y0 + nh * 0.14, nw * 0.8, nh * 0.22, nh * 0.11);
-    g.fill();
+    if (!neon) {
+      g.fillStyle = 'rgba(255,255,255,.55)';
+      g.beginPath();
+      g.roundRect(x0 + nw * 0.1, y0 + nh * 0.14, nw * 0.8, nh * 0.22, Math.min(nh * 0.11, nh * th.r));
+      g.fill();
+    }
     const face = this.faces[n.lane], s = nh * 0.8;
     if (n.item && !missed) {
       // 아이템 노트: 무지개 테두리 + 공격 아이콘 (멀티)
@@ -1227,7 +1288,7 @@ export class Game {
       g.textBaseline = 'alphabetic';
     } else if (face && !n.fill) g.drawImage(face, x - s / 2, y - s / 2, s, s);
     else if (n.fill) {
-      g.fillStyle = INK;
+      g.fillStyle = neon ? color : INK;
       g.beginPath();
       g.arc(x, y, nh * 0.12, 0, Math.PI * 2);
       g.fill();

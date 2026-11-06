@@ -5,7 +5,7 @@
 // act()가 모든 재화 변동을 처리한다. 로그인 유저는 서버가 act()를 돌려 저장하고, 게스트는 브라우저가 같은 act()를 돌려 기기에 저장한다.
 import { SONGS, SONG, DIFFS, DIFF_NAME, seeded, hashStr } from './songs.js';
 
-export const VERSION = '4.1.0'; // 사이트 맨 아래에 보이는 버전 (공지사항과 맞춰서 올린다)
+export const VERSION = '4.2.0'; // 사이트 맨 아래에 보이는 버전 (공지사항과 맞춰서 올린다)
 export const MAX_LEVEL = 20; // 친구(캐릭터) 최고 레벨
 export const MAX_LV = 1000; // 플레이어 최고 레벨
 export const FREE_AVATARS = 12;
@@ -322,6 +322,45 @@ export function priceOf(s, item) {
     ? { coins: 0, gems: e.gems, give: { coins: e.give(n) }, left: e.max - n }
     : { coins: e.coins(n), gems: 0, give: item.give, left: e.max - n };
 }
+
+// 연주 테마: 코인으로 사서 연주 화면을 바꾼다 (보기만 바뀌고 점수 · 판정은 그대로). 한 번 사면 계속 쓴다
+// bg: 판 바깥 배경(CSS) / board · a: 판 색 · 진하기 / jl: 판정선 색 / r: 노트 모서리 둥글기 / ink: 테두리 색 / dark: 속이 어두운 네온 노트
+// fx: 떠다니는 무늬 { kind, n: 개수, speed: 화면을 지나는 초, dir: 1 떨어짐 · -1 올라감 · 0 제자리, size, c: 색 } / deco: 배경 그림 (game.js SHAPE · DECO)
+const TH = (id, name, icon, price, desc, o) => ({ id, name, icon, price, desc, r: 0.35, ink: '#4a3953', a: 0.5, ...o });
+export const THEMES = [
+  TH('default', '기본 무대', '🎵', 0, '처음부터 쓰는 밤하늘 무대', { bg: '', board: '28, 18, 52', fever: '60, 24, 70', a: 0.64, jl: '255,141,182' }),
+  TH('sakura', '벚꽃 밤', '🌸', 200000, '분홍 밤하늘에 꽃잎이 흩날려요', {
+    bg: 'linear-gradient(#2b1b3d, #6b2f5f 55%, #e58fb0)', board: '60, 20, 56', jl: '255,170,205',
+    fx: { kind: 'petal', n: 22, speed: 14, dir: 1, size: 6, c: ['#ffc4da', '#ffb0cc', '#ffe3ee'] } }),
+  TH('ocean', '깊은 바다', '🐠', 200000, '푸른 바닷속에서 물방울이 올라와요', {
+    bg: 'linear-gradient(#0a6a8a, #0a2a55 55%, #071637)', board: '6, 34, 70', jl: '110,225,255',
+    fx: { kind: 'bubble', n: 18, speed: 16, dir: -1, size: 7, c: ['#9fe8ff', '#d6f6ff'] } }),
+  TH('forest', '반딧불 숲', '🌲', 250000, '깜깜한 숲에 반딧불이 깜빡여요', {
+    bg: 'linear-gradient(#071f1c, #123f30 60%, #0f3322)', board: '10, 40, 30', jl: '190,240,120', deco: 'pines',
+    fx: { kind: 'firefly', n: 20, speed: 30, dir: -1, size: 3, c: ['#e6ff8a', '#c8f56a'] } }),
+  TH('snow', '눈 오는 밤', '❄️', 250000, '조용한 겨울밤에 함박눈이 내려요', {
+    bg: 'linear-gradient(#0e1b3d, #2b4478 60%, #8fb0d9)', board: '18, 34, 78', jl: '190,225,255',
+    fx: { kind: 'snow', n: 36, speed: 18, dir: 1, size: 3.2, c: ['#fff', '#dcecff'] } }),
+  TH('sunset', '노을 해변', '🌅', 300000, '해가 지는 바다 위에서 연주해요', {
+    bg: 'linear-gradient(#2a1a4a, #a13c6a 40%, #ff8a5c 58%, #ffc46b 66%)', board: '70, 22, 60', jl: '255,190,120', deco: 'sun' }),
+  TH('candy', '사탕 나라', '🍭', 300000, '알록달록 달콤한 나라 · 동글동글 노트', {
+    bg: 'linear-gradient(#ffb3d9, #c9a8ff 55%, #8fd8ff)', board: '110, 50, 130', jl: '255,235,130', r: 0.5,
+    fx: { kind: 'sprinkle', n: 26, speed: 20, dir: 1, size: 5, c: ['#fff', '#ffe08d', '#9ff0d0', '#ff8db6', '#8fd3ff'] } }),
+  TH('neon', '네온 시티', '🌃', 400000, '빛나는 도시 · 테두리만 빛나는 네온 노트', {
+    bg: 'linear-gradient(#0a0420, #1c0a3f 50%, #3a0f5e)', board: '12, 6, 34', jl: '0,240,255', r: 0.2, ink: '#00f0ff', dark: true, deco: 'grid' }),
+  TH('arcade', '8비트 오락실', '👾', 400000, '옛날 오락실 화면 · 네모난 픽셀 노트', {
+    bg: 'repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 2px, transparent 2px 6px), linear-gradient(#0c0c28, #1a1450)', board: '14, 14, 44', jl: '120,255,120', r: 0.04, ink: '#000',
+    fx: { kind: 'pixel', n: 22, speed: 22, dir: 1, size: 8, c: ['#ff5d8f', '#4ec3ff', '#ffe14d', '#7dff7a'] } }),
+  TH('fiesta', '피에스타', '🎉', 500000, '라 쿠카라차가 절로 나오는 축제 거리', {
+    bg: 'linear-gradient(#5a1240, #b8322f 50%, #f29a2e)', board: '70, 16, 40', a: 0.6, jl: '255,210,90', deco: 'bunting',
+    fx: { kind: 'sprinkle', n: 14, speed: 24, dir: 1, size: 5, c: ['#ffd25e', '#3fd4a6', '#ff5d8f', '#4ec3ff'] } }),
+  TH('galaxy', '은하수', '🌌', 1000000, '별이 쏟아지는 우주 한가운데 · 최고급 테마', {
+    bg: 'radial-gradient(ellipse at 70% 20%, rgba(160,90,255,.5), transparent 55%), radial-gradient(ellipse at 20% 70%, rgba(60,160,255,.4), transparent 50%), #060417',
+    board: '10, 6, 34', jl: '200,170,255', ink: '#2a1f55',
+    fx: { kind: 'star', n: 60, dir: 0, size: 2.2, c: ['#fff', '#cfe4ff', '#ffe9c4'] } }),
+];
+export const THEME = table(THEMES.map((t) => [t.id, t]));
+export const ownedTheme = (s, id) => id === 'default' || s.themes.includes(id);
 
 // 코인 쓸 곳 1) 오늘의 카드: 매일 0시(한국 시간)에 등급별(희귀 · 영웅 · 전설 · 신화) 한 명씩 바뀐다. 칸마다 하루 3장, 살수록 비싸진다.
 // 없는 캐릭터면 그 캐릭터를 얻고(1레벨), 있으면 레벨 업 카드 1장. 초월은 팔지 않는다
@@ -778,7 +817,7 @@ export function newSave() {
     chars: { hachiware: 1, chiikawa: 1, usagi: 1 }, dup: {},
     team: ['hachiware', 'chiikawa', 'usagi', null],
     items: { heart: 1, star: 1, feather: 1 },
-    songs: [], avatars: [], best: {}, ach: {}, achS: {}, daily: '', pity: {}, rookie: false, renames: 0,
+    songs: [], avatars: [], themes: [], theme: 'default', best: {}, ach: {}, achS: {}, daily: '', pity: {}, rookie: false, renames: 0,
     attend: { month: '', count: 0 },
     day: { ...freshDay(), date: '' },
     online: { date: '', start: 0, claimed: [] },
@@ -986,6 +1025,12 @@ export function act(input, a, rand = Math.random, cfg = {}) {
         if (!isInt(n, FREE_AVATARS + 1, 32) || s.avatars.includes(n)) fail('살 수 없는 프로필이에요');
         pay(s, AVATAR_PRICE);
         s.avatars.push(n);
+      } else if (id.startsWith('theme:')) {
+        const t = THEME[id.slice(6)];
+        if (!t?.price || s.themes.includes(t.id)) fail('살 수 없는 테마예요');
+        pay(s, t.price);
+        s.themes.push(t.id);
+        s.theme = t.id; // 사면 바로 쓴다
       } else if (id.startsWith('card:')) {
         const cid = id.slice(5), n = s.day.cards?.[cid] ?? 0;
         if (!cardsOf().includes(cid)) fail('오늘은 팔지 않는 카드예요');
@@ -1119,6 +1164,13 @@ export function act(input, a, rand = Math.random, cfg = {}) {
       if (!isInt(a.avatar, 1, 32) || !ownedAvatar(s, a.avatar)) fail('아직 없는 프로필이에요');
       s.avatar = a.avatar;
       return done({ avatar: a.avatar });
+    }
+
+    // 가진 연주 테마로 바꾸기
+    case 'theme': {
+      if (!THEME[a.id] || !ownedTheme(s, a.id)) fail('아직 없는 테마예요');
+      s.theme = a.id;
+      return done();
     }
 
     // 프로필 테두리 고르기 (-1 = 늘 가장 높은 테두리)

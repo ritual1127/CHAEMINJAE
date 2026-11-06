@@ -8,7 +8,7 @@ import {
   act, newSave, normalize, teamBuffs, teamPower, powerOf, bestTeam, GameError, MAX_LEVEL, MAX_LV, CHARS, CHAR, BANNERS, BANNER, RARITY, TOP, GOD_RATE,
   ACH_TRACKS, ACH_TRACK, ACH_TOTAL, ACH_CATS, achCount, achView, claimedOf, MISSIONS, weekOf, pickupOf, pickupEnds, SERVER_ONLY, claimable, bannerOf, priceOf, SHOP,
   ATTEND, attendOf, today, copiesFor, copiesToMax, coinsFor, levelOf, expAt, expNeed, expProgress, levelReward, perksOf, frameInfo, frameTier, frameOfSave,
-  mpOrder, mpTarget, INQUIRY, MP, ATTACKS, itemize, GIFT, valueAt, REF, BOAST_MAX,
+  mpOrder, mpTarget, INQUIRY, MP, ATTACKS, itemize, GIFT, valueAt, REF, BOAST_MAX, THEMES, THEME,
 } from '../public/rules.js';
 
 const low = () => 0.01; // 가장 흔한 결과(일반 · 목록 첫 친구)가 나오는 난수
@@ -589,4 +589,38 @@ test('점수 자랑은 하루 BOAST_MAX번 · 서버만 부를 수 있다 · 친
   assert.throws(() => act(s, { type: 'boast' }), /하루/);
   assert.ok(SERVER_ONLY.has('boast'));
   assert.ok(REF.base >= 100000 && REF.join > 0 && REF.invite > 0 && REF.plays >= 1 && REF.max >= 1);
+});
+
+test('연주 테마: 10종 · 최소 20만 코인 · 사면 바로 쓰고 다시 사지 못한다 · 없는 테마는 못 쓴다 · 점수에는 영향 없다', () => {
+  const paid = THEMES.filter((t) => t.price);
+  assert.equal(paid.length, 10);
+  assert.ok(paid.every((t) => t.price >= 200000), '최소 20만 코인');
+  assert.equal(new Set(THEMES.map((t) => t.id)).size, THEMES.length);
+  assert.equal(THEMES[0].id, 'default');
+  assert.equal(THEMES[0].price, 0);
+  for (const t of THEMES) assert.ok(t.name && t.icon && t.desc && t.board && t.jl && t.r > 0 && t.ink && t.a > 0, t.id);
+
+  const rich = { ...newSave(), coins: 500000 };
+  assert.equal(rich.theme, 'default');
+  assert.equal(THEME.constructor, undefined);
+  assert.throws(() => act(newSave(), { type: 'buy', item: 'theme:sakura' }), /코인이 부족/);
+  assert.throws(() => act(rich, { type: 'buy', item: 'theme:default' }), /살 수 없는/);
+  assert.throws(() => act(rich, { type: 'buy', item: 'theme:constructor' }), /살 수 없는/);
+  assert.throws(() => act(rich, { type: 'buy', item: 'theme:galaxy' }), /코인이 부족/);
+  assert.throws(() => act(rich, { type: 'theme', id: 'sakura' }), /아직 없는/, '안 산 테마');
+  assert.throws(() => act(rich, { type: 'theme', id: 'constructor' }), /아직 없는/);
+
+  const { save: s } = act(rich, { type: 'buy', item: 'theme:sakura' });
+  assert.deepEqual([s.coins, s.themes, s.theme, s.stats.buys], [300000, ['sakura'], 'sakura', 1], '코인이 빠지고 바로 쓴다');
+  assert.throws(() => act(s, { type: 'buy', item: 'theme:sakura' }), /살 수 없는/, '두 번 사지 못한다');
+  assert.equal(act(s, { type: 'theme', id: 'default' }).save.theme, 'default', '기본 테마로 돌아가기');
+  assert.equal(act(act(s, { type: 'theme', id: 'default' }).save, { type: 'theme', id: 'sakura' }).save.theme, 'sakura', '산 테마는 계속 쓴다');
+  assert.deepEqual([normalize({ coins: 5 }).themes, normalize({ coins: 5 }).theme], [[], 'default'], '예전 저장 데이터');
+
+  // 같은 연주 결과면 테마가 달라도 보상이 같다
+  const play = (x) => {
+    const st = act(x, { type: 'start', song: 'twinkle', diff: 'easy' }).save;
+    return act(st, { type: 'finish', song: 'twinkle', diff: 'easy', raw: 9e5, score: 9e5, combo: 10, rank: 'A', cleared: true, perfect: 5 }).result;
+  };
+  assert.deepEqual(play(newSave()), play({ ...newSave(), themes: ['sakura'], theme: 'sakura' }));
 });

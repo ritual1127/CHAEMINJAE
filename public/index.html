@@ -273,6 +273,7 @@
         <div class="head"><h2>상점</h2><small class="count" id="shopWallet"></small></div>
         <div class="shop-tabs" id="shopTabs" role="tablist" aria-label="상점 분류">
           <button type="button" role="tab" data-tab="cards">🃏 오늘의 카드</button>
+          <button type="button" role="tab" data-tab="themes">🎨 테마</button>
           <button type="button" role="tab" data-tab="special">🎲 특별</button>
           <button type="button" role="tab" data-tab="boost">🍪 부스터</button>
           <button type="button" role="tab" data-tab="gems">💎 보석 · 코인</button>
@@ -280,6 +281,7 @@
           <button type="button" role="tab" data-tab="faces">🖼 프로필</button>
         </div>
         <div class="shop-pane" data-pane="cards"><p class="shop-note">매일 0시에 바뀌어요 · 없는 친구는 데려오고, 있는 친구는 레벨 업 카드 · <span id="cardsLeft"></span></p><div class="shop-grid cards" id="shopCards"></div></div>
+        <div class="shop-pane" data-pane="themes"><p class="shop-note">연주 화면을 통째로 바꿔요 · 점수에는 영향 없어요 · 눌러서 미리 보기</p><div class="shop-grid themes" id="shopThemes"></div></div>
         <div class="shop-pane" data-pane="special"><p class="shop-note">코인으로 사는 행운 상자 · 할인 세트 · 경험치 물약</p><div class="shop-grid" id="shopSpecial"></div></div>
         <div class="shop-pane" data-pane="boost"><p class="shop-note">연주를 시작할 때 골라 쓰는 1회용 아이템</p><div class="shop-grid" id="shopBoost"></div></div>
         <div class="shop-pane" data-pane="gems"><p class="shop-note">많이 바꿀수록 오늘 가격이 올라요</p><div class="shop-grid" id="shopGems"></div></div>
@@ -506,7 +508,7 @@
       </section>
       <div class="sd-box sd-buffs"><span>팀 버프</span><div class="chips" id="sdBuffs"></div></div>
       <div class="sd-box sd-boost"><span>부스터</span><div class="boosters" id="sdBoosters"></div></div>
-      <div class="sd-start"><button class="btn pink big" id="sdStart">시작!</button></div>
+      <div class="sd-start"><select id="sdTheme" aria-label="연주 테마"></select><button class="btn pink big" id="sdStart">시작!</button></div>
     </div>
   </dialog>
 
@@ -578,6 +580,16 @@
     <div class="mail-top"><small id="mailSum"></small><button type="button" class="btn small plain" id="mailClean">읽은 우편 지우기</button><button type="button" class="btn small pink" id="mailAll">모두 받기</button></div>
     <form class="coupon" id="couponForm" novalidate><input id="couponCode" maxlength="24" placeholder="🎟 쿠폰 코드가 있나요?" autocomplete="off" aria-label="쿠폰 코드"><button class="btn small butter">쿠폰 받기</button></form>
     <ul class="mail-list" id="mailList"></ul>
+  </dialog>
+
+  <!-- 연주 테마 미리 보기: 실제 노트가 내려오는 모습 (자동 연주 · 소리 없음) -->
+  <dialog id="themeDlg">
+    <form method="dialog"><button class="x" aria-label="닫기"><svg><use href="#i-close"/></svg></button></form>
+    <h2 id="thName"></h2>
+    <p class="hint" id="thDesc"></p>
+    <div class="th-view" id="thView"><canvas id="thCanvas"></canvas></div>
+    <small class="hint th-note" id="thNote"></small>
+    <button type="button" class="btn pink" id="thGo"></button>
   </dialog>
 
   <!-- 월간 출석부 -->

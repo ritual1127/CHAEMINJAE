@@ -7,7 +7,7 @@ import {
   MAX_LEVEL, MAX_LV, TOP, FREE_AVATARS, AVATAR_PRICE, RENAME_COINS, VERSION, INQUIRY, MP, ATTACKS, ATTACK_KINDS, GIFT,
   act, normalize, teamBuffs, teamPower, powerOf, valueAt, bestTeam, unlocked, ownedAvatar, claimable, missionsReady, onlineReady,
   levelOf, today, dayOf, cardsOf, cardPrice, LUCKY, BOT_SKILL, botAttacks, CARD_SHOP, POTION, pickupOf, pickupEnds, bannerOf, priceOf, attendOf, mpOrder, mpTarget, itemize,
-  copiesFor, coinsFor, canLevel, achView, achCtx, achCount, tierName, expProgress, levelReward, perksOf, frameInfo, frameTier, frameOfSave, REF,
+  copiesFor, coinsFor, canLevel, achView, achCtx, achCount, tierName, expProgress, levelReward, perksOf, frameInfo, frameTier, frameOfSave, REF, THEMES, THEME, ownedTheme,
 } from './rules.js';
 
 const $ = (s) => document.querySelector(s);
@@ -207,6 +207,7 @@ async function doAct(action) {
 
 function toast(msg) {
   const el = $('#toast');
+  ($$('dialog[open]').at(-1) ?? $('#app')).append(el); // 창이 열려 있으면 그 창 안에 (창 뒤에 흐리게 가려지지 않게)
   el.textContent = msg;
   el.classList.add('show');
   clearTimeout(toast.t);
@@ -711,10 +712,27 @@ function renderSongDlg() {
     return `<button type="button" class="boost" data-k="${k}" aria-pressed="${state.boosters.has(k)}" ${n ? '' : 'disabled'}>
       <span class="ic">${x.icon}</span>${esc(x.name)}<small>${n}개</small></button>`;
   }).join('');
+  $('#sdTheme').innerHTML = THEMES.filter((t) => ownedTheme(s, t.id)).map((t) => `<option value="${t.id}"${t.id === s.theme ? ' selected' : ''}>${t.icon} ${esc(t.name)}</option>`).join('')
+    + '<option value="">🛒 테마 사러 가기</option>';
   $('#sdStart').innerHTML = open ? `${DIFF_NAME[state.diff]} 시작!` : `${icon('lock')}${icon('coin')}${fmt(song.price)} 열기`;
   $('#sdStart').disabled = !open && s.coins < song.price;
   loadSongRank();
 }
+// 곡 창에서 바로 테마 바꾸기 · 마지막 칸을 고르면 테마 상점으로
+$('#sdTheme').onchange = async (e) => {
+  sound.sfx('tap');
+  if (!e.target.value) {
+    state.shopTab = 'themes';
+    $('#songDlg').close();
+    return show('shop');
+  }
+  try {
+    await doAct({ type: 'theme', id: e.target.value });
+  } catch (err) {
+    toast(err.message);
+    renderSongDlg();
+  }
+};
 
 // 곡 창 왼쪽(모바일은 난이도 아래) 랭킹. 30초 동안은 다시 안 불러온다
 const rankCache = new Map();
@@ -1334,9 +1352,69 @@ RENDER.shop = () => {
     ${unlocked(s, x) ? '<span class="own">보유 중</span>' : buyBtn(`song:${x.id}`, x.price, false, s.coins < x.price)}</div>`).join('');
   $('#shopAvatars').innerHTML = Array.from({ length: 32 - FREE_AVATARS }, (_, i) => i + FREE_AVATARS + 1).map((n) => `<div class="item">
     <img src="${avatar(n)}" alt="" loading="lazy">${ownedAvatar(s, n) ? '<span class="own">보유</span>' : buyBtn(`avatar:${n}`, AVATAR_PRICE, false, s.coins < AVATAR_PRICE)}</div>`).join('');
+  // 테마는 비싸서 바로 사지 않고, 누르면 미리 보기 창에서 사거나 쓴다
+  $('#shopThemes').innerHTML = THEMES.map((t) => `<button type="button" class="item theme-item${t.id === s.theme ? ' on' : ''}" data-theme="${t.id}">
+    <span class="ic"${t.bg ? ` style="background:${t.bg}"` : ''}>${t.icon}</span><b>${esc(t.name)}</b><p>${esc(t.desc)}</p>
+    <span class="own">${t.id === s.theme ? '✔ 사용 중' : ownedTheme(s, t.id) ? '보유' : `${icon('coin')}${fmt(t.price)}`}</span></button>`).join('');
+};
+
+/* 연주 테마 미리 보기: 진짜 게임 화면을 소리 없이 자동 연주로 돌린다 */
+let demo = null, demoId = '', demoToken = null;
+const stopDemo = () => {
+  demo?.stop();
+  demo = demoToken = null;
+};
+async function runDemo() {
+  stopDemo();
+  const token = (demoToken = {}), t = THEME[demoId], s = state.save, dlg = $('#themeDlg');
+  $('#thView').style.background = t.bg;
+  // 창이 커지는 연출이 끝난 뒤에 크기를 잰다
+  const [faces] = await Promise.all([Promise.all(s.team.map((id) => (id ? loadImg(face(id)).catch(() => null) : null))), ...dlg.getAnimations().map((a) => a.finished.catch(() => {}))]);
+  if (token !== demoToken || !dlg.open) return;
+  const g = new Game($('#thCanvas'), {
+    song: SONG.cucafiesta, diff: 'normal', speed: settings.speed, offset: 0, buffs: NO_BUFFS, hitsound: false, demo: true, auto: true, theme: t,
+    lanes: s.team.map((id, i) => ({ color: id ? CHAR[id].color : LANE_COLORS[i], face: faces[i], badge: id ? CHAR[id].badge : null, key: '' })),
+    onJudge() {}, onHp() {}, onTick() {}, onEnd: runDemo,
+  });
+  const t0 = performance.now() - (g.tiles[0].t - 1.5) * 1000; // 첫 노트 1.5초 전부터
+  g.time = () => (performance.now() - t0) / 1000;
+  g.running = true;
+  g.raf = requestAnimationFrame(g.loop);
+  demo = g;
+}
+function renderThemeBtn() {
+  const t = THEME[demoId], s = state.save, b = $('#thGo'), own = ownedTheme(s, t.id), short = t.price - s.coins;
+  b.disabled = t.id === s.theme || (!own && short > 0);
+  b.innerHTML = t.id === s.theme ? '✔ 사용 중' : own ? '이 테마 쓰기' : `${icon('coin')}${fmt(t.price)} 사고 바로 쓰기`;
+  $('#thNote').textContent = own ? '점수에는 영향 없어요 · 곡 고르는 창에서도 바꿀 수 있어요' : short > 0 ? `코인이 ${fmt(short)}개 모자라요` : '한 번 사면 계속 쓸 수 있어요 · 점수에는 영향 없어요';
+}
+function openTheme(id) {
+  demoId = id;
+  sound.get();
+  sound.sfx('tap');
+  $('#thName').textContent = `${THEME[id].icon} ${THEME[id].name}`;
+  $('#thDesc').textContent = THEME[id].desc;
+  renderThemeBtn();
+  $('#themeDlg').showModal();
+  runDemo();
+}
+$('#themeDlg').addEventListener('close', stopDemo);
+$('#thGo').onclick = async () => {
+  const t = THEME[demoId], own = ownedTheme(state.save, t.id);
+  try {
+    await doAct(own ? { type: 'theme', id: t.id } : { type: 'buy', item: `theme:${t.id}` });
+    sound.sfx(own ? 'ok' : 'coin');
+    toast(own ? `${t.name} 테마로 바꿨어요` : `${t.name} 테마를 샀어요! 다음 연주부터 나와요`);
+    renderThemeBtn();
+    refresh();
+  } catch (err) {
+    toast(err.message);
+  }
 };
 
 $('#shop').onclick = async (e) => {
+  const th = e.target.closest('[data-theme]');
+  if (th) return openTheme(th.dataset.theme);
   const b = e.target.closest('[data-buy]');
   if (!b || b.disabled) return;
   try {
@@ -1695,9 +1773,10 @@ async function startGameOnce() {
 function playGame(song, diff, buffs, faces, multi = false, tiles = null) {
   $('#loading').hidden = true;
   game?.stop();
-  const s = state.save, keys = settings.keys.map(keyLabel);
+  const s = state.save, keys = settings.keys.map(keyLabel), theme = THEME[s.theme] ?? THEMES[0];
   state.run = { song, diff, buffs, multi };
   show('game');
+  $('#game').style.background = theme.bg;
   $('#game').classList.toggle('multi', multi);
   $('#paused h2').textContent = multi ? '게임은 계속되고 있어요!' : '잠깐 쉬어요';
   $('#resume').textContent = multi ? '돌아가기' : '계속하기';
@@ -1716,7 +1795,7 @@ function playGame(song, diff, buffs, faces, multi = false, tiles = null) {
     : `<li><span class="chip-b none">${esc(keys[i])} 빈 칸</span></li>`)).join('');
   $('#gBuffs').innerHTML = buffChips(buffs);
   game = new Game(field, {
-    song, diff, speed: settings.speed, offset: settings.offset, buffs, hitsound: settings.hitsound, multi, tiles, onItem,
+    song, diff, speed: settings.speed, offset: settings.offset, buffs, hitsound: settings.hitsound, multi, tiles, onItem, theme,
     lanes: s.team.map((id, i) => ({ color: id ? CHAR[id].color : LANE_COLORS[i], face: faces[i], badge: id ? CHAR[id].badge : null, key: keys[i] })),
     onJudge, onHp, onCombo, onEnd: multi ? finishMulti : finish, onError: reportError2,
     auto: /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).has('auto'), // 영상 촬영용 자동 연주 (로컬 전용)
@@ -1796,7 +1875,10 @@ addEventListener('blur', () => {
   for (let l = 0; l < 4; l++) game.release(l);
   pointers.clear();
 });
-addEventListener('resize', () => game?.resize());
+addEventListener('resize', () => {
+  game?.resize();
+  demo?.resize();
+});
 // 화면을 벗어나면(다른 앱 · 창 닫기 · 화면 끄기) 게임을 멈추고 소리도 통째로 끈다. 돌아오면 소리를 켜고 상태를 다시 확인
 const away = () => {
   if (state.run?.multi && current === 'game') return; // 멀티는 다 같이 연주 중이라 멈추지 않는다

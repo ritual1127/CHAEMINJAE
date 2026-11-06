@@ -2213,3 +2213,17 @@ dialog.evo-fx[open] { align-items: center; animation: popIn .3s cubic-bezier(.3,
   #genreTabs::-webkit-scrollbar { display: none; }
   #genreTabs button { flex: none; }
 }
+
+/* ---------- v4.2: 연주 테마 ---------- */
+.theme-item { font: inherit; color: var(--ink); cursor: pointer; }
+.theme-item .ic { width: 100%; height: 72px; font-size: 34px; background: linear-gradient(#1c1234, #3b2a66); border: 2px solid var(--ink); border-radius: 12px; }
+.theme-item .own { margin-top: auto; }
+.theme-item .own svg { width: 15px; height: 15px; margin-right: 2px; vertical-align: -3px; }
+.theme-item.on { border-color: #e5487f; box-shadow: 0 4px 0 #e5487f; }
+.th-view { height: min(52dvh, 420px); overflow: hidden; background: linear-gradient(#1c1234, #3b2a66); border: 3px solid var(--ink); border-radius: 16px; }
+.th-view canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+#themeDlg p, #themeDlg small { margin: 0; text-align: center; }
+.th-note { color: var(--ink2); }
+.sd-start { gap: 8px; }
+.sd-start select { flex: 0 1 40%; min-width: 0; padding: 0 8px; font: inherit; font-size: 14px; color: var(--ink); background: #fff; border: 3px solid var(--ink); border-radius: 16px; }
+dialog .toast { position: fixed; } /* 창 안 알림: 창을 스크롤해도 화면 가운데에 */
