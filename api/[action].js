@@ -54,7 +54,20 @@ const RELEASE = {
 // 테이블은 첫 요청 때 만든다 (별도 마이그레이션 단계 없음). 이미 있는 테이블은 건드리지 않고 새 테이블만 더한다
 // 이 버전으로 한 번 다 만들었으면 표시 행이 남아서, 그 뒤 새로 뜬 함수 인스턴스는 질문 한 번으로 끝낸다 (사람이 몰려 인스턴스가 많이 떠도 DB가 편하게)
 let ready;
+// 배포 직후 여러 인스턴스가 동시에 표 · 색인을 만들면 'IF NOT EXISTS'여도 한쪽이 "이미 있음" 오류(23505 · 42P07 · 42710)를 낸다 (v4.1.0 배포 때 500 다섯 건)
+// → 잠깐 쉬고 다시 돌린다. 모든 문장이 여러 번 돌려도 같은 결과라, 다시 돌 때는 이미 만들어진 걸 그냥 지나간다
+const RACE = new Set(['23505', '42P07', '42710']);
 const init = () => (ready ??= (async () => {
+  for (let i = 0; ; i++) {
+    try {
+      return await migrate();
+    } catch (e) {
+      if (i >= 3 || !RACE.has(e.code)) throw e;
+      await new Promise((r) => setTimeout(r, 300 * (i + 1)));
+    }
+  }
+})().catch((e) => { ready = null; throw e; }));
+async function migrate() {
   try {
     if ((await sql`SELECT 1 FROM app_settings WHERE key = ${`ready:${VERSION}:${SCHEMA}`}`).length) return;
   } catch { /* 처음 만드는 DB: 아래에서 모두 만든다 */ }
@@ -261,7 +274,7 @@ const init = () => (ready ??= (async () => {
     created_at TIMESTAMPTZ NOT NULL DEFAULT now())`;
   await sql`CREATE INDEX IF NOT EXISTS sec_log_at ON sec_log (kind, created_at)`;
   await sql`INSERT INTO app_settings (key, value) VALUES (${`ready:${VERSION}:${SCHEMA}`}, 'true'::jsonb) ON CONFLICT (key) DO NOTHING`;
-})().catch((e) => { ready = null; throw e; }));
+}
 
 // 관리자 설정(점검 · 점검 예고 · 뽑기 확률): 함수 인스턴스마다 5초 캐시 (관리자가 바꾸면 늦어도 5초 뒤 모든 요청에 반영)
 const settingCache = new Map();
