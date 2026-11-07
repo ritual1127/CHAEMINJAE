@@ -250,6 +250,7 @@ function show(id) {
   renderTop();
   music();
   sideAds();
+  moAds();
   if (MAIN.includes(id)) pollMail();
 }
 
@@ -576,9 +577,10 @@ loadNotices();
 // 사이트 맨 아래 버전 표시
 $$('.ver-label').forEach((el) => (el.textContent = `v${VERSION}`));
 
-// 카카오 애드핏 광고: 홈 화면 아래 (넓은 PC 728×90 · 그 밖 320×100). 홈을 처음 열 때 한 번만, 개발 중(localhost)에는 안 불러온다
+const NO_ADS = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname); // 개발 중에는 광고를 안 불러온다
+// 카카오 애드핏 광고: 홈 화면 아래 (넓은 PC 728×90 · 그 밖 320×100). 홈을 처음 열 때 한 번만
 function ads() {
-  if (ads.done || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) return;
+  if (ads.done || NO_ADS) return;
   ads.done = true;
   const pc = matchMedia('(min-width: 1000px) and (orientation: landscape)').matches, box = $('#adBox');
   const ins = Object.assign(document.createElement('ins'), { className: 'kakao_ad_area' });
@@ -597,22 +599,49 @@ function sideAds() {
   const wrap = $('#sideAds'), done = current === 'result' || (current === 'room' && mp.room?.status === 'done');
   const room = current === 'room' ? 1560 : 1180, pc = matchMedia(`(hover: hover) and (pointer: fine) and (min-width: ${room}px) and (min-height: 640px)`).matches;
   wrap.hidden = !(done && pc);
-  if (wrap.hidden || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) return;
+  if (wrap.hidden || NO_ADS) return;
   if (Date.now() - (sideAds.at ?? 0) < 60000 && $('#sideAdL').childElementCount) return;
   sideAds.at = Date.now();
-  for (const [id, unit] of SIDE_ADS) {
-    const ins = Object.assign(document.createElement('ins'), { className: 'kakao_ad_area' });
-    ins.style.display = 'none';
-    Object.assign(ins.dataset, { adUnit: unit, adWidth: '160', adHeight: '600' });
-    $(`#${id}`).replaceChildren(ins);
+  for (const [id, unit] of SIDE_ADS) $(`#${id}`).replaceChildren(adIns({ adUnit: unit, adWidth: '160', adHeight: '600' }));
+  adScript();
+}
+addEventListener('resize', () => !$('#sideAds').hidden !== (current === 'result') && sideAds());
+
+// 모바일: 게임이 끝날 때마다 결과 위 320×200 · 아래 320×100. 1분 안에 다시 불러오지 않는 건 PC와 같다
+// 주소창이 접힐 때도 resize가 오니 resize로는 부르지 않는다 (스크롤만 해도 광고가 새로 불리면 안 된다)
+const MO_ADS = [['DAN-yeLd9DDX3BhjUzeU', 200], ['DAN-zLVaOwwnlFHQPQXA', 100]];
+// 광고가 없으면(NO-AD) 칸을 접는다. 애드핏 콜백은 광고 단위마다 이름이 달라야 한다
+MO_ADS.forEach((_, i) => (window[`moAdFail${i}`] = (ins) => ins.parentElement?.classList.add('empty')));
+function moAds() {
+  const done = current === 'result' || (current === 'room' && mp.room?.status === 'done'), on = done && !isPC(), all = $$('.end-ad');
+  all.forEach((b) => (b.hidden = !on));
+  if (!on || NO_ADS) return;
+  const boxes = $$(`#${current} .end-ad`);
+  if (Date.now() - (moAds.at ?? 0) < 60000 && boxes[0].childElementCount) return;
+  moAds.at = Date.now();
+  for (const b of all) { // 다른 화면에 남은 광고도 비운다 (같은 광고 단위가 한 페이지에 두 번 있지 않게)
+    b.replaceChildren();
+    b.classList.remove('empty');
   }
-  // 애드핏 스크립트를 다시 붙이면 새로 넣은 광고 칸을 찾아 채운다
+  MO_ADS.forEach(([unit, h], i) => {
+    boxes[i].style.height = `${h}px`; // 자리를 미리 잡아서 광고가 떠도 버튼이 밀리지 않게
+    boxes[i].append(adIns({ adUnit: unit, adWidth: '320', adHeight: String(h), adOnfail: `moAdFail${i}` }));
+  });
+  adScript();
+}
+function adIns(data) {
+  const ins = Object.assign(document.createElement('ins'), { className: 'kakao_ad_area' });
+  ins.style.display = 'none';
+  Object.assign(ins.dataset, data);
+  return ins;
+}
+// 애드핏 스크립트를 다시 붙이면 새로 넣은 광고 칸을 찾아 채운다
+function adScript() {
   document.querySelector('script[data-side-ads]')?.remove();
   const sc = Object.assign(document.createElement('script'), { src: '//t1.kakaocdn.net/kas/static/ba.min.js', async: true });
   sc.dataset.sideAds = '1';
   document.body.append(sc);
 }
-addEventListener('resize', () => !$('#sideAds').hidden !== (current === 'result') && sideAds());
 
 $('#missionCard').onclick = () => {
   state.questTab = 'today';
@@ -1923,6 +1952,7 @@ async function finish(r) {
   const { song, diff, buffs } = state.run;
   game = null;
   show('result');
+  $('#result').scrollTop = 0; // 지난 판에 내려 둔 채로 다시하기를 눌러도 위 광고 · 점수부터 보이게
   jacketTo($('#rJacket'), song);
   $('#rTitle').textContent = song.title;
   $('#rDiff').textContent = `${DIFF_NAME[diff]} Lv.${chartLevel(song, diff)}`;
@@ -2692,7 +2722,10 @@ function mpApply(r) {
   }
   if (current === 'room') renderRoom();
   else renderTop();
-  if (current === 'room' && was?.status !== r.status) sideAds();
+  if (current === 'room' && was?.status !== r.status) {
+    sideAds();
+    moAds();
+  }
 }
 
 function mpGone(msg) {

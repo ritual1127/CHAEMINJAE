@@ -2078,6 +2078,22 @@ dialog.evo-fx[open] { align-items: center; animation: popIn .3s cubic-bezier(.3,
 .keygrid.atk { grid-template-columns: 1fr; margin-top: 6px; }
 
 /* PC 결과 화면 좌우 광고 (160×600) */
+/* 모바일 결과 광고: 음수 여백은 320px 폰에서 가로 스크롤이 생기지 않게 · 버튼에서 떨어뜨려 잘못 누르지 않게 */
+.end-ad { align-self: center; width: 320px; margin-inline: -16px; overflow: hidden; }
+.end-ad.empty { display: none; }
+.head + .end-ad, .share-row + .end-ad, .room-grid + .end-ad { margin-top: 16px; }
+/* 광고로 길어지면 위에서부터 쌓고 (가운데 정렬은 위쪽이 잘려서 스크롤로도 못 본다), 다시하기 · 곡 목록은 스크롤 없이 누를 수 있게 화면 아래에 붙인다 */
+#result:has(.end-ad:not([hidden]):not(.empty)) { justify-content: flex-start; }
+#result:has(.end-ad:not([hidden]):not(.empty)) > .row:not(.share-row) { position: sticky; bottom: calc(env(safe-area-inset-bottom) + 8px); z-index: 2; }
+/* 작은 폰: 붙여 둔 버튼이 점수를 가리지 않게 도장을 줄인다 */
+@media (max-height: 640px) {
+  #result:has(.end-ad:not([hidden]):not(.empty)) .stamp { width: 64px; height: 64px; font-size: 44px; -webkit-text-stroke-width: 5px; }
+}
+/* 높이가 낮은 가로 화면: 위 광고가 결과를 거의 다 가리니 광고는 모두 결과 · 버튼 아래로 */
+@media (orientation: landscape) and (max-height: 540px) {
+  #result .end-ad { order: 1; margin-top: 16px; }
+  #result:has(.end-ad:not([hidden]):not(.empty)) > .row:not(.share-row) { position: static; }
+}
 .side-ads { position: fixed; inset: 0; z-index: 3; pointer-events: none; }
 .side-ad { position: absolute; top: 50%; width: 160px; height: 600px; translate: 0 -50%; pointer-events: auto; }
 .side-ad.left { left: 12px; }
