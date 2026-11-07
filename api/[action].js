@@ -10,10 +10,11 @@ import { neon } from '@neondatabase/serverless';
 import { randomBytes, randomInt, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 import {
   act, newSave, normalize, teamPower, unlocked, levelOf, GameError, BANNER, FREE_AVATARS, RANKS, RENAME_COINS, SERVER_ONLY, VERSION, INQUIRY, MP, ATTACKS,
-  itemize, perksOf, frameOfSave, GIFT, CHAR, RARITY, TOP, mpOrder, BOT_SKILL, makeBot, botPlay, REF,
+  itemize, perksOf, frameOfSave, GIFT, CHAR, RARITY, TOP, mpOrder, BOT_SKILL, makeBot, botPlay, botRank, REF,
 } from '../public/rules.js';
 import { SONG, DIFFS, DIFF_NAME, compile, playSong, makeChart } from '../public/songs.js';
 
+process.noDeprecation = true; // Vercel 런타임의 url.parse() 경고(DEP0169)가 에러 로그를 덮어서 진짜 에러가 안 보인다
 const sql = neon(process.env.DATABASE_URL);
 const DAY = 86400;
 const NAME = /^[가-힣a-zA-Z0-9_]{2,12}$/;
@@ -370,7 +371,8 @@ const previewing = async (req) => req.cookies?.apv === '1' && (await adminOk(req
 
 // 저장 데이터 갱신: 동시에 두 요청이 와도 ver 비교로 한쪽만 반영되고 나머지는 다시 시도. 레벨 · 테두리 칸도 같이 (랭킹 · 친구 목록용)
 async function mutate(userId, apply) {
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 6; i++) {
+    if (i) await new Promise((r) => setTimeout(r, 30 + Math.random() * 90)); // 겹친 요청이 같은 순간에 또 부딪히지 않게 조금씩 다르게 쉰다
     const [row] = await sql`SELECT save, ver FROM users WHERE id = ${userId}`;
     if (!row) throw new GameError('없는 회원이에요');
     const out = apply(row.save);
@@ -719,6 +721,7 @@ const routes = {
       const until = new Date(user.banned_until).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
       return res.status(403).json({ error: `이용이 정지된 계정이에요 (${until}까지)${user.ban_reason ? ` · 사유: ${user.ban_reason}` : ''}` });
     }
+    await sql`UPDATE users SET temp_pw = NULL, temp_pw_at = NULL WHERE id = ${user.id} AND temp_pw IS NOT NULL`; // 임시 비밀번호는 한 번 쓰이면 평문 기록을 지운다
     await startSession(res, user.id, ip);
     res.json(await profile(user));
   },
@@ -1096,7 +1099,18 @@ const routes = {
             AND (SELECT count(*) FROM room_events WHERE code = ${code} AND round = ${round} AND from_id = ${uid}) < ${itemsOf(rm.song, rm.diff, round)}`;
       }
     }
-    const view = await roomView(code, uid, { since: isInt(b.since, 0, 2 ** 31 - 1) ? b.since : 0, round, state: json(b.state, 4000), result: json(b.result, 1000) });
+    // 결과는 채보로 가능한 값만 받는다: 시작 뒤 지난 시간까지 나올 수 있는 판정 수로 점수 · 콤보를 자르고 등급은 서버가 다시 매긴다 (화면을 고쳐 멀티 순위 · 1등 횟수를 올리는 걸 막는다)
+    let result = null;
+    if (b.result && typeof b.result === 'object') {
+      const [rm] = await sql`SELECT song, diff, (extract(epoch FROM clock_timestamp() - start_at) * 1000)::float8 AS e FROM rooms WHERE code = ${code} AND round = ${round} AND status <> 'lobby'`;
+      if (rm) {
+        const c = chartOf(rm.song, rm.diff), n = rm.e < 2500 ? 0 : c.at(rm.e / 1000), cap = n ? Math.round((1e6 * n) / c.total) + 1 : 0, r = b.result;
+        const raw = Math.min(cap, Math.max(0, Math.floor(Number(r.raw)) || 0)), combo = Math.min(n, Math.max(0, Math.floor(Number(r.combo)) || 0));
+        result = { raw, rank: botRank(raw), combo, fc: r.fc === true && combo >= c.total, cleared: r.cleared === true && raw > 0, quit: r.quit === true,
+          n: Array.isArray(r.n) ? r.n.slice(0, 4).map((x) => Math.min(c.total, Math.max(0, Math.floor(Number(x)) || 0))) : undefined };
+      }
+    }
+    const view = await roomView(code, uid, { since: isInt(b.since, 0, 2 ** 31 - 1) ? b.since : 0, round, state: json(b.state, 4000), result: result && JSON.stringify(result) });
     res.json(view ?? { gone: true });
   },
 
