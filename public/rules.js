@@ -5,7 +5,7 @@
 // act()가 모든 재화 변동을 처리한다. 로그인 유저는 서버가 act()를 돌려 저장하고, 게스트는 브라우저가 같은 act()를 돌려 기기에 저장한다.
 import { SONGS, SONG, DIFFS, DIFF_NAME, seeded, hashStr } from './songs.js';
 
-export const VERSION = '4.2.0'; // 사이트 맨 아래에 보이는 버전 (공지사항과 맞춰서 올린다)
+export const VERSION = '4.2.1'; // 사이트 맨 아래에 보이는 버전 (공지사항과 맞춰서 올린다)
 export const MAX_LEVEL = 20; // 친구(캐릭터) 최고 레벨
 export const MAX_LV = 1000; // 플레이어 최고 레벨
 export const FREE_AVATARS = 12;
@@ -112,8 +112,9 @@ export const BUFFS = {
   revive: (v) => `쓰러지면 체력 ${v}%로 부활`,
   god: (v) => `신의 힘: 점수 +${v}% · 판정 +${Math.round(v / 4)}ms · 모든 능력 강화`,
 };
-const CAP = { score: 150, guard: 70, window: 30, revive: 90 };
-const GOD_CAP = { score: 600, guard: 95, window: 60, revive: 100 }; // 초월 친구가 팀에 있으면 한계가 확 풀린다
+const CAP = { guard: 70, window: 30, revive: 90 };
+const GOD_CAP = { guard: 95, window: 60, revive: 100 }; // 초월 친구가 팀에 있으면 한계가 확 풀린다
+const GOD_SCORE = 600; // 점수 한계는 초월 팀에만 (일반 팀은 전부 20레벨이어도 +339%). 기록 형식 한계(1e7)를 넘지 않게 하는 값이고, 부스터는 그 위에 더한다
 
 // values: [1레벨, 5레벨] 버프 수치. 6~20레벨은 같은 기울기로 계속 오른다 / voice: [목소리 음높이(미디), 음색]
 // img: 그림을 빌려 쓰는 원래 캐릭터 / badge: 의상 표시 / fx: 카드 배경 · 색감 테마 (style.css의 .fx-*) / card: 카드 그림을 따로 쓸 때
@@ -517,10 +518,17 @@ export function teamBuffs(s, boosters = [], team = s.team) {
     const hit = SYNERGIES.filter((x) => x.group === group && x.chars.every((id) => ids.includes(id))).at(-1);
     if (hit) { synergies.push(hit); add(hit.buff, hit.value); }
   }
+  if (divine) b.score = Math.min(b.score, GOD_SCORE);
   for (const k of boosters) add(BOOSTERS[k].buff, BOOSTERS[k].value);
   for (const [k, v] of Object.entries(divine ? GOD_CAP : CAP)) b[k] = Math.min(b[k], v);
   return { ...b, synergies, divine };
 }
+
+// 더해도 팀 버프가 그대로인 부스터(이미 한계 · 부활은 더 큰 값이 있음)는 곡 창에서 고를 수 없고, 시작할 때 차감하지도 않는다
+export const boosterWorks = (s, k) => {
+  const buff = BOOSTERS[k].buff;
+  return teamBuffs(s, [k])[buff] > teamBuffs(s)[buff];
+};
 
 // 팀 점수가 가장 높은 4명
 // ponytail: 카드 점수 상위 16명 안에서만 4명 조합을 전수 조사(1,820가지). 시너지 조합은 시너지 버튼으로 따로 편성
@@ -1184,7 +1192,7 @@ export function act(input, a, rand = Math.random, cfg = {}) {
       const song = SONG[a.song];
       if (!song || !DIFFS.includes(a.diff)) fail('없는 곡이에요');
       if (!unlocked(s, song)) fail('아직 잠긴 곡이에요');
-      const boosters = [...new Set(Array.isArray(a.boosters) ? a.boosters : [])].filter((k) => BOOSTERS[k]);
+      const boosters = [...new Set(Array.isArray(a.boosters) ? a.boosters : [])].filter((k) => BOOSTERS[k] && boosterWorks(s, k));
       for (const k of boosters) if (!(s.items[k] > 0)) fail(`${BOOSTERS[k].name}이(가) 없어요`);
       for (const k of boosters) s.items[k]--;
       s.pend = boosters; // 끝낼 때 서버가 다시 본다 (코인 · 경험치 적용 + 가능한 점수 계산)

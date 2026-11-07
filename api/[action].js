@@ -24,11 +24,11 @@ const WELCOME = { title: '🎉 먼작귀 리듬 파티에 온 걸 환영해요!'
 // 이 버전으로 처음 배포될 때 공지사항에 한 번 올라가는 업데이트 내역 (관리자 페이지에서 고칠 수 있다)
 const SCHEMA = 3; // 표 구조를 바꿀 때마다 +1 (같은 버전에서도 init이 다시 돈다)
 const RELEASE = {
-  title: '연주 테마 10종 등장! · 노트 칠 때 효과를 차분하게',
+  title: '점수 보너스 · 부스터 오류를 고쳤어요',
   body: [
-    '🎨 연주 테마: 상점 → 테마 탭에서 코인으로 사서 연주 화면을 통째로 바꿔요 (벚꽃 밤 · 깊은 바다 · 반딧불 숲 · 눈 오는 밤 · 노을 해변 · 사탕 나라 · 네온 시티 · 8비트 오락실 · 피에스타 · 은하수)',
-    '👀 사기 전에 미리 보기로 노트가 내려오는 모습을 볼 수 있어요 · 곡 고르는 창에서 바로 바꿀 수 있어요 · 점수에는 영향 없어요',
-    '✨ 노트를 칠 때 효과가 너무 요란해서 차분하게 줄였어요 (노트가 더 잘 보여요)',
+    '📈 팀 점수 보너스가 150%에서 멈추던 걸 고쳤어요. 이제 팀 버프에 더해진 %만큼 그대로 점수에 들어가요',
+    '🍬 반짝 별사탕: 팀 보너스가 150%에 닿아 있으면 써도 점수가 그대로였어요. 이제 언제나 +10%가 더해져요',
+    '🛡️ 방패 젤리 · 정확 안경 · 부활 깃털: 팀 능력이 이미 최대라 효과가 없으면 "이미 최대"로 표시되고 차감되지 않아요',
   ].join('\n'),
 };
 
@@ -409,7 +409,7 @@ async function board(user, a) {
   return { rank: pos, prev: old ? Math.max(before, pos) : null, total, passed: passed.length };
 }
 
-const validPlay = (b) => SONG[b.song] && DIFFS.includes(b.diff) && RANKS.includes(b.rank) && isInt(b.raw, 0, 1e6) && isInt(b.score, 0, 3e6);
+const validPlay = (b) => SONG[b.song] && DIFFS.includes(b.diff) && RANKS.includes(b.rank) && isInt(b.raw, 0, 1e6) && isInt(b.score, 0, 1e7);
 const login = (res) => res.status(401).json({ error: '다시 로그인해 주세요' });
 const adminOnly = (res) => res.status(401).json({ error: '관리자 로그인이 필요해요' });
 

@@ -8,7 +8,7 @@ import {
   act, newSave, normalize, teamBuffs, teamPower, powerOf, bestTeam, GameError, MAX_LEVEL, MAX_LV, CHARS, CHAR, BANNERS, BANNER, RARITY, TOP, GOD_RATE,
   ACH_TRACKS, ACH_TRACK, ACH_TOTAL, ACH_CATS, achCount, achView, claimedOf, MISSIONS, weekOf, pickupOf, pickupEnds, SERVER_ONLY, claimable, bannerOf, priceOf, SHOP,
   ATTEND, attendOf, today, copiesFor, copiesToMax, coinsFor, levelOf, expAt, expNeed, expProgress, levelReward, perksOf, frameInfo, frameTier, frameOfSave,
-  mpOrder, mpTarget, INQUIRY, MP, ATTACKS, itemize, GIFT, valueAt, REF, BOAST_MAX, THEMES, THEME,
+  mpOrder, mpTarget, INQUIRY, MP, ATTACKS, itemize, GIFT, valueAt, REF, BOAST_MAX, THEMES, THEME, boosterWorks,
 } from '../public/rules.js';
 
 const low = () => 0.01; // 가장 흔한 결과(일반 · 목록 첫 친구)가 나오는 난수
@@ -179,7 +179,7 @@ test('초월 친구는 버프 한계를 풀 만큼 세다', () => {
   const s = { ...newSave(), chars: { hachiware: 1, chiikawa: 1, usagi: 1, god_usagi: 1, god_chiikawa: 1 }, team: ['god_usagi', 'god_chiikawa', 'hachiware', 'usagi'] };
   const b = teamBuffs(s);
   assert.ok(b.divine);
-  assert.ok(b.score > 150, `점수 +${b.score}% (보통 한계 150%)`);
+  assert.ok(b.score > 150, `점수 +${b.score}%`);
   assert.equal(b.revive, 100);
   assert.ok(b.window > 30);
   assert.ok(powerOf(s, 'god_usagi') > powerOf({ ...s, chars: { golden_usagi: 20 } }, 'golden_usagi'), '초월 1레벨이 신화 20레벨보다 세다');
@@ -552,6 +552,50 @@ test('연주 기록 검증 (서버만): 시작한 기록 · 걸린 시간 · 그
   cheats(won.save, fin({ multi: true, score: 1e6 }), room); // 같은 판 두 번
   // 게스트(브라우저에서 도는 act)는 검사하지 않는다
   assert.ok(act(newSave(), fin({ score: 1e6 })).result.cleared);
+});
+
+/* ---------- v4.2.1: 점수 보너스 · 부스터 (문의: 155%가 150%로 보임 · 별사탕을 써도 풀콤 250만) ---------- */
+
+const lvTeam = (team, L, items = {}) => ({ ...newSave(), team: [...team, null, null, null].slice(0, 4), chars: Object.fromEntries(team.map((id) => [id, L])), items });
+const TEAM155 = ['star_trio', 'golden_usagi', 'wizard_hachiware', 'guitar_hachiware'];
+
+test('점수 보너스는 더한 그대로 · 별사탕은 어떤 팀에도 +10%', () => {
+  const s = lvTeam(TEAM155, 8);
+  assert.equal(teamBuffs(s).score, 155);
+  assert.equal(teamBuffs(s, ['star']).score, 165);
+  const gods = lvTeam(['god_usagi', 'god_chiikawa'], 20);
+  assert.equal(teamBuffs(gods).score, 600, '초월 팀 한계');
+  assert.equal(teamBuffs(gods, ['star']).score, 610, '초월 팀 한계에 닿아도 별사탕은 더해진다');
+  assert.ok(1e6 * (1 + 6.1) <= 1e7, '가장 높은 점수도 기록 형식 한계(1e7) 안');
+});
+
+test('서버 검증: 155% 팀 + 별사탕 풀 퍼펙트 265만점은 통과 · 그보다 크면 막힌다', () => {
+  const total = 10, cfg = { chart: () => ({ ms: 30000, total, at: () => total }) };
+  const started = act(lvTeam(TEAM155, 8, { star: 2 }), { type: 'start', song: 'twinkle', diff: 'normal', boosters: ['star'] }).save;
+  assert.equal(started.items.star, 1);
+  const s = { ...started, run: { ...started.run, at: Date.now() - 31000 } };
+  const fin = (score) => ({ type: 'finish', song: 'twinkle', diff: 'normal', raw: 1e6, score, combo: total, rank: 'S', cleared: true, fullCombo: true, allPerfect: true, perfect: total });
+  assert.throws(() => act(s, fin(2650002), Math.random, cfg), (e) => e.cheat === true);
+  assert.equal(act(s, fin(2650000), Math.random, cfg).save.best['twinkle:normal'].score, 2650000);
+});
+
+test('한계에 닿아 효과 없는 부스터는 고를 수 없고 차감되지 않는다', () => {
+  const guard = lvTeam(['pajama_white', 'pumpkin_hachiware', 'trumpet_shisa', 'ghost_tiha'], 5, { shield: 2, star: 1 });
+  assert.equal(teamBuffs(guard).guard, 70);
+  assert.equal(boosterWorks(guard, 'shield'), false);
+  assert.equal(boosterWorks(guard, 'star'), true);
+  const r = act(guard, { type: 'start', song: 'twinkle', diff: 'normal', boosters: ['shield', 'star'] }).save;
+  assert.equal(r.items.shield, 2, '효과 없는 방패 젤리는 그대로');
+  assert.equal(r.items.star, 0);
+  assert.deepEqual(r.pend, ['star']);
+  assert.equal(boosterWorks(lvTeam(['knight_rakko'], 5), 'feather'), false, '기사 랏코 부활 60%가 깃털 50%보다 크다');
+  assert.equal(boosterWorks(lvTeam(['witch_usagi', 'ninja_hachiware', 'astro_shisa'], 5), 'glasses'), false, '판정 범위 한계 30ms');
+  // 한계 아래면 그대로 쓰이고 차감된다
+  const low = lvTeam(['hachiware'], 1, { shield: 1, glasses: 1, feather: 1 });
+  for (const k of ['shield', 'glasses', 'feather']) assert.equal(boosterWorks(low, k), true, k);
+  const used = act(low, { type: 'start', song: 'twinkle', diff: 'normal', boosters: ['shield', 'glasses', 'feather'] }).save;
+  assert.deepEqual(used.pend, ['shield', 'glasses', 'feather']);
+  assert.equal(used.items.shield + used.items.glasses + used.items.feather, 0);
 });
 
 test('똑같은 모양이 이어지지 않는다 (모든 곡): 같은 칸 3연타 · 긴 트릴 · 같은 4개 모양 세 번 · 같은 8개 모양 두 번 없음', () => {

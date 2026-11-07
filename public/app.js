@@ -5,7 +5,7 @@ import { sound, Game, Mini, rankOf } from './game.js';
 import {
   CHARS, CHAR, RARITY, BUFFS, SYNERGIES, BOOSTERS, SHOP, ACH_TRACKS, ACH_TOTAL, ACH_CATS, MISSIONS, ONLINE, BANNERS, ATTEND,
   MAX_LEVEL, MAX_LV, TOP, FREE_AVATARS, AVATAR_PRICE, RENAME_COINS, VERSION, INQUIRY, MP, ATTACKS, ATTACK_KINDS, GIFT,
-  act, normalize, teamBuffs, teamPower, powerOf, valueAt, bestTeam, unlocked, ownedAvatar, claimable, missionsReady, onlineReady,
+  act, normalize, teamBuffs, boosterWorks, teamPower, powerOf, valueAt, bestTeam, unlocked, ownedAvatar, claimable, missionsReady, onlineReady,
   levelOf, today, dayOf, cardsOf, cardPrice, LUCKY, BOT_SKILL, botAttacks, CARD_SHOP, POTION, pickupOf, pickupEnds, bannerOf, priceOf, attendOf, mpOrder, mpTarget, itemize,
   copiesFor, coinsFor, canLevel, achView, achCtx, achCount, tierName, expProgress, levelReward, perksOf, frameInfo, frameTier, frameOfSave, REF, THEMES, THEME, ownedTheme,
 } from './rules.js';
@@ -708,9 +708,9 @@ function renderSongDlg() {
     <span>${DIFF_NAME[d]}</span><b>${chartLevel(song, d)}</b>${s.best[`${song.id}:${d}`] ? `<small>${s.best[`${song.id}:${d}`].rank}</small>` : ''}</button>`).join('');
   $('#sdBuffs').innerHTML = buffChips(teamBuffs(s, [...state.boosters]));
   $('#sdBoosters').innerHTML = Object.entries(BOOSTERS).map(([k, x]) => {
-    const n = s.items[k] ?? 0;
-    return `<button type="button" class="boost" data-k="${k}" aria-pressed="${state.boosters.has(k)}" ${n ? '' : 'disabled'}>
-      <span class="ic">${x.icon}</span>${esc(x.name)}<small>${n}개</small></button>`;
+    const n = s.items[k] ?? 0, works = boosterWorks(s, k);
+    return `<button type="button" class="boost" data-k="${k}" aria-pressed="${state.boosters.has(k)}" ${n && works ? '' : 'disabled'}>
+      <span class="ic">${x.icon}</span>${esc(x.name)}<small>${works ? `${n}개` : '이미 최대'}</small></button>`;
   }).join('');
   $('#sdTheme').innerHTML = THEMES.filter((t) => ownedTheme(s, t.id)).map((t) => `<option value="${t.id}"${t.id === s.theme ? ' selected' : ''}>${t.icon} ${esc(t.name)}</option>`).join('')
     + '<option value="">🛒 테마 사러 가기</option>';
