@@ -43,7 +43,7 @@ h2, h3 { font-weight: normal; }
   isolation: isolate;
   container-type: inline-size;
   display: grid;
-  grid-template: "top" auto "main" 1fr "nav" auto / 100%;
+  grid-template: "top" auto "main" 1fr "bar" auto "nav" auto / 100%;
 }
 @media (orientation: portrait) and (min-width: 560px) and (min-height: 760px) {
   #app {
@@ -825,7 +825,7 @@ input[type="range"] { width: 100%; accent-color: var(--pink); }
   :root { --nav: 210px; }
   #app {
     max-width: none;
-    grid-template: "nav top" auto "nav main" 1fr / var(--nav) 1fr;
+    grid-template: "nav top" auto "nav main" 1fr "nav bar" auto / var(--nav) 1fr;
   }
   #nav {
     display: flex;
@@ -1456,8 +1456,8 @@ dialog h2 { font-size: 23px; }
 .stage { container-type: size; }
 .trio { width: min(86cqw, 190cqh); }
 @media (orientation: portrait), (max-width: 639px) {
-  #scene[data-mode="home"] .stage { top: 190px; bottom: 300px; height: auto; }
-  #app.ad-on #scene[data-mode="home"] .stage { bottom: 410px; }
+  #scene[data-mode="home"] .stage { top: 190px; bottom: calc(300px + var(--room-bar, 0px)); height: auto; }
+  #app.ad-on #scene[data-mode="home"] .stage { bottom: calc(410px + var(--room-bar, 0px)); }
 }
 @media (orientation: landscape) and (min-width: 640px) {
   #app.ad-on #scene[data-mode="home"] .stage { bottom: calc(10% + 110px); }
@@ -1880,7 +1880,10 @@ dialog.evo-fx[open] { align-items: center; animation: popIn .3s cubic-bezier(.3,
 .mp-result em { grid-area: sc; min-width: 84px; font-size: 19px; font-style: normal; text-align: right; font-variant-numeric: tabular-nums; }
 .mp-reward { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 8px 0 0; font-size: 15px; }
 .mp-reward svg { width: 18px; height: 18px; }
-.room-bar { position: absolute; right: 18px; bottom: calc(env(safe-area-inset-bottom) + 18px); z-index: 20; padding: 8px 18px; font-size: 16px; color: #fff; background: linear-gradient(#9fd4ff, #5fb1f5); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink); text-shadow: 0 1px 0 rgba(74, 57, 83, .35); animation: popIn .35s cubic-bezier(.3, 1.6, .5, 1); }
+/* 멀티 방 돌아가기: 떠 있으면 메뉴 · 광고 · 목록을 가리니 본문과 메뉴 사이에 자기 줄을 갖는다. 그만큼 본문이 줄어서 홈 캐릭터도 같이 올린다 (--room-bar: 줄 높이) */
+#app:has(.room-bar:not([hidden])) { --room-bar: 57px; }
+.room-bar { grid-area: bar; justify-self: center; z-index: 3; margin: 4px 12px 10px; padding: 8px 18px; font-size: 16px; color: #fff; background: linear-gradient(#9fd4ff, #5fb1f5); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink); text-shadow: 0 1px 0 rgba(74, 57, 83, .35); animation: popIn .35s cubic-bezier(.3, 1.6, .5, 1); }
+@media (orientation: landscape) and (min-width: 640px) { .room-bar { margin-bottom: calc(env(safe-area-inset-bottom) + 10px); } } /* 가로 화면은 아래에 메뉴가 없어서 홈 표시줄을 직접 피한다 */
 @media (max-width: 899px) {
   .room-grid, .mp-entry { grid-template-columns: minmax(0, 1fr); }
 }
