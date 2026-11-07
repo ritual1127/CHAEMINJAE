@@ -43,7 +43,7 @@ h2, h3 { font-weight: normal; }
   isolation: isolate;
   container-type: inline-size;
   display: grid;
-  grid-template: "top" auto "main" 1fr "bar" auto "nav" auto / 100%;
+  grid-template: "top" auto "bar" auto "main" 1fr "nav" auto / 100%;
 }
 @media (orientation: portrait) and (min-width: 560px) and (min-height: 760px) {
   #app {
@@ -825,7 +825,7 @@ input[type="range"] { width: 100%; accent-color: var(--pink); }
   :root { --nav: 210px; }
   #app {
     max-width: none;
-    grid-template: "nav top" auto "nav main" 1fr "nav bar" auto / var(--nav) 1fr;
+    grid-template: "nav top" auto "nav bar" auto "nav main" 1fr / var(--nav) 1fr;
   }
   #nav {
     display: flex;
@@ -1451,13 +1451,26 @@ dialog h2 { font-size: 23px; }
 .home-links b { font-weight: normal; }
 .home-links > button:active { translate: 0 2px; box-shadow: 0 1px 0 var(--ink); }
 .notice-btn .dot { position: absolute; top: -4px; right: -4px; width: 12px; height: 12px; background: #ff5c8a; border: 2px solid #fff; border-radius: 50%; }
-#home .spacer { min-height: 16dvh; }
-/* 홈 캐릭터 무대: 연주하기 버튼 바로 위에 서도록 (광고가 뜨면 그만큼 위로) · 무대 높이에 맞춰 크기 조절 */
+#home .spacer { min-height: clamp(84px, 14dvh, 150px); } /* 캐릭터 자리: 짧은 화면에서도 최소 84px (짧으면 app.js가 캐릭터를 연주하기 버튼 뒤로 조금 내려 더 크게 보인다) */
+/* 홈 캐릭터 무대: 로고와 연주하기 버튼 사이 빈칸(.spacer)을 app.js가 실제로 재서 --stage-top · --stage-h로 준다 (기종 · 브라우저마다 다른 높이를 고정값으로 맞출 수 없어서) · 무대 높이에 맞춰 크기 조절 */
 .stage { container-type: size; }
 .trio { width: min(86cqw, 190cqh); }
 @media (orientation: portrait), (max-width: 639px) {
-  #scene[data-mode="home"] .stage { top: 190px; bottom: calc(300px + var(--room-bar, 0px)); height: auto; }
-  #app.ad-on #scene[data-mode="home"] .stage { bottom: calc(410px + var(--room-bar, 0px)); }
+  #scene[data-mode="home"] .stage { top: var(--stage-top, 190px); bottom: auto; height: var(--stage-h, 120px); }
+}
+/* 짧은 세로 화면(사파리 · 삼성 인터넷처럼 위아래 도구 막대가 큰 브라우저 · 작은 폰): 홈 요소를 줄여 광고까지 스크롤 없이 보이게 */
+@media (orientation: portrait) and (max-height: 860px) {
+  #topbar { padding-top: calc(env(safe-area-inset-top) + 6px); }
+  .chip img { width: 32px; height: 32px; }
+  .exp { height: 7px; }
+  #home.screen { gap: 6px; padding-bottom: 6px; }
+  #home .home-top .logo { font-size: clamp(44px, 14cqw, 72px); }
+  .ribbon { margin-top: 2px; padding: 3px 16px; font-size: 15px; }
+  .home-panel { gap: 8px; }
+  .play { padding: 8px; font-size: 24px; }
+  .mini { min-height: 46px; padding: 4px 10px; }
+  .mini b { font-size: 15px; }
+  .home-foot { margin-top: 0; font-size: 10px; line-height: 1; }
 }
 @media (orientation: landscape) and (min-width: 640px) {
   #app.ad-on #scene[data-mode="home"] .stage { bottom: calc(10% + 110px); }
@@ -1843,6 +1856,7 @@ dialog.evo-fx[open] { align-items: center; animation: popIn .3s cubic-bezier(.3,
 .room-code b { font-size: 26px; font-weight: normal; letter-spacing: 5px; color: #e5487f; }
 .room-code small { font-size: 12px; color: var(--ink2); }
 .room-code:active { translate: 0 2px; box-shadow: 0 1px 0 var(--ink); }
+#room .head h2 { min-width: max-content; white-space: nowrap; } /* 좁으면 '멀/티/방'으로 세로로 쪼개지던 것 */
 .room-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr); gap: 16px; align-items: start; }
 .room-left, .room-right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .room-seats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding-top: 10px; }
@@ -1880,10 +1894,10 @@ dialog.evo-fx[open] { align-items: center; animation: popIn .3s cubic-bezier(.3,
 .mp-result em { grid-area: sc; min-width: 84px; font-size: 19px; font-style: normal; text-align: right; font-variant-numeric: tabular-nums; }
 .mp-reward { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 8px 0 0; font-size: 15px; }
 .mp-reward svg { width: 18px; height: 18px; }
-/* 멀티 방 돌아가기: 떠 있으면 메뉴 · 광고 · 목록을 가리니 본문과 메뉴 사이에 자기 줄을 갖는다. 그만큼 본문이 줄어서 홈 캐릭터도 같이 올린다 (--room-bar: 줄 높이) */
-#app:has(.room-bar:not([hidden])) { --room-bar: 57px; }
-.room-bar { grid-area: bar; justify-self: center; z-index: 3; margin: 4px 12px 10px; padding: 8px 18px; font-size: 16px; color: #fff; background: linear-gradient(#9fd4ff, #5fb1f5); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink); text-shadow: 0 1px 0 rgba(74, 57, 83, .35); animation: popIn .35s cubic-bezier(.3, 1.6, .5, 1); }
-@media (orientation: landscape) and (min-width: 640px) { .room-bar { margin-bottom: calc(env(safe-area-inset-bottom) + 10px); } } /* 가로 화면은 아래에 메뉴가 없어서 홈 표시줄을 직접 피한다 */
+/* 멀티 방 돌아가기: 통화 중 띠처럼 상단바 바로 아래 얇은 줄 (떠 있으면 메뉴 · 광고 · 목록을 가리고, 아래 줄이면 본문을 많이 깎는다) */
+.room-bar { grid-area: bar; z-index: 3; margin: 0 10px 4px; padding: 4px 12px; font-size: 13px; line-height: 1.3; color: #fff; background: linear-gradient(#9fd4ff, #5fb1f5); border: 2px solid var(--ink); border-radius: 12px; box-shadow: 0 3px 0 var(--ink); text-shadow: 0 1px 0 rgba(74, 57, 83, .35); animation: popIn .35s cubic-bezier(.3, 1.6, .5, 1); }
+.room-bar:active { translate: 0 2px; box-shadow: 0 1px 0 var(--ink); }
+@media (orientation: landscape) and (min-width: 640px) { .room-bar { justify-self: center; min-width: 320px; margin: 0 20px 6px; } }
 @media (max-width: 899px) {
   .room-grid, .mp-entry { grid-template-columns: minmax(0, 1fr); }
 }
@@ -2105,10 +2119,39 @@ dialog.evo-fx[open] { align-items: center; animation: popIn .3s cubic-bezier(.3,
 
 /* 곡 목록의 난이도 칸은 PC · 휴대폰 모두 숨긴다 (곡을 누르면 창에서 고른다) */
 .song .lvs { display: none !important; }
+/* 휴대폰 멀티 방: 자리 10개를 5열 2줄 작은 칸으로 (2열 5줄은 자리만 800px이라 곡 · 시작 버튼이 안 보였다) · 머리줄 · 곡 칸도 작게 */
 @media (max-width: 560px) {
-  .room-seats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .room-seats { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding-top: 8px; }
+  .seat { gap: 2px; min-height: 0; padding: 9px 3px 6px; border-width: 2px; border-radius: 14px; box-shadow: 0 3px 0 var(--ink); }
+  .seat .fr { --sz: 40px; --bw: 2px; }
+  .seat b { display: -webkit-box; max-height: 2.4em; overflow: hidden; font-size: 11px; line-height: 1.2; text-align: center; white-space: normal; word-break: break-all; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .seat small { max-width: 100%; overflow: hidden; font-size: 9.5px; white-space: nowrap; text-overflow: ellipsis; }
+  .seat .st { max-width: 100%; padding: 0 6px; overflow: hidden; font-size: 10px; white-space: nowrap; text-overflow: ellipsis; }
+  .seat .crown { top: -12px; font-size: 18px; }
+  .seat-tools { top: 2px; right: 2px; gap: 1px; }
+  .seat-tools button { min-width: 22px; height: 22px; font-size: 11px; }
+  .seat.empty .plus { font-size: 22px; }
+  .seat.empty small { font-size: 10px; }
+  #room .head { gap: 6px; }
+  #room .head h2 { font-size: 20px; -webkit-text-stroke-width: 4px; }
+  .room-code { gap: 5px; padding: 2px 10px; font-size: 12px; border-width: 2px; box-shadow: 0 2px 0 var(--ink); }
+  .room-code b { font-size: 19px; letter-spacing: 3px; }
+  .room-code > span { display: none; } /* '참가 코드' 글자는 빼고 숫자만 */
+  #room .head .count { font-size: 12px; }
+  #roomLeave span { display: none; } /* 나가기는 아이콘만 (aria-label이 있다) */
+  #roomLeave { order: 1; padding: 5px 8px; } /* 첫 줄: 제목 · 코드 · 인원 · 나가기 / 둘째 줄: 친구 초대(가로로 꽉 차게) */
+  #roomInvite { flex: 1 0 auto; order: 2; }
+  .room-song { gap: 10px; padding: 8px; }
+  .room-song img { width: 56px; height: 56px; border-width: 2px; border-radius: 12px; }
+  .room-song b { font-size: 17px; }
+  .room-song small { margin-top: 2px; font-size: 11px; }
+  #roomDiffs button { padding: 4px 2px 3px; }
+  #roomDiffs button b { font-size: 18px; }
   .frow { flex-wrap: wrap; }
   .frow .acts { width: 100%; }
+}
+@media (max-width: 340px) {
+  .room-seats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 /* v4: 오늘의 카드 상점 · 상단바 사진 · 카드 막대 */
@@ -2133,7 +2176,18 @@ dialog.evo-fx[open] { align-items: center; animation: popIn .3s cubic-bezier(.3,
   #game.multi .mp-atk small { font-size: 10px; line-height: 1.2; }
   #game.multi .mp-charges i { width: 20px; height: 20px; font-size: 13px; }
   .mp-alert { max-width: calc(100vw - 24px); overflow: hidden; font-size: 14px; text-overflow: ellipsis; }
-  .room-grid { display: flex; flex-direction: column; gap: 12px; }
+  /* 세로로 쌓을 때는 왼쪽 · 오른쪽 묶음을 풀어서 곡 → (방장) 곡 고르기 → 결과 → 자리 → 순위 → 시작 버튼 순으로. 시작 · 준비 버튼은 화면 아래에 붙어서 스크롤 없이 누른다 */
+  .room-grid { display: flex; flex-direction: column; gap: 12px; align-items: stretch; } /* 기본 규칙의 start가 남으면 버튼 줄이 내용 너비만큼만 된다 */
+  .room-left, .room-right { display: contents; }
+  .room-song { order: -2; }
+  .room-result { order: -1; }
+  .room-board { order: 1; }
+  .room-pick { order: 2; } /* 곡 고르기(방장)는 자리 아래: 사람이 먼저 보이게 */
+  .room-hint { order: 3; }
+  .room-btns { order: 4; position: sticky; bottom: -14px; z-index: 2; margin: 0 -12px -14px; padding: 10px 12px 14px; background: linear-gradient(rgba(255, 250, 243, 0), rgba(255, 250, 243, .96) 38%); }
+  .seat b { display: -webkit-box; max-height: 2.4em; overflow: hidden; line-height: 1.2; text-align: center; white-space: normal; word-break: break-all; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .seat .st { max-width: 100%; padding: 1px 6px; overflow: hidden; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; } /* 폴드 · 아이패드의 83px 자리에서 '🤖 보통'이 잘리지 않게 */
+  .room-btns .btn { flex: 1 1 100%; max-width: none; }
   #room .head { flex-wrap: wrap; }
   .mp-entry { display: flex; flex-direction: column; gap: 12px; }
 }

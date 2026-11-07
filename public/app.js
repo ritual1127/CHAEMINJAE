@@ -607,6 +607,15 @@ function sideAds() {
 }
 addEventListener('resize', () => !$('#sideAds').hidden !== (current === 'result') && sideAds());
 
+// 홈 캐릭터 무대 = 로고와 연주하기 버튼 사이 빈칸. 기종 · 브라우저(주소창 · 도구 막대 높이)마다 다르니 실제로 재서 CSS 변수로 준다 (세로 화면만 쓴다)
+// 빈칸이 150px보다 작으면(짧은 화면) 모자란 만큼(최대 40px) 연주하기 버튼 뒤로 내려 선다 (발만 가려지고 얼굴은 다 보인다)
+const fitStage = () => {
+  const sp = $('#home .spacer').getBoundingClientRect(), app = $('#app').getBoundingClientRect(), over = Math.min(40, Math.max(0, 150 - sp.height));
+  scene.style.setProperty('--stage-top', `${Math.round(sp.top - app.top)}px`);
+  scene.style.setProperty('--stage-h', `${Math.round(sp.height + over)}px`);
+};
+new ResizeObserver(fitStage).observe($('#home .spacer'));
+
 // 모바일: 게임이 끝날 때마다 결과 위 320×200 · 아래 320×100. 1분 안에 다시 불러오지 않는 건 PC와 같다
 // 주소창이 접힐 때도 resize가 오니 resize로는 부르지 않는다 (스크롤만 해도 광고가 새로 불리면 안 된다)
 const MO_ADS = [['DAN-yeLd9DDX3BhjUzeU', 200], ['DAN-zLVaOwwnlFHQPQXA', 100]];
@@ -2761,7 +2770,7 @@ function renderRoom() {
   if (!r) return;
   const me = r.players.find((p) => p.id === r.me), host = r.host === r.me, song = SONG[r.song], playing = r.status === 'playing';
   const others = r.players.filter((p) => p.id !== r.host), waiting = others.filter((p) => !p.ready);
-  $('#roomCode').innerHTML = `참가 코드 <b>${esc(r.code)}</b><small>📋 복사</small>`;
+  $('#roomCode').innerHTML = `<span>참가 코드</span><b>${esc(r.code)}</b><small>📋 복사</small>`;
   $('#roomCount').textContent = `${r.players.length} / ${MP.max}명`;
   $('#roomSeats').innerHTML = Array.from({ length: MP.max }, (_, i) => {
     const p = r.players.find((x) => x.seat === i);

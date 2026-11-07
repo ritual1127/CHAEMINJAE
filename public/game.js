@@ -435,7 +435,7 @@ export const sound = {
 
   get() {
     if (!this.ctx) {
-      this.ctx = new AudioContext({ latencyHint: 'interactive' });
+      this.ctx = new (globalThis.AudioContext ?? globalThis.webkitAudioContext)({ latencyHint: 'interactive' }); // 옛 iOS 사파리는 webkit 접두사만 있다
       this.out = this.ctx.createDynamicsCompressor();
       this.out.connect(this.ctx.destination);
       this.noise = noiseBuffer(this.ctx, 0.5);
