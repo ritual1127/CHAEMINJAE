@@ -22,7 +22,7 @@ const rand = () => randomInt(R48) / R48; // 뽑기는 서버 난수로 (48비트
 const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
 const WELCOME = { title: '🎉 먼작귀 리듬 파티에 온 걸 환영해요!', body: '시작 선물로 보석 500개를 보내요. 매일 출석 · 미션 · 접속 보상도 꼭 챙겨 가세요!', gems: 500 };
 // 이 버전으로 처음 배포될 때 공지사항에 한 번 올라가는 업데이트 내역 (관리자 페이지에서 고칠 수 있다)
-const SCHEMA = 3; // 표 구조를 바꿀 때마다 +1 (같은 버전에서도 init이 다시 돈다)
+const SCHEMA = 4; // 표 구조를 바꿀 때마다 +1 (같은 버전에서도 init이 다시 돈다)
 const RELEASE = {
   title: '점수 보너스 · 부스터 오류를 고쳤어요',
   body: [
@@ -170,6 +170,8 @@ async function migrate() {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS lv INT NOT NULL DEFAULT 1,
     ADD COLUMN IF NOT EXISTS frame INT NOT NULL DEFAULT 0,
     ADD COLUMN IF NOT EXISTS total_score BIGINT NOT NULL DEFAULT 0`;
+  // v4.2.1: 회원 IP (가입 때 · 마지막 신호 때). 관리자만 본다 (부계정 · 이상한 기록 확인용)
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS signup_ip TEXT, ADD COLUMN IF NOT EXISTS last_ip TEXT`;
   await sql`CREATE INDEX IF NOT EXISTS scores_board ON scores (song, diff, score DESC, played_at)`;
   await sql`CREATE INDEX IF NOT EXISTS users_total ON users (total_score DESC) WHERE total_score > 0`;
   await sql`CREATE INDEX IF NOT EXISTS users_seen ON users (last_seen)`;
@@ -322,11 +324,11 @@ const checkPw = (pw, stored) => {
 const cookie = (name, value, maxAge) => `${name}=${value}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
 
 // 쿠키에는 랜덤 토큰, DB에는 그 해시만 저장
-async function startSession(res, userId) {
+async function startSession(res, userId, ip) {
   const token = randomBytes(32).toString('base64url');
   await sql`INSERT INTO sessions (token, user_id, expires_at)
             VALUES (${hash(token).toString('hex')}, ${userId}, now() + interval '30 days')`;
-  await sql`UPDATE users SET last_seen = now() WHERE id = ${userId}`;
+  await sql`UPDATE users SET last_seen = now(), last_ip = ${ip} WHERE id = ${userId}`;
   res.setHeader('Set-Cookie', cookie('sid', token, 30 * DAY));
 }
 
@@ -419,7 +421,7 @@ async function seen(req) {
   const { v = '', s = '', d = '' } = req.query, token = req.cookies?.sid ? hash(req.cookies.sid).toString('hex') : '';
   if (!/^[\w-]{8,40}$/.test(v)) return null;
   const [r] = await sql`WITH u AS (SELECT user_id FROM sessions WHERE token = ${token} AND expires_at > now()),
-    l AS (UPDATE users SET last_seen = now(), online_at = now(), -- 총 접속 시간: 마지막 신호 뒤 지난 시간을 더한다. 75초 넘게 끊겼으면 새 접속이라 안 더한다 (화면을 숨기면 신호가 없어서 안 세고, 기기가 여러 대여도 회원마다 한 번만 센다)
+    l AS (UPDATE users SET last_seen = now(), online_at = now(), last_ip = ${ipOf(req)}, -- 총 접속 시간: 마지막 신호 뒤 지난 시간을 더한다. 75초 넘게 끊겼으면 새 접속이라 안 더한다 (화면을 숨기면 신호가 없어서 안 세고, 기기가 여러 대여도 회원마다 한 번만 센다)
         online_secs = online_secs + CASE WHEN online_at > now() - interval '75 seconds' THEN round(extract(epoch FROM now() - online_at))::bigint ELSE 0 END
       WHERE id = (SELECT user_id FROM u)),
     p AS (INSERT INTO presence (vid, user_id, screen, device) VALUES (${v}, (SELECT user_id FROM u), ${/^[\w:-]{1,40}$/.test(s) ? s : ''}, ${d === 'pc' ? 'pc' : 'mo'})
@@ -682,7 +684,7 @@ const routes = {
       if (!ref) return res.status(400).json({ error: '없는 친구 코드예요. 코드를 다시 확인하거나 비워 두고 가입해 주세요' });
     }
     const save = { ...newSave(), avatar };
-    const [user] = await sql`INSERT INTO users (username, pw, avatar, save, ref_by) VALUES (${name}, ${hashPw(password)}, ${avatar}, ${JSON.stringify(save)}::jsonb, ${ref?.id ?? null})
+    const [user] = await sql`INSERT INTO users (username, pw, avatar, save, ref_by, signup_ip, last_ip) VALUES (${name}, ${hashPw(password)}, ${avatar}, ${JSON.stringify(save)}::jsonb, ${ref?.id ?? null}, ${ip}, ${ip})
                              ON CONFLICT (username) DO NOTHING RETURNING id, username, avatar, save`;
     if (!user) return res.status(409).json({ error: '이미 누가 쓰고 있는 닉네임이에요' });
     await logSec('signup', ip, user.id);
@@ -696,7 +698,7 @@ const routes = {
         await acceptFriend(user.id, ref.id);
       }
     }
-    await startSession(res, user.id);
+    await startSession(res, user.id, ip);
     res.json(await profile(user));
   },
 
@@ -717,7 +719,7 @@ const routes = {
       const until = new Date(user.banned_until).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
       return res.status(403).json({ error: `이용이 정지된 계정이에요 (${until}까지)${user.ban_reason ? ` · 사유: ${user.ban_reason}` : ''}` });
     }
-    await startSession(res, user.id);
+    await startSession(res, user.id, ip);
     res.json(await profile(user));
   },
 
@@ -1489,7 +1491,7 @@ const routes = {
         coalesce((save->'stats'->>'maxCombo')::int, 0) AS max_combo,
         (SELECT count(*)::int FROM jsonb_object_keys(coalesce(save->'chars', '{}'::jsonb))) AS chars,
         (SELECT count(*)::int FROM jsonb_object_keys(coalesce(save->'stats'->'clears', '{}'::jsonb))) AS clears,
-        lv, frame, total_score::float8 AS total, online_secs::float8 AS online_secs,
+        lv, frame, total_score::float8 AS total, online_secs::float8 AS online_secs, last_ip,
         (SELECT array_agg(old_name ORDER BY id DESC) FROM name_history WHERE user_id = users.id) AS olds,
         save->'chars' AS c, save->'team' AS t
         FROM users ORDER BY created_at DESC LIMIT 500`,
@@ -1628,19 +1630,23 @@ const routes = {
   async 'GET admin-user'(req, res) {
     if (!(await adminOk(req))) return adminOnly(res);
     const name = text(req.query.name, 20);
-    const [u] = await sql`SELECT id, username, avatar, lv, frame, total_score::float8 AS total, online_secs::float8 AS online_secs, created_at, last_seen, save, banned_until, ban_reason, temp_pw, temp_pw_at
+    const [u] = await sql`SELECT id, username, avatar, lv, frame, total_score::float8 AS total, online_secs::float8 AS online_secs, created_at, last_seen, save, banned_until, ban_reason, temp_pw, temp_pw_at, signup_ip, last_ip
                           FROM users WHERE id = coalesce((SELECT id FROM users WHERE username = ${name}),
                             (SELECT user_id FROM name_history WHERE old_name = ${name} ORDER BY id DESC LIMIT 1))`;
     if (!u) return res.status(404).json({ error: '그런 닉네임은 없어요' });
     const s = normalize(u.save);
-    const [[f], plays, names] = await Promise.all([
+    const ips = [u.signup_ip, u.last_ip].filter((x) => x && x !== 'local');
+    const [[f], plays, names, sameIp] = await Promise.all([
       sql`SELECT (SELECT count(*)::int FROM friends WHERE user_id = ${u.id} AND status = 'accepted') AS friends,
           (SELECT count(*)::int FROM mail WHERE user_id = ${u.id} AND kind = 'friend') AS gifts_got`,
       sql`SELECT song, diff, score, rank, cleared, multi, played_at FROM play_log WHERE user_id = ${u.id} ORDER BY played_at DESC LIMIT 20`,
       sql`SELECT old_name, new_name, by_admin, created_at FROM name_history WHERE user_id = ${u.id} ORDER BY id DESC LIMIT 100`,
+      // 같은 IP(가입 · 마지막)를 쓴 다른 회원 (부계정 확인용 · 학교 · 집 공유 와이파이면 같은 IP가 흔하니 참고만)
+      ips.length ? sql`SELECT username, last_ip, signup_ip, last_seen FROM users WHERE id <> ${u.id}
+        AND (last_ip = ANY(string_to_array(${ips.join(',')}, ',')) OR signup_ip = ANY(string_to_array(${ips.join(',')}, ','))) ORDER BY last_seen DESC NULLS LAST LIMIT 30` : [],
     ]);
     res.json({
-      names, renames: s.renames, online_secs: u.online_secs,
+      names, renames: s.renames, online_secs: u.online_secs, signup_ip: u.signup_ip, last_ip: u.last_ip, same_ip: sameIp,
       username: u.username, avatar: u.avatar, lv: u.lv, frame: u.frame, total: u.total, created_at: u.created_at, last_seen: u.last_seen,
       banned_until: u.banned_until && new Date(u.banned_until) > new Date() ? u.banned_until : null, ban_reason: u.ban_reason,
       temp_pw: u.temp_pw, temp_pw_at: u.temp_pw_at,
